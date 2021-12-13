@@ -1,8 +1,8 @@
 # Introduction of this ReadMe file
 
-This artefact contains the source code for paper submission 10143 to AAAI 2022, with the title:
+This artefact contains the source code for our AAAI 2022 paper:
 
-**<center>Sampling-Based Robust Control of Autonomous Systems with Non-Gaussian Noise</center>**
+<center>Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous Systems with Non-Gaussian Noise. AAAI 2022</center>
 
 This folder contains everything that is needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM. Using the instructions below, the experiments may be replicated on a virtual machine, or on your own machine.
 
@@ -97,19 +97,7 @@ Open a terminal and navigate to the artefact folder. Then, run the following com
 $ pip3 install -r requirements.txt
 ```
 
-The following packages will be installed:
-
-- imageio==2.9.0 (needed for visvis)
-- matplotlib==3.3.4
-- numpy==1.20.1
-- pandas==1.3.2
-- pyopengl==3.1.5 (needed for visvis)
-- pyqt5==5.15.2 (needed for visvis)
-- scipy==1.6.2
-- seaborn==0.11.2
-- visvis==1.12.4 (to create 3D UAV plots)
-- xlrd==2.0.1
-- xlsxwriter==3.0.1
+Please checkout the file `requirements.txt` to see the full list of packages that will be installed.
 
 ## 5. Set default folders and options
 
