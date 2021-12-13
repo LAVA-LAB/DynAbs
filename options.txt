@@ -1,6 +1,6 @@
 # User options for the scenario-based abstractions Python program
 scenarios.samples = 25
-scenarios.samples_max = 25600
+scenarios.samples_max = 6400
 scenarios.confidence = 0.1
 mdp.prism_folder = <path-to-prism>/prism-imc/prism/
 mdp.mode = interval
