@@ -8,10 +8,13 @@
 |______________________________________|
 
 Implementation of the method proposed in the paper:
- "Sampling-Based Robust Control of Autonomous Systems with Non-Gaussian Noise"
 
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
+  Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & 
+  Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous 
+  Systems with Non-Gaussian Noise. AAAI 2022.
+
+Originally coded by:        Thom S. Badings
+Contact e-mail address:     thom.badings@ru.nl>
 ______________________________________________________________________________
 
 Module containing smaller ancillary functions called repeatedly by other 

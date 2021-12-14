@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Parameters for the Building Automation System (BAS) case. There parameters
-were obtained from the following reference:
+Parameters for the Building Automation System (BAS) case. The parameters were
+obtained from the following reference:
     
     N. Cauchi and A. Abate.  Benchmarks for cyber-physical systems: A modular 
     model libraryfor building automation systems. In ADHS, volume 51 of 

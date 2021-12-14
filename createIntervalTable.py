@@ -7,11 +7,14 @@
 |  SCENARIO-BASED ABSTRACTION PROGRAM  |
 |______________________________________|
 
-This ancillary script belongs to the following paper:
- "Sampling-Based Robust Control of Autonomous Systems with Non-Gaussian Noise"
+This script belongs to the following paper:
+    
+  Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & 
+  Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous 
+  Systems with Non-Gaussian Noise. AAAI 2022.
 
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
+Originally coded by:        Thom S. Badings
+Contact e-mail address:     thom.badings@ru.nl
 
 Specifically, this script generates the tables of probability intervals, used
 for computing the transition probabilities of our sampling-based abstractions.
