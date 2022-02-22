@@ -245,6 +245,10 @@ class Abstraction(object):
                 sum_key = np.sum(keys, axis=0)
                 i = self.partition['R']['idx'][tuple(sum_key)]
                 
+                # Skip if i is a critical state
+                if i in self.partition['critical']:
+                    continue
+                
                 v_list = list(itertools.product(*vals))
                 v_sum  = np.sum(v_list, axis=1)
                 enabled = set()
@@ -276,7 +280,14 @@ class Abstraction(object):
                 v_sum  = np.sum(v_list, axis=1)
                 enabled_inv = set()
                 for v in v_sum:
-                    enabled_inv.add( self.partition['R']['idx'][tuple(v)] )
+                    
+                    state = self.partition['R']['idx'][tuple(v)]
+                    
+                    # Skip if v is a critical state
+                    if state in self.partition['critical']:
+                        continue
+                    
+                    enabled_inv.add( state )
                 
                 self.actions['enabled_inv'][a] = enabled_inv
                 
