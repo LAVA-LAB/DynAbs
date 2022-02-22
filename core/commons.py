@@ -27,6 +27,7 @@ import time                     # Import to create tic/toc functions
 import sys                      # Allows to terminate the code at some point
 import itertools                # Import to crate iterators
 import os                       # Import OS to allow creationg of folders
+from scipy.spatial import Delaunay
 
 class table(object):
     '''
@@ -83,6 +84,33 @@ class table(object):
             
         if head:
             print('-'*sum(self.col_width))
+
+def in_hull(p, hull):
+    '''
+    Test if points in `p` are in `hull`.
+
+    `p` should be a `NxK` coordinates of `N` points in `K` dimensions
+    `hull` is either a scipy.spatial.Delaunay object or the `MxK` array of the 
+    coordinates of `M` points in `K`dimensions for which Delaunay triangulation
+    will be computed
+    '''
+    
+    if not isinstance(hull,Delaunay):
+        print(' -- Creating hull...')
+        hull = Delaunay(hull, qhull_options='QJ')
+
+    boolArray = hull.find_simplex(p) >= 0
+
+    return boolArray
+
+def overapprox_box(brs):
+    
+    brs_min = np.min(brs, axis=0)
+    brs_max = np.max(brs, axis=0)
+    
+    backreach_heur = np.vstack((brs_min, brs_max))
+    
+    return backreach_heur
 
 def createDirectory(folder):
     '''
@@ -411,3 +439,6 @@ def angle_between(v1, v2):
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+def flatten(t):
+    return [item for sublist in t for item in sublist]

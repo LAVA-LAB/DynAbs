@@ -28,10 +28,11 @@ from scipy.spatial import ConvexHull
 from matplotlib.patches import Rectangle
 
 from ..commons import printWarning, mat_to_vec, cm2inch
+from core.monte_carlo import monte_carlo
 
-
-def createPartitionPlot(i_tup, j_tup, j, delta_plot, setup, model, \
-                        abstr, allOriginPointsNested, predecessor_set):
+def createPartitionPlot(i_tup, j_tup, j, setup, model, \
+                        partition, allOriginPointsNested, predecessor_set,
+                        prefix):
     
     '''
     
@@ -45,14 +46,12 @@ def createPartitionPlot(i_tup, j_tup, j, delta_plot, setup, model, \
         Tuple of indices to create a cross-section for (i.e. are fixed)
     j : int
         Index of the center region of the state space partition.
-    delta_plot : int
-        Value for which to show the set controllable to `d_j` in `delta` steps.
     setup : dict
         Setup dictionary.
     model : dict
         Main dictionary of the LTI system model.
-    abstr : dict
-        Dictionay containing all information of the finite-state abstraction.
+    partition : dict
+        Dictionay containing all information of the partitioning.
     allOriginPointsNested : list
         Nested lists containing all origin points of all regions.
     predecessor_set : array
@@ -82,26 +81,22 @@ def createPartitionPlot(i_tup, j_tup, j, delta_plot, setup, model, \
     
     for k,poly in enumerate(allOriginPointsNested):
 
-        if model.n <= 2 or ( \
-            abstr['P'][k]['center'][j0] == model.setup['partition']['origin'][j0] and \
-            abstr['P'][k]['center'][j1] == model.setup['partition']['origin'][j1]):
+        if model.n <= 2 or all( partition['R']['center'][k,[j0,j1]] == model.setup['partition']['origin'][[j0,j1]] ):
 
             # Convert poly list to numpy array            
             polyMat = np.array(poly)
             
             # Plot partitions and label
-            ax.text(abstr['P'][k]['center'][i0], abstr['P'][k]['center'][i1], k, \
+            ax.text(partition['R']['center'][k,i0], partition['R']['center'][k,i1], k, \
                       verticalalignment='center', horizontalalignment='center' )  
             hull = ConvexHull(polyMat, qhull_options='QJ')
             ax.plot(polyMat[hull.vertices,i0], polyMat[hull.vertices,i1], lw=1)
             ax.plot([polyMat[hull.vertices[0],i0], polyMat[hull.vertices[-1],i0]], \
                       [polyMat[hull.vertices[0],i1], polyMat[hull.vertices[-1],i1]], lw=1)
         
-    for k,target_point in enumerate(abstr['target']['d']):
+    for k,target_point in enumerate(actions['targets']):
           
-        if model.n <= 2 or ( \
-            abstr['P'][k]['center'][j0] == model.setup['partition']['origin'][j0] and \
-            abstr['P'][k]['center'][j1] == model.setup['partition']['origin'][j1]):
+        if model.n <= 2 or all( partition['R']['center'][k,[j0,j1]] == model.setup['partition']['origin'][[j0,j1]] ):
         
             # Plot target point
             plt.scatter(target_point[i0], target_point[i1], c='k', s=6)
@@ -120,10 +115,12 @@ def createPartitionPlot(i_tup, j_tup, j, delta_plot, setup, model, \
     fig.tight_layout()
                 
     # Save figure
-    filename = setup.directories['outputF']+'partitioning_'+ \
-                str(delta_plot)+'_coords=('+str(i0)+','+str(i1)+')'
+    filename = setup.directories['outputF']+str(prefix)+'_'+'partitioning'+ \
+                '_coords=('+str(i0)+','+str(i1)+')'
     for form in setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
+    
+    plt.show()
     
     # If number of dimensions is 3, create 3D plot
     if model.n == 3:
@@ -158,7 +155,9 @@ def createPartitionPlot(i_tup, j_tup, j, delta_plot, setup, model, \
             plt.savefig(filename+'.'+str(form), format=form, 
                         bbox_inches='tight')
         
-    else:
+        plt.show()
+        
+    elif model.n > 3:
         print('Number of dimensions is larger than 3, so partition plot omitted')
 
 def set_axes_equal(ax: plt.Axes):
@@ -184,9 +183,9 @@ def _set_axes_radius(ax, origin, radius):
     ax.set_xlim3d([x - radius, x + radius])
     ax.set_ylim3d([y - radius, y + radius])
 
-def createProbabilityPlots(setup, plot, N, model, results, abstr, mc):
+def createProbabilityPlots(setup, N, model, results, partition, mc=None):
     '''
-    Create the result plots for the abstraction instance.
+    Create the result plots for the partitionaction instance.
 
     Parameters
     ----------
@@ -200,8 +199,8 @@ def createProbabilityPlots(setup, plot, N, model, results, abstr, mc):
         Main dictionary of the LTI system model.
     results : dict
         Dictionary containing all results from solving the MDP.
-    abstr : dict
-        Dictionay containing all information of the finite-state abstraction.
+    partition : dict
+        Dictionay containing all information of the partitioning
     mc : dict
         Dictionary containing all data relevant to the Monte Carlo simulations.
 
@@ -212,7 +211,6 @@ def createProbabilityPlots(setup, plot, N, model, results, abstr, mc):
     '''
     
     # Plot 2D probability plot over time
-    
     if N/2 != round(N/2):
         printWarning('WARNING: '+str(N/2)+' is no valid integer index')
         printWarning('Print results for time index k='+
@@ -224,34 +222,14 @@ def createProbabilityPlots(setup, plot, N, model, results, abstr, mc):
         fig = plt.figure(figsize=cm2inch(8, 6))
     ax = plt.gca()
     
-    if 'start' in plot['N']:
-        # Plot probability reachabilities
-        color = next(ax._get_lines.prop_cycler)['color']
-        
-        plt.plot(results['optimal_reward'][plot['N']['start'],:], label='k='+str(plot['T']['start']), linewidth=1, color=color)
-        if setup.montecarlo['enabled'] and not setup.montecarlo['init_states']:
-            plt.plot(mc['results']['reachability_probability'][:,0], label='Monte carlo (k='+str(plot['T']['start'])+')', \
-                     linewidth=1, color=color, linestyle='dashed')
+    # Plot probability reachabilities
+    color = next(ax._get_lines.prop_cycler)['color']
     
-    if 'half' in plot['N']:
-        color = next(ax._get_lines.prop_cycler)['color']
-        
-        plt.plot(results['optimal_reward'][plot['N']['half'],:], label='k='+str(plot['T']['half']), linewidth=1, color=color)
-        if setup.montecarlo['enabled'] and not setup.montecarlo['init_states']:
-            plt.plot(mc['results']['reachability_probability'][:,1], label='Monte carlo (k='+str(plot['T']['half'])+')', \
-                     linewidth=1, color=color, linestyle='dashed')
-    
-    if 'final' in plot['N']:
-        color = next(ax._get_lines.prop_cycler)['color']
-        
-        plt.plot(results['optimal_reward'][plot['N']['final'],:], 
-                 label='k='+str(plot['T']['final']), linewidth=1, color=color)
-        
-        if setup.montecarlo['enabled'] and not setup.montecarlo['init_states']:
-            plt.plot(mc['results']['reachability_probability'][:,2], 
-                     label='Monte carlo (k='+str(plot['T']['final'])+')', \
-                     linewidth=1, color=color, linestyle='dashed')
-    
+    plt.plot(results['optimal_reward'], label='k=0', linewidth=1, color=color)
+    if setup.montecarlo['enabled'] and not setup.montecarlo['init_states']:
+        plt.plot(mc['reachability'], label='Monte carlo (k=0)', \
+                 linewidth=1, color=color, linestyle='dashed')
+                
     # Styling plot
     plt.xlabel('States')
     plt.ylabel('Reachability probability')
@@ -264,6 +242,8 @@ def createProbabilityPlots(setup, plot, N, model, results, abstr, mc):
     filename = setup.directories['outputFcase']+'reachability_probability'
     for form in setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
+    
+    plt.show()
     
     ######################
     # Determine dimension of model
@@ -278,127 +258,58 @@ def createProbabilityPlots(setup, plot, N, model, results, abstr, mc):
         plot3D      = dict()
         
         # Retreive X and Y values of the centers of the regions
-        plot3D['x'] = np.zeros(len(abstr['P']))
-        plot3D['y'] = np.zeros(len(abstr['P']))
+        plot3D['x'] = np.zeros(partition['nr_regions'])
+        plot3D['y'] = np.zeros(partition['nr_regions'])
         
-        for i in range(len(abstr['P'])):
-            plot3D['x'][i]  = abstr['P'][i]['center'][0]
-            plot3D['y'][i]  = abstr['P'][i]['center'][1]
+        for i in range(partition['nr_regions']):
+            plot3D['x'][i], plot3D['y'][i] = partition['R']['center'][i]
         
         plot3D['x'] = np.reshape(plot3D['x'], (m[0],m[1]))
         plot3D['y'] = np.reshape(plot3D['y'], (m[0],m[1]))
-        
-        fig_comb    = plt.figure(figsize=cm2inch(16,5.33))
-        fig_ind     = 0
-        ax_comb     = dict()
-        surf_comb   = dict()
-        
-        time_list = [ [plot['N'][key], plot['T'][key]] 
-                      for key in plot['N'].keys() ]
-        
-        for [k,t] in time_list:
-            # Create figure
-            fig = plt.figure(figsize=cm2inch(8,5.33))
-            ax  = plt.axes(projection='3d')
-            
-            # Increase combo figure index
-            fig_ind += 1
-            
-            # Create combo subplot
-            ax_comb[fig_ind]  = fig_comb.add_subplot(1,3,fig_ind, 
-                                                     projection="3d")
 
-            # Determine matrix of probability values
-            Z   = np.reshape(results['optimal_reward'][k,:], (m[0],m[1]))
-            
-            # Plot the surface
-            surf = ax.plot_surface(plot3D['x'], plot3D['y'], Z, 
-                            cmap=cm.coolwarm, linewidth=0, antialiased=False)
-            
-            # Add subfigure in combined figure
-            surf_comb[fig_ind] = ax_comb[fig_ind].plot_surface(plot3D['x'], 
-             plot3D['y'], Z, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-            
-            # Customize the z axis
-            ax.set_zlim(0,1)
-            
-            # Add a color bar which maps values to colors.
-            fig.colorbar(surf, shrink=0.5, aspect=5)
-            
-            # Set title and axis format
-            ax.title.set_text('Reachability probability at time k = '+str(t))
-            x_row = mat_to_vec( plot3D['x'] )
-            y_col = mat_to_vec( plot3D['y'] )
-            n_ticks = 5
-            plt.xticks(np.arange(min(x_row), max(x_row)+1, \
-                                 (max(x_row) - min(x_row))/n_ticks ))
-            plt.yticks(np.arange(min(y_col), max(y_col)+1, \
-                                 (max(y_col) - min(y_col))/n_ticks ))
-            plt.tick_params(pad=-3)
-                
-            plt.xlabel('x_1', labelpad=-6)
-            plt.ylabel('x_2', labelpad=-6)
-            
-            # Set tight layout
-            fig.tight_layout()
-            
-            # Save figure
-            filename = setup.directories['outputFcase']+\
-                '3d_reachability_k='+str(t)
-            
-            for form in setup.plotting['exportFormats']:
-                plt.savefig(filename+'.'+str(form), format=form, 
-                            bbox_inches='tight')
-            
-            # Style combined subplot figure
-            ax_comb[fig_ind].set_zlim(0,1)
-            ax_comb[fig_ind].set_title('time k = '+str(t))
-            ax_comb[fig_ind].set_xticks(np.arange(min(x_row), max(x_row)+1, \
-                                 (max(x_row) - min(x_row))/n_ticks ))
-            ax_comb[fig_ind].set_yticks(np.arange(min(y_col), max(y_col)+1, \
-                                 (max(y_col) - min(y_col))/n_ticks ))
-            ax_comb[fig_ind].tick_params(pad=-3)
-            ax_comb[fig_ind].set_xlabel('x_1', labelpad=-6)
-            ax_comb[fig_ind].set_ylabel('x_2', labelpad=-6)
+        # Create figure
+        fig = plt.figure(figsize=cm2inch(8,5.33))
+        ax  = plt.axes(projection='3d')
+
+        # Determine matrix of probability values
+        Z   = np.reshape(results['optimal_reward'], (m[0],m[1]))
         
-        # Style combined subplot figure
-        fig_comb.tight_layout()
+        # Plot the surface
+        surf = ax.plot_surface(plot3D['x'], plot3D['y'], Z, 
+                        cmap=cm.coolwarm, linewidth=0, antialiased=False)
+        
+        # Customize the z axis
+        ax.set_zlim(0,1)
+        
+        # Add a color bar which maps values to colors.
+        fig.colorbar(surf, shrink=0.5, aspect=5)
+        
+        # Set title and axis format
+        ax.title.set_text('Reachability probability at time k = 0')
+        x_row = mat_to_vec( plot3D['x'] )
+        y_col = mat_to_vec( plot3D['y'] )
+        n_ticks = 5
+        plt.xticks(np.arange(min(x_row), max(x_row)+1, \
+                             (max(x_row) - min(x_row))/n_ticks ))
+        plt.yticks(np.arange(min(y_col), max(y_col)+1, \
+                             (max(y_col) - min(y_col))/n_ticks ))
+        plt.tick_params(pad=-3)
+            
+        plt.xlabel('x_1', labelpad=-6)
+        plt.ylabel('x_2', labelpad=-6)
+        
+        # Set tight layout
+        fig.tight_layout()
         
         # Save figure
-        filename = setup.directories['outputFcase']+'3d_reachability_all'
+        filename = setup.directories['outputFcase']+\
+            '3d_reachability_k=0'
+        
         for form in setup.plotting['exportFormats']:
             plt.savefig(filename+'.'+str(form), format=form, 
                         bbox_inches='tight')
-    
-    ######################
-    # Visualize matrix of action types, based on nr of time steps grouped
-
-    fig, ax = plt.subplots(figsize=cm2inch(16,6))
-    
-    # Shortcut to data
-    data = results['optimal_delta']
-    
-    #get discrete colormap
-    cmap = plt.get_cmap('Greys', np.max(data)-np.min(data)+1)
-    
-    # set limits .5 outside true range
-    mat = ax.matshow(data,cmap=cmap,vmin = np.min(data)-.5, 
-                     vmax = np.max(data)+.5)
-    
-    #tell the colorbar to tick at integers
-    plt.colorbar(mat, ticks=np.arange(np.min(data),np.max(data)+1), 
-                 shrink=0.5, aspect=5)
-    
-    plt.xlabel('State')
-    plt.ylabel('Time step ($k$)')
-    
-     # Set tight layout
-    fig.tight_layout()
-                
-    # Save figure
-    filename = setup.directories['outputFcase']+'policy_action_delta_value'
-    for form in setup.plotting['exportFormats']:
-        plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
+        
+        plt.show()
         
 def UAV_3D_plotLayout(ScAb):
     '''
@@ -416,18 +327,17 @@ def UAV_3D_plotLayout(ScAb):
     '''
     
     cut_value = np.zeros(3)
-    for i,d in enumerate(range(1, ScAb.basemodel.n, 2)):
-        if ScAb.basemodel.setup['partition']['nrPerDim'][d]/2 != round( 
-                ScAb.basemodel.setup['partition']['nrPerDim'][d]/2 ):
+    for i,d in enumerate(range(1, ScAb.model.n, 2)):
+        if ScAb.model.setup['partition']['nrPerDim'][d]/2 != round( 
+                ScAb.model.setup['partition']['nrPerDim'][d]/2 ):
             cut_value[i] = 0
         else:
-            cut_value[i] = ScAb.basemodel.setup['partition']['width'][d] / 2    
+            cut_value[i] = ScAb.model.setup['partition']['width'][d] / 2    
     
-    min_delta = int(min(ScAb.setup.deltas))
-    UAVplot3d_visvis( ScAb.setup, ScAb.model[min_delta], ScAb.abstr, 
+    UAVplot3d_visvis( ScAb.setup, ScAb.model, ScAb.partition, 
                       traces=[], cut_value=cut_value ) 
 
-def UAVplots(ScAb, case_id, writer=None, itersToPlot=1):
+def UAVplots(ScAb, case_id, writer=None, itersToSim=10000, itersToPlot=1):
     '''
     Create the trajectory plots for the UAV benchmarks
 
@@ -449,63 +359,61 @@ def UAVplots(ScAb, case_id, writer=None, itersToPlot=1):
 
     '''
     
-    from core.mainFunctions import computeRegionCenters
+    from core.define_partition import computeRegionCenters
     from core.commons import setStateBlock
     
     # Determine desired state IDs
-    if ScAb.basemodel.name == 'UAV':
-        if ScAb.basemodel.modelDim == 2:
-            x_init = setStateBlock(ScAb.basemodel.setup['partition'], 
-                                   a=[-6], b=[0], c=[-6], d=[0])
+    if ScAb.model.name == 'UAV':
+        if ScAb.model.modelDim == 2:
+            x_init = ScAb.model.setup['x0']
             
             cut_value = np.zeros(2)
-            for i,d in enumerate(range(1, ScAb.basemodel.n, 2)):
-                if ScAb.basemodel.setup['partition']['nrPerDim'][d]/2 != \
-                  round( ScAb.basemodel.setup['partition']['nrPerDim'][d]/2 ):
+            for i,d in enumerate(range(1, ScAb.model.n, 2)):
+                if ScAb.model.setup['partition']['nrPerDim'][d]/2 != \
+                  round( ScAb.model.setup['partition']['nrPerDim'][d]/2 ):
                       
                     cut_value[i] = 0
                 else:
-                    cut_value[i] = ScAb.basemodel.setup['partition'][
+                    cut_value[i] = ScAb.model.setup['partition'][
                                     'width'][d] / 2                
             
-        elif ScAb.basemodel.modelDim == 3:
-            x_init = ScAb.basemodel.setup['x0']
+        elif ScAb.model.modelDim == 3:
+            x_init = ScAb.model.setup['x0']
             
             cut_value = np.zeros(3)
-            for i,d in enumerate(range(1, ScAb.basemodel.n, 2)):
-                if ScAb.basemodel.setup['partition']['nrPerDim'][d]/2 != \
-                  round( ScAb.basemodel.setup['partition']['nrPerDim'][d]/2 ):
+            for i,d in enumerate(range(1, ScAb.model.n, 2)):
+                if ScAb.model.setup['partition']['nrPerDim'][d]/2 != \
+                  round( ScAb.model.setup['partition']['nrPerDim'][d]/2 ):
                       
                     cut_value[i] = 0
                 else:
-                    cut_value[i] = ScAb.basemodel.setup['partition'][
+                    cut_value[i] = ScAb.model.setup['partition'][
                                     'width'][d] / 2         
                     
-    elif ScAb.basemodel.name == 'shuttle':
-        x_init = setStateBlock(ScAb.basemodel.setup['partition'], 
+    elif ScAb.model.name == 'shuttle':
+        x_init = setStateBlock(ScAb.model.setup['partition'], 
                                a=[-.75], b=[-.85], c=[0], d=[0])
         
         cut_value = np.array([0.005, 0.005])
             
     # Compute all centers of regions associated with points
     x_init_centers = computeRegionCenters(np.array(x_init), 
-                                          ScAb.basemodel.setup['partition'])
+                                          ScAb.model.setup['partition'])
     
     # Filter to only keep unique centers
     x_init_unique = np.unique(x_init_centers, axis=0)
     
-    state_idxs = [ScAb.abstr['allCenters'][tuple(c)] for c in x_init_unique 
-                                   if tuple(c) in ScAb.abstr['allCenters']]
+    state_idxs = [ScAb.partition['R']['c_tuple'][tuple(c)] for c in x_init_unique 
+                                   if tuple(c) in ScAb.partition['R']['c_tuple']]
     
     print(' -- Perform simulations for initial states:',state_idxs)
     
     ScAb.setup.montecarlo['init_states'] = state_idxs
-    ScAb.setup.montecarlo['iterations'] = 10000
-    ScAb.monteCarlo()
+    ScAb.setup.montecarlo['iterations'] = itersToSim
+    ScAb.mc = monte_carlo(ScAb)
     
-    PRISM_reach = ScAb.results['optimal_reward'][0,state_idxs]
-    empirical_reach = ScAb.mc['results']['reachability_probability'][
-                                state_idxs]
+    PRISM_reach = ScAb.results['optimal_reward'][state_idxs]
+    empirical_reach = ScAb.mc['reachability'][state_idxs]
     
     print('Probabilistic reachability (PRISM): ',PRISM_reach)
     print('Empirical reachability (Monte Carlo):',empirical_reach)
@@ -523,43 +431,41 @@ def UAVplots(ScAb, case_id, writer=None, itersToPlot=1):
     traces = []
     for i in state_idxs:
         for j in range(itersToPlot):
-            traces += [ScAb.mc['traces'][0][i][j]]
+            traces += [ScAb.mc['traces'][i][j]]
             
     alltraces = []
     for i in state_idxs:
         for j in range(ScAb.setup.montecarlo['iterations']):
-            alltraces += [ScAb.mc['traces'][0][i][j]]
+            alltraces += [ScAb.mc['traces'][i][j]]
     
-    min_delta = int(min(ScAb.setup.deltas))
-    
-    if ScAb.basemodel.modelDim == 2:
-        if ScAb.basemodel.name == 'UAV':
+    if ScAb.model.modelDim == 2:
+        if ScAb.model.name == 'UAV':
             i_show = (0,2)
             i_hide = (1,3)
             
-            UAVplot2D( i_show, i_hide, ScAb.setup, ScAb.model[min_delta], 
-                       ScAb.abstr, traces, cut_value )
+            UAVplot2D( i_show, i_hide, ScAb.setup, ScAb.model, 
+                       ScAb.partition, traces, cut_value )
             
-        elif ScAb.basemodel.name == 'shuttle':
+        elif ScAb.model.name == 'shuttle':
             i_show = (2,3)
             i_hide = (0,1)
         
-            UAVplot2D( i_show, i_hide, ScAb.setup, ScAb.model[min_delta], 
-                       ScAb.abstr, traces, cut_value )
+            UAVplot2D( i_show, i_hide, ScAb.setup, ScAb.model, 
+                       ScAb.partition, traces, cut_value )
     
             i_show = (0,1)
             i_hide = (2,3)
         
-            UAVplot2D( i_show, i_hide, ScAb.setup, ScAb.model[min_delta], 
-                       ScAb.abstr, traces, cut_value )
+            UAVplot2D( i_show, i_hide, ScAb.setup, ScAb.model, 
+                       ScAb.partition, traces, cut_value )
     
-    elif ScAb.basemodel.modelDim == 3:
+    elif ScAb.model.modelDim == 3:
         if ScAb.setup.main['iterative'] is False or \
           ScAb.setup.plotting['3D_UAV']:
         
             # Only plot trajectory plot in non-iterative mode (because it 
             # pauses the script)
-            UAVplot3d_visvis( ScAb.setup, ScAb.model[min_delta], ScAb.abstr, 
+            UAVplot3d_visvis( ScAb.setup, ScAb.model, ScAb.partition, 
                               traces, cut_value ) 
     
     traces_df = pd.DataFrame(alltraces)
@@ -567,7 +473,7 @@ def UAVplots(ScAb, case_id, writer=None, itersToPlot=1):
     
     return performance_df
     
-def UAVplot2D(i_show, i_hide, setup, model, abstr, traces, cut_value, 
+def UAVplot2D(i_show, i_hide, setup, model, partition, traces, cut_value, 
               line=False, stateLabels=False):
     '''
     Create 2D trajectory plots for the 2D UAV benchmark
@@ -582,8 +488,8 @@ def UAVplot2D(i_show, i_hide, setup, model, abstr, traces, cut_value,
         Setup dictionary.
     model : dict
         Main dictionary of the LTI system model.
-    abstr : dict
-        Dictionay containing all information of the finite-state abstraction.
+    partition : dict
+        Dictionay containing all information of the partitioning.
     traces : list
         Nested list containing the trajectories (traces) to plot for
     cut_value : array
@@ -641,26 +547,22 @@ def UAVplot2D(i_show, i_hide, setup, model, abstr, traces, cut_value,
     ax.set_title("N = "+str(setup.scenarios['samples']),fontsize=10)
     
     # Draw goal states
-    for goal in abstr['goal']:
+    for goal in partition['goal']:
         
-        goalState = abstr['P'][goal]
-        if goalState['center'][ih1] == cut_value[0] and \
-          goalState['center'][ih2] == cut_value[1]:
+        if all(partition['R']['center'][goal, [ih1,ih2]] == cut_value):
         
-            goal_lower = [goalState['low'][is1], goalState['low'][is2]]
+            goal_lower = partition['R']['low'][goal, [is1, is2]]
             goalState = Rectangle(goal_lower, width=width[is1], 
                                   height=width[is2], color="green", 
                                   alpha=0.3, linewidth=None)
             ax.add_patch(goalState)
     
     # Draw critical states
-    for crit in abstr['critical']:
+    for crit in partition['critical']:
         
-        critState = abstr['P'][crit]
-        if critState['center'][ih1] == cut_value[0] and \
-          critState['center'][ih2] == cut_value[1]:
+        if all(partition['R']['center'][crit, [ih1,ih2]] == cut_value):
         
-            critStateLow = [critState['low'][is1], critState['low'][is2]]
+            critStateLow = partition['R']['low'][crit, [is1, is2]]
             criticalState = Rectangle(critStateLow, width=width[is1], 
                                       height=width[is2], color="red", 
                                       alpha=0.3, linewidth=None)
@@ -670,14 +572,12 @@ def UAVplot2D(i_show, i_hide, setup, model, abstr, traces, cut_value,
         # Draw every X-th label
         if stateLabels:
             skip = 1
-            for i in range(0, abstr['nr_regions'], skip):
+            for i in range(0, partition['nr_regions'], skip):
                 
-                state = abstr['P'][i]
-                if state['center'][ih1] == cut_value[0] and \
-                  state['center'][ih2] == cut_value[1]:
+                if all(partition['R']['center'][i, [ih1,ih2]] == cut_value):
                                 
-                    ax.text(abstr['P'][i]['center'][is1], 
-                            abstr['P'][i]['center'][is2], i, \
+                    ax.text(partition['R']['center'][i,is1], 
+                            partition['R']['center'][i,is2], i, \
                             verticalalignment='center', 
                             horizontalalignment='center' ) 
             
@@ -727,7 +627,7 @@ def UAVplot2D(i_show, i_hide, setup, model, abstr, traces, cut_value,
         
     plt.show()
     
-def UAVplot3d_visvis(setup, model, abstr, traces, cut_value):
+def UAVplot3d_visvis(setup, model, partition, traces, cut_value):
     '''
     Create 3D trajectory plots for the 3D UAV benchmark
 
@@ -737,8 +637,8 @@ def UAVplot3d_visvis(setup, model, abstr, traces, cut_value):
         Setup dictionary.
     model : dict
         Main dictionary of the LTI system model.
-    abstr : dict
-        Dictionay containing all information of the finite-state abstraction.
+    partition : dict
+        Dictionay containing all information of the partitioning.
     traces : list
         Nested list containing the trajectories (traces) to plot for
     cut_value : array
@@ -768,34 +668,22 @@ def UAVplot3d_visvis(setup, model, abstr, traces, cut_value):
                                 model.setup['partition']['width'][4]])    
     
     # Draw goal states
-    for goal in abstr['goal']:
+    for goal in partition['goal']:
         
-        goalState = abstr['P'][goal]
-        if goalState['center'][1] == cut_value[0] and \
-           goalState['center'][3] == cut_value[1] and \
-           goalState['center'][5] == cut_value[2]:
-        
-            center_xyz = np.array([goalState['center'][0], 
-                                   goalState['center'][2], 
-                                   goalState['center'][4]])
+        goalCenter = partition['R']['center'][goal]
+        if all(goalCenter[[1,3,5]] == cut_value):
             
-            goal = vv.solidBox(tuple(center_xyz), 
+            goal = vv.solidBox(tuple(goalCenter), 
                                scaling=tuple(regionWidth_xyz))
             goal.faceColor = (0,1,0,0.8)
             
     # Draw critical states
-    for crit in abstr['critical']:
+    for crit in partition['critical']:
         
-        critState = abstr['P'][crit]
-        if critState['center'][1] == cut_value[0] and \
-           critState['center'][3] == cut_value[1] and \
-           critState['center'][5] == cut_value[2]:
+        critCenter = partition['R']['center'][crit]
+        if all(critCenter[[1,3,5]] == cut_value):
         
-            center_xyz = np.array([critState['center'][0], 
-                                   critState['center'][2], 
-                                   critState['center'][4]])    
-        
-            critical = vv.solidBox(tuple(center_xyz), 
+            critical = vv.solidBox(tuple(critCenter), 
                                    scaling=tuple(regionWidth_xyz))
             critical.faceColor = (1,0,0,0.8)
     
@@ -896,20 +784,18 @@ def load_traces_manual(ScAb, pathLow, pathHigh, idxLow=0, idxHigh=0):
     traceLow  = list(tracesLow.loc[idxLow].dropna())
     traceHigh  = list(tracesHigh.loc[idxHigh].dropna())
     
-    min_delta = int(min(ScAb.setup.deltas))
-    
     cut_value = np.zeros(3)
-    for i,d in enumerate(range(1, ScAb.basemodel.n, 2)):
-        if ScAb.basemodel.setup['partition']['nrPerDim'][d]/2 != round( 
-                ScAb.basemodel.setup['partition']['nrPerDim'][d]/2 ):
+    for i,d in enumerate(range(1, ScAb.model.n, 2)):
+        if ScAb.model.setup['partition']['nrPerDim'][d]/2 != round( 
+                ScAb.model.setup['partition']['nrPerDim'][d]/2 ):
             cut_value[i] = 0
         else:
-            cut_value[i] = ScAb.basemodel.setup['partition']['width'][d] / 2
+            cut_value[i] = ScAb.model.setup['partition']['width'][d] / 2
     
-    UAVplot3d_visvis_manual( ScAb.setup, ScAb.model[min_delta], ScAb.abstr, 
+    UAVplot3d_visvis_manual( ScAb.setup, ScAb.model, ScAb.partition, 
                              cut_value, traceLow, traceHigh) 
     
-def UAVplot3d_visvis_manual(setup, model, abstr, cut_value, traceLow, 
+def UAVplot3d_visvis_manual(setup, model, partition, cut_value, traceLow, 
                             traceHigh):
     '''
     Create 3D trajectory plots for the 3D UAV benchmark
@@ -920,8 +806,8 @@ def UAVplot3d_visvis_manual(setup, model, abstr, cut_value, traceLow,
         Setup dictionary.
     model : dict
         Main dictionary of the LTI system model.
-    abstr : dict
-        Dictionay containing all information of the finite-state abstraction.
+    partition : dict
+        Dictionay containing all information of the partitioning.
     traces : list
         Nested list containing the trajectories (traces) to plot for
     cut_value : array
@@ -951,34 +837,22 @@ def UAVplot3d_visvis_manual(setup, model, abstr, cut_value, traceLow,
                                 model.setup['partition']['width'][4]])    
     
     # Draw goal states
-    for goal in abstr['goal']:
+    for goal in partition['goal']:
         
-        goalState = abstr['P'][goal]
-        if goalState['center'][1] == cut_value[0] and \
-           goalState['center'][3] == cut_value[1] and \
-           goalState['center'][5] == cut_value[2]:
-        
-            center_xyz = np.array([goalState['center'][0], 
-                                   goalState['center'][2], 
-                                   goalState['center'][4]])
+        goalCenter = partition['R']['center'][goal]
+        if all(goalCenter[[1,3,5]] == cut_value):
             
-            goal = vv.solidBox(tuple(center_xyz), 
+            goal = vv.solidBox(tuple(goalCenter), 
                                scaling=tuple(regionWidth_xyz))
             goal.faceColor = (0,0.8,0,0.8)
             
     # Draw critical states
-    for crit in abstr['critical']:
+    for crit in partition['critical']:
         
-        critState = abstr['P'][crit]
-        if critState['center'][1] == cut_value[0] and \
-           critState['center'][3] == cut_value[1] and \
-           critState['center'][5] == cut_value[2]:
+        critCenter = partition['R']['center'][crit]
+        if all(critCenter[[1,3,5]] == cut_value):
         
-            center_xyz = np.array([critState['center'][0], 
-                                   critState['center'][2], 
-                                   critState['center'][4]])    
-        
-            critical = vv.solidBox(tuple(center_xyz), 
+            critical = vv.solidBox(tuple(critCenter), 
                                    scaling=tuple(regionWidth_xyz))
             critical.faceColor = (0.8,0,0,0.8)
     
@@ -1107,47 +981,56 @@ def reachabilityHeatMap(ScAb):
     '''
     
     import seaborn as sns
-    from ..mainFunctions import definePartitions
+    from ..define_partition import definePartitions
 
-    if ScAb.basemodel.name == 'building_2room':
+    if ScAb.model.n == 2:
+        
+        x_nr = ScAb.model.setup['partition']['nrPerDim'][0]
+        y_nr = ScAb.model.setup['partition']['nrPerDim'][1]
+        
+        cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr], 
+               ScAb.model.setup['partition']['width'], 
+               ScAb.model.setup['partition']['origin'], onlyCenter=True)
+
+    if ScAb.model.name == 'building_2room':
     
-        x_nr = ScAb.basemodel.setup['partition']['nrPerDim'][0]
-        y_nr = ScAb.basemodel.setup['partition']['nrPerDim'][1]
+        x_nr = ScAb.model.setup['partition']['nrPerDim'][0]
+        y_nr = ScAb.model.setup['partition']['nrPerDim'][1]
         
-        cut_centers = definePartitions(ScAb.basemodel.n, [x_nr, y_nr, 1, 1], 
-               ScAb.basemodel.setup['partition']['width'], 
-               ScAb.basemodel.setup['partition']['origin'], onlyCenter=True)
+        cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr, 1, 1], 
+               ScAb.model.setup['partition']['width'], 
+               ScAb.model.setup['partition']['origin'], onlyCenter=True)
         
-    elif ScAb.basemodel.name == 'building_1room':
+    if ScAb.model.name == 'anaesthesia_delivery':
     
-        x_nr = ScAb.basemodel.setup['partition']['nrPerDim'][0]
-        y_nr = ScAb.basemodel.setup['partition']['nrPerDim'][1]
+        x_nr = ScAb.model.setup['partition']['nrPerDim'][0]
+        y_nr = ScAb.model.setup['partition']['nrPerDim'][1]
         
-        cut_centers = definePartitions(ScAb.basemodel.n, [x_nr, y_nr], 
-               ScAb.basemodel.setup['partition']['width'], 
-               ScAb.basemodel.setup['partition']['origin'], onlyCenter=True)
+        cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr, 1], 
+               ScAb.model.setup['partition']['width'], 
+               ScAb.model.setup['partition']['origin'], onlyCenter=True)
         
-    elif ScAb.basemodel.name == 'UAV':
+    elif ScAb.model.n == 4:
         
-        x_nr = ScAb.basemodel.setup['partition']['nrPerDim'][0]
-        y_nr = ScAb.basemodel.setup['partition']['nrPerDim'][2]
+        x_nr = ScAb.model.setup['partition']['nrPerDim'][0]
+        y_nr = ScAb.model.setup['partition']['nrPerDim'][2]
         
-        cut_centers = definePartitions(ScAb.basemodel.n, [x_nr, 1, y_nr, 1], 
-               ScAb.basemodel.setup['partition']['width'], 
-               ScAb.basemodel.setup['partition']['origin'], onlyCenter=True)
+        cut_centers = definePartitions(ScAb.model.n, [x_nr, 1, y_nr, 1], 
+               ScAb.model.setup['partition']['width'], 
+               ScAb.model.setup['partition']['origin'], onlyCenter=True)
                           
     cut_values = np.zeros((x_nr, y_nr))
-    cut_coords = np.zeros((x_nr, y_nr, ScAb.basemodel.n))
+    cut_coords = np.zeros((x_nr, y_nr, ScAb.model.n))
     
-    cut_idxs = [ScAb.abstr['allCenters'][tuple(c)] for c in cut_centers 
-                                   if tuple(c) in ScAb.abstr['allCenters']]              
+    cut_idxs = [ScAb.partition['R']['c_tuple'][tuple(c)] for c in cut_centers 
+                                   if tuple(c) in ScAb.partition['R']['c_tuple']]              
     
     for i,(idx,center) in enumerate(zip(cut_idxs, cut_centers)):
         
         j = i % y_nr
         k = i // y_nr
         
-        cut_values[k,j] = ScAb.results['optimal_reward'][0,idx]
+        cut_values[k,j] = ScAb.results['optimal_reward'][idx]
         cut_coords[k,j,:] = center
     
     cut_df = pd.DataFrame( cut_values, index=cut_coords[:,0,0], 
@@ -1159,8 +1042,8 @@ def reachabilityHeatMap(ScAb):
     ax.figure.axes[-1].yaxis.label.set_size(20)
     ax.invert_yaxis()
     
-    ax.set_xlabel('Temp. zone 1', fontsize=15)
-    ax.set_ylabel('Temp. zone 2', fontsize=15)
+    ax.set_xlabel('Var 1', fontsize=15)
+    ax.set_ylabel('Var 2', fontsize=15)
     ax.set_title("N = "+str(ScAb.setup.scenarios['samples']),fontsize=20)
     
     # Set tight layout
