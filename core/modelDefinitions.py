@@ -251,10 +251,10 @@ class UAV(master.LTI_master):
                 
                 # self.setup['extra_targets'] = setStateBlock(self.setup['partition'], a=[5], b='all', c=[5], d='all')
                 
-                self.setup['specification']['critical'] = [[]] #np.vstack((
-                    # setStateBlock(self.setup['partition'], a=[-6,-4,-2], b='all', c=[2], d='all'),
-                    # setStateBlock(self.setup['partition'], a=[4,6], b='all', c=[-8,-6], d='all')
-                    # ))
+                self.setup['specification']['critical'] = np.vstack((
+                    setStateBlock(self.setup['partition'], a=[-6,-4,-2], b='all', c=[2], d='all'),
+                    setStateBlock(self.setup['partition'], a=[4,6], b='all', c=[-8,-6], d='all')
+                    ))
                 
                 self.setup['x0'] = setStateBlock(self.setup['partition'], a=[-6], b=[0], c=[-6], d=[0])
                 
