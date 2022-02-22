@@ -218,8 +218,12 @@ def defEnabledActions_UA(partition, actions, model, dim_n=False, dim_p=False, ve
         dim_n = np.array(model.n)
         dim_p = np.array(model.p)
         
+        compositional = False
+        
     else:
         model = partial_model(deepcopy(model), dim_n, dim_p)
+    
+        compositional = True
     
     G_zero = def_backward_reach(model)
     
@@ -298,7 +302,7 @@ def defEnabledActions_UA(partition, actions, model, dim_n=False, dim_p=False, ve
             s = partition['R']['idx'][s_tup]
             
             # Skip if this is a critical state
-            if s in partition['critical']:
+            if s in partition['critical'] and not compositional:
                 continue
             
             region_min.value = partition['R']['low'][s][dim_n]

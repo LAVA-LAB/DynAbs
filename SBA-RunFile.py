@@ -115,6 +115,8 @@ while (ScAb.setup.scenarios['samples'] <= ScAb.setup.scenarios['samples_max'] \
         # Calculate transition probabilities
         ScAb.define_probabilities()
         
+        assert False
+        
         # Build and solve interval MDP
         model_size = ScAb.build_iMDP(problem_type='reachavoid')
         ScAb.solve_iMDP()
