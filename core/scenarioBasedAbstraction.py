@@ -280,6 +280,8 @@ class Abstraction(object):
                 for j,i in enumerate(dim):
                     mats[h][i,j] = 1
             
+            nr_A = 0
+            
             # Zipping over the product of the keys/values of the dictionaries
             for keys, valsA, valsB in zip(keys_prod, vals_inv, vals_CE):
                 
@@ -302,6 +304,9 @@ class Abstraction(object):
                 
                 self.actions['enabled_inv'][a] = enabled_inv
                 
+                if len(enabled_inv) > 0:
+                    nr_A += 1
+                
                 # Compute control error
                 self.actions['control_error'][a] = {
                     'pos': np.sum([mats[z] @ valsB[z]['pos'] for z in range(len(valsB))], axis=0),
@@ -310,53 +315,15 @@ class Abstraction(object):
         
             self.CE = CE
         
-        ### 2 ###
-        # If parametric, compute enabled actions under every A matrix
-        # elif self.setup.parametric:
-        #     print('- For parametric A matrix')
-            
-        #     backreach = [None for i in range(len(self.model.A_set))]
-            
-        #     for A_idx,A in enumerate(self.model.A_set):
-            
-        #         model = copy.deepcopy(self.model)
-        #         model.A = model.A_set[A_idx]
-        #         model.A_inv = model.A_set_inv[A_idx]
-            
-        #         nr_A, actions, _, \
-        #             backreach[A_idx] = defEnabledActions(self.setup, self.partition, model, A_idx=A_idx)
-                
-        #         if A_idx == 0:
-        #             self.actions['enabled'] = actions
-                    
-        #         else:
-        #             self.actions['enabled'] = [list(set.intersection(set(_x),set(_y)).difference({0})) for _x,_y in zip(self.actions['enabled'],actions)]
-                    
-        #         print('--- No. actions enabled for A_'+str(A_idx)+':', nr_A)
-        
-        #     nr_A = len(np.unique(flatten(self.actions['enabled']))) 
-            
-        #     # Compute inverse actions object
-        #     self.actions['enabled_inv'] = [[] for i in range(self.partition['nr_regions'])]
-            
-        #     for i,ac in enumerate(actions):
-        #         for a in ac:
-        #             self.actions['enabled_inv'][a] += [i]
-        
-        #     # Store backward reachable sets for all actions
-        #     self.brs = np.concatenate((backreach), axis=1)
-
-        #     self.backreach_heur = overapprox_box(self.brs)
-        
         ### 3 ###
         else:
             nr_A, self.actions['enabled'], \
              self.actions['enabled_inv'], _ = defEnabledActions(self.setup, self.partition, self.actions, self.model)
                     
-        # print(nr_A,'actions enabled')
-        # if nr_A == 0:
-        #     printWarning('No actions enabled at all, so terminate')
-        #     sys.exit()
+        print(nr_A,'actions enabled')
+        if nr_A == 0:
+            printWarning('No actions enabled at all, so terminate')
+            sys.exit()
     
         self.time['2_enabledActions'] = tocDiff(False)
         print('Enabled actions define - time:',self.time['2_enabledActions'])
@@ -688,32 +655,14 @@ class scenarioBasedAbstraction(Abstraction):
                            'Probabilities computed (transitions: '+
                            str(nr_transitions)+')'])
                         
-                    from .compute_probabilities import plot_transition
+                    # from .compute_probabilities import plot_transition
                         
-                    a_plot = self.partition['R']['c_tuple'][(-8,0)]
-                    if a == a_plot:
-                        plot_transition(samples, self.actions['control_error'][a], 
-                            (0,1), (), self.setup, self.model, self.partition,
-                            np.array([]), self.actions['backreach'][a])
-                    
-                # elif self.setup.parametric:
-                    
-                #     for s in self.actions['enabled_inv'][a]:
-                    
-                #         prob[a][s] = computeScenarioBounds_uncertain(self.setup, 
-                #               self.model.setup['partition'], 
-                #               self.partition, self.trans, samples, self.backreach_heur[a], self.model)
-                    
-                #     # Print normal row in table
-                #     if a % printEvery == 0 or True:
-                #         s = self.actions['enabled_inv'][a]
-                        
-                #         if len(s) > 0:
-                #             nr_transitions = len(prob[a][s[0]]['successor_idxs'])
-                #             tab.print_row([k, a, 
-                #                'Probabilities computed (transitions: '+
-                #                str(nr_transitions)+')'])
-                        
+                    # a_plot = self.partition['R']['c_tuple'][(-8,0)]
+                    # if a == a_plot:
+                    #     plot_transition(samples, self.actions['control_error'][a], 
+                    #         (0,1), (), self.setup, self.model, self.partition,
+                    #         np.array([]), self.actions['backreach'][a])
+                
                 else:
                     
                     prob[a] = computeScenarioBounds_sparse(self.setup, 

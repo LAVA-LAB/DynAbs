@@ -390,8 +390,6 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
                        for idx, cu in np.ndenumerate(counts_upp) if cu > 0], 
                       dtype = int)
 
-    print(counts)
-
     # Number of samples not in any region (i.e. in absorbing state)
     deadlock_low = 1 - trans['memory'][counts_absorb_low][1]
     if counts_absorb_upp > Nsamples:

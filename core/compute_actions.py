@@ -319,10 +319,6 @@ def defEnabledActions_UA(flags, partition, actions, model, dim_n=False, dim_p=Fa
                             e_error_neg = e_error.min(axis=0)
                             e_error_pos = e_error.max(axis=0)
                             
-                        print('Epistemic error:')
-                        print(e_error_neg)
-                        print(e_error_pos)
-                            
                         error_neg = c_error_neg + e_error_neg
                         error_pos = c_error_pos + e_error_pos
                         

@@ -51,14 +51,13 @@ class robot(master.LTI_master):
         self.setup['control']['limits']['uMin'] =  [-4]
         self.setup['control']['limits']['uMax'] =  [4]
         
-        mode = 0
+        mode = 1
         
         # Partition size
         if mode == 0:
             self.setup['partition']['nrPerDim']  = [11, 11]
             self.setup['partition']['width']     = [2, 2]
             self.setup['partition']['origin']    = [0, 0]
-            
         elif mode == 1:
             self.setup['partition']['nrPerDim']  = [21, 21]
             self.setup['partition']['width']     = [1, 1]
@@ -134,96 +133,6 @@ class robot(master.LTI_master):
         self.noise = dict()
         self.noise['w_cov'] = np.eye(np.size(self.A,1)) * 0.08
         
-# class XYpos(master.LTI_master):
-    
-#     def __init__(self):
-#         '''
-#         Initialize robot model class, which is a 1-dimensional dummy problem,
-#         modelled as a double integrator.
-
-#         Returns
-#         -------
-#         None.
-
-#         '''
-        
-#         # Initialize superclass
-#         master.LTI_master.__init__(self)
-        
-#         # Number of time steps to lump together (can be used to make the model
-#         # fully actuated)
-#         self.setup['lump'] = 1
-        
-#         # Authority limit for the control u, both positive and negative
-#         self.setup['control']['limits']['uMin'] =  [-6, -6]
-#         self.setup['control']['limits']['uMax'] =  [6, 6]
-        
-#         # Partition size
-#         self.setup['partition']['nrPerDim']  = [21, 21]
-#         self.setup['partition']['width']     = [1, 1]
-#         self.setup['partition']['origin']    = [0, 0]
-        
-#         # Actions per dimension (if 'auto', equal to nr of regions)
-#         self.setup['targets']['nrPerDim']    = 'auto'
-#         self.setup['targets']['domain']      = 'auto'
-
-#         # Specification information
-#         self.setup['specification']['goal']           = [[0, 0]]
-#         self.setup['specification']['critical'] = np.vstack((
-#             setStateBlock(self.setup['partition'], a=[-5,-4,-3], b=[-6,-5,-4,-3,-2,-1]),
-#             setStateBlock(self.setup['partition'], a=[5,6,7], c=[3,4,5,6]),
-#             setStateBlock(self.setup['partition'], a=[5,6,7], c=[-3,-2,-1,0])
-#             ))
-        
-#         # Discretization step size
-#         self.tau = 1.0
-        
-#         # Step-bound on property
-#         self.setup['endTime'] = 64 
-    
-#     def setModel(self, observer):
-#         '''
-#         Set linear dynamical system.
-
-#         Parameters
-#         ----------
-#         observer : Boolean
-#             If True, an observer is created for the model.
-
-#         Returns
-#         -------
-#         None.
-
-#         '''
-        
-#         # State transition matrix
-#         self.A  = np.array([[1, 0],
-#                             [0, 1]])
-        
-#         self.A_set = [
-#             self.A + np.array([[-0.05,0],[0,-0.05]]),
-#             self.A + np.array([[0.05,0],[0,0.05]])
-#             ]
-        
-#         # Input matrix
-#         self.B  = np.array([[self.tau**2/2,0],
-#                             [0,self.tau**2/2]])
-        
-#         if observer:
-#             # Observation matrix
-#             self.C          = np.array([[1, 0], [0, 1]])
-#             self.r          = len(self.C)
-        
-#         # Disturbance matrix
-#         self.Q  = np.array([[0],[0]])
-        
-#         # Determine system dimensions
-#         self.n = np.size(self.A,1)
-#         self.p = np.size(self.B,1)
-        
-#         # Covariance of the process noise
-#         self.noise = dict()
-#         self.noise['w_cov'] = np.eye(np.size(self.A,1)) * 0.2
         
 class UAV(master.LTI_master):
     
@@ -261,7 +170,7 @@ class UAV(master.LTI_master):
             if V == 1:
     
                 # Partition size
-                self.setup['partition']['nrPerDim']  = [9,7,9,7]
+                self.setup['partition']['nrPerDim']  = [9,9,9,9]
                 self.setup['partition']['width']     = [2, 2, 2, 2]
                 self.setup['partition']['origin']    = [0, 0, 0, 0]
                 
@@ -384,7 +293,7 @@ class UAV(master.LTI_master):
         
         # State transition matrix
         Ablock = np.array([[1, self.tau],
-                          [0, 1]])
+                          [0, 0.9]])
         
         # Input matrix
         Bblock = np.array([[self.tau**2/2],
@@ -405,6 +314,11 @@ class UAV(master.LTI_master):
         else:
             self.A  = scipy.linalg.block_diag(Ablock, Ablock)
             self.B  = scipy.linalg.block_diag(Bblock, Bblock)
+            
+            self.A_set = [
+                        self.A - np.diag([0, -0.1, 0, -0.1]),
+                        self.A - np.diag([0, 0.1, 0, 0.1])
+                        ]
         
             # Disturbance matrix
             self.Q  = np.array([[0],[0],[0],[0]])
