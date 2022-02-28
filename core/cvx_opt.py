@@ -65,7 +65,7 @@ class abstraction_error(object):
 
         else:
             # If multiple vertices/points provided, return max/min among them
-            error_pos = np.max(error, axis=0)
-            error_neg = np.min(error, axis=0)
+            error_pos = error.max(axis=0)
+            error_neg = error.min(axis=0)
             
             return False, self.x.value, error_pos, error_neg

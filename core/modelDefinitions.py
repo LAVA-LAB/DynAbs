@@ -48,20 +48,38 @@ class robot(master.LTI_master):
         self.setup['lump'] = 1
         
         # Authority limit for the control u, both positive and negative
-        self.setup['control']['limits']['uMin'] =  [-5]
-        self.setup['control']['limits']['uMax'] =  [5]
+        self.setup['control']['limits']['uMin'] =  [-4]
+        self.setup['control']['limits']['uMax'] =  [4]
+        
+        mode = 0
         
         # Partition size
-        self.setup['partition']['nrPerDim']  = [9, 7]
-        self.setup['partition']['width']     = [2, 2]
-        self.setup['partition']['origin']    = [0, 0]
+        if mode == 0:
+            self.setup['partition']['nrPerDim']  = [11, 11]
+            self.setup['partition']['width']     = [2, 2]
+            self.setup['partition']['origin']    = [0, 0]
+            
+        elif mode == 1:
+            self.setup['partition']['nrPerDim']  = [21, 21]
+            self.setup['partition']['width']     = [1, 1]
+            self.setup['partition']['origin']    = [0, 0]
+        else:
+            self.setup['partition']['nrPerDim']  = [21, 21]
+            self.setup['partition']['width']     = [1, 1]
+            self.setup['partition']['origin']    = [0, 0]
         
         # Actions per dimension (if 'auto', equal to nr of regions)
         self.setup['targets']['nrPerDim']    = 'auto'
         self.setup['targets']['domain']      = 'auto'
 
         # Specification information
-        self.setup['specification']['goal']           = setStateBlock(self.setup['partition'], a=[2,4,6], b='all')
+        if mode == 0:
+            self.setup['specification']['goal']           = setStateBlock(self.setup['partition'], a=[4,6,8], b='all')
+        elif mode == 1:
+            self.setup['specification']['goal']           = setStateBlock(self.setup['partition'], a=[3.5, 4.5, 5.5, 6.5, 7.5, 8.5], b='all')
+        else:
+            self.setup['specification']['goal']           = setStateBlock(self.setup['partition'], a=[-2.5, -1.5, -0.5, 0.5, 1.5, 2.5], b=[-2.5, -1.5, -0.5, 0.5, 1.5, 2.5])
+        
         self.setup['specification']['critical']       = [[]] #setStateBlock(self.setup['partition'], a=[-6,-4], b=[-4,-2]) #[[]]
         
         # Discretization step size
@@ -91,6 +109,11 @@ class robot(master.LTI_master):
         self.A  = np.array([[1, self.tau],
                             [0, .8]])
         
+        self.A_set = [
+                    np.array([[1, self.tau],[0,0.7]]),
+                    np.array([[1, self.tau],[0,0.9]])
+                    ]
+        
         # Input matrix
         self.B  = np.array([[self.tau**2/2],
                                 [self.tau]])
@@ -109,7 +132,7 @@ class robot(master.LTI_master):
         
         # Covariance of the process noise
         self.noise = dict()
-        self.noise['w_cov'] = np.eye(np.size(self.A,1)) * 0.1
+        self.noise['w_cov'] = np.eye(np.size(self.A,1)) * 0.08
         
 # class XYpos(master.LTI_master):
     
@@ -228,8 +251,8 @@ class UAV(master.LTI_master):
         if self.modelDim == 2:
     
             # Authority limit for the control u, both positive and negative
-            self.setup['control']['limits']['uMin'] = [-5, -5]
-            self.setup['control']['limits']['uMax'] = [5, 5]        
+            self.setup['control']['limits']['uMin'] = [-4, -4]
+            self.setup['control']['limits']['uMax'] = [4, 4]        
     
             self.setup['max_control_error'] = np.array([2, 10, 2, 10])
     
@@ -397,7 +420,7 @@ class UAV(master.LTI_master):
 
         # Covariance of the process noise
         self.noise = dict()
-        self.noise['w_cov'] = np.eye(np.size(self.A,1))*0.1*0.1
+        self.noise['w_cov'] = np.eye(np.size(self.A,1))*0.08
            
     def setTurbulenceNoise(self, folder, N):
         '''

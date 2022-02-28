@@ -154,13 +154,12 @@ class mdp(object):
             
             # Check if region is a deadlock state
             if len(actions['enabled'][i]) == 0:
-                substring += ' 1 3'
+                substring += ' 1'
             
             # Check if region is in goal set
             if i in self.goodStates:
-                substring += ' 2'
-                
-            if i in self.badStates:
+                substring += ' 2' 
+            elif i in self.badStates: # or len(actions['enabled'][i]) == 0:
                 substring += ' 3'
             
             label_file_list[i+2] = substring

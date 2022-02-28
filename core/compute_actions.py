@@ -168,7 +168,7 @@ def def_backward_reach(model):
     
     return backreach
 
-def partial_model(model, dim_n, dim_p):
+def partial_model(flags, model, dim_n, dim_p):
     
     #TODO: improve this function.
     
@@ -184,6 +184,9 @@ def partial_model(model, dim_n, dim_p):
     model.n         = len(dim_n)
     model.p         = len(dim_p)
     
+    if flags['parametric_A']:
+        model.A_set     = [A[n_start:n_end, n_start:n_end] for A in model.A_set]
+    
     model.setup['partition']['nrPerDim'] = model.setup['partition']['nrPerDim'][dim_n]
     model.setup['partition']['width'] = model.setup['partition']['width'][dim_n]
     model.setup['partition']['origin'] = model.setup['partition']['origin'][dim_n]
@@ -191,7 +194,8 @@ def partial_model(model, dim_n, dim_p):
     model.uMin = model.uMin[dim_p]
     model.uMax = model.uMax[dim_p]
     
-    model.setup['max_control_error'] = model.setup['max_control_error'][dim_n]
+    if 'max_control_error' in model.setup:
+        model.setup['max_control_error'] = model.setup['max_control_error'][dim_n]
 
     return model
 
@@ -205,13 +209,11 @@ def def_all_BRS(model, partition, targets):
         
     return backreach
 
-def defEnabledActions_UA(partition, actions, model, dim_n=False, dim_p=False, verbose=False):
-    
-    print('DIM_N:', dim_n)
+def defEnabledActions_UA(flags, partition, actions, model, dim_n=False, dim_p=False, verbose=False):
     
     full_n = model.n
     nrPerDim = [model.setup['partition']['nrPerDim'][i] if i in dim_n else 1 for i in range(full_n)]
-    action_range = itertools.product(*map(range, [0]*full_n, nrPerDim))
+    action_range = list(itertools.product(*map(range, [0]*full_n, nrPerDim)))
     
     # Compute the backward reachable set (not accounting for target point yet)    
     if dim_n is False or dim_p is False:
@@ -221,14 +223,11 @@ def defEnabledActions_UA(partition, actions, model, dim_n=False, dim_p=False, ve
         compositional = False
         
     else:
-        model = partial_model(deepcopy(model), dim_n, dim_p)
+        model = partial_model(flags, deepcopy(model), dim_n, dim_p)
     
         compositional = True
     
     G_zero = def_backward_reach(model)
-    
-    # action_range = f7(np.concatenate(( partition['goal'],
-    #                    np.arange(actions['nr_actions']) )))
     
     # Number of vertices in backward reachable set
     v = len(G_zero)
@@ -258,22 +257,10 @@ def defEnabledActions_UA(partition, actions, model, dim_n=False, dim_p=False, ve
     enabled_inv = {}   
     control_error = {}
     
-    # control_error   = [{'pos': np.zeros(model.n), 'neg': np.zeros(model.n)} 
-    #                    for i in range(actions['nr_actions'])]
-    
-    # actions_enabled = np.full(actions['nr_actions'], False)
-    
-    # enabled         = [set() for i in range(partition['nr_regions'])]
-    # enabled_inv     = [set() for i in range(actions['nr_actions'])]
-    
     # For every action
     for a_tup in progressbar(action_range, redirect_stdout=True):
         
         idx = partition['R']['idx'][a_tup]
-        
-        target = actions['targets'][idx, dim_n]
-        
-        # backreach[a_tup] = G_zero + model.A_inv @ target #actions['targets'][a_tup]
         
         # Get backward reachable set
         BRS = np.unique(actions['backreach'][idx][:, dim_n], axis=0)
@@ -314,12 +301,34 @@ def defEnabledActions_UA(partition, actions, model, dim_n=False, dim_p=False, ve
                 # If problem not infeasible, then action enabled in this state
                 # But we do another step to limit the abstraction error
                 
+                vertices = np.unique(partition['allCorners'][s][:, dim_n], axis=0)
+                
                 # Compute abstraction error
-                flag, p, err_pos, err_neg = abstr_error.solve(
-                        np.unique(partition['allCorners'][s][:, dim_n], axis=0), 
+                flag, p, c_error_neg, c_error_pos = abstr_error.solve(
+                        vertices, 
                         BRS)
                 
                 if not flag:
+                    
+                    # Check if we also have to account for the epistemic error
+                    if flags['parametric_A']:
+                    
+                        # Compute epistemic error
+                        for A_vertex in model.A_set:
+                            e_error = ((A_vertex - model.A) @ vertices.T).T
+                            e_error_neg = e_error.min(axis=0)
+                            e_error_pos = e_error.max(axis=0)
+                            
+                        print('Epistemic error:')
+                        print(e_error_neg)
+                        print(e_error_pos)
+                            
+                        error_neg = c_error_neg + e_error_neg
+                        error_pos = c_error_pos + e_error_pos
+                        
+                    else:
+                        error_neg = c_error_neg
+                        error_pos = c_error_pos
                     
                     if s_tup in enabled:
                         enabled[s_tup].add(a_tup)
@@ -332,11 +341,10 @@ def defEnabledActions_UA(partition, actions, model, dim_n=False, dim_p=False, ve
                         enabled_inv[a_tup] = {s_tup}
                     
                     if a_tup in control_error:
-                        control_error[a_tup]['pos'] = np.maximum(err_pos, control_error[a_tup]['pos'])
-                        control_error[a_tup]['neg'] = np.minimum(err_neg, control_error[a_tup]['neg'])
+                        control_error[a_tup]['pos'] = np.maximum(error_neg, control_error[a_tup]['pos'])
+                        control_error[a_tup]['neg'] = np.minimum(error_pos, control_error[a_tup]['neg'])
                     else:
-                        control_error[a_tup] = {'pos': err_pos,
-                                            'neg': err_neg}
+                        control_error[a_tup] = {'neg': error_neg, 'pos': error_pos}
                     
                 # else:
                 #     print('Do not enable action',a,'in state',s,'because the error is too large:',err_pos,err_neg)

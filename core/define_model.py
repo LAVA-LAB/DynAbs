@@ -19,6 +19,7 @@ ______________________________________________________________________________
 """
 
 import numpy as np              # Import Numpy for computations
+from scipy.sparse.csgraph import connected_components
 
 def define_model(setup, model_raw):
     '''
@@ -91,6 +92,26 @@ def define_model(setup, model_raw):
             (model.B @ uAvg + model.Q_flat)
     
     return model
+
+def find_connected_components(A, B, n, p):
+    
+    no_comp, array = connected_components(A, directed=False)
+    
+    dim_n = [[] for i in range(no_comp)]
+    dim_p = [[] for i in range(no_comp)]
+    
+    for c in range(no_comp):
+        states = np.arange(n)[array == c]
+        
+        dim_n[c] = states
+        
+        inputs = np.arange(p)[np.any(B[states] != 0, axis=0)]
+        dim_p[c] = inputs
+        
+    if sum([len(dim_p[c]) for c in range(no_comp)]) != p:
+        print('WARNING: control inputs not decoupled between components')
+    
+    return dim_n, dim_p
 
 def makeModelFullyActuated(model, manualDimension='auto', observer=False):
     '''

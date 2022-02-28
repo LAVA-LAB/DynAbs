@@ -390,7 +390,7 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
                        for idx, cu in np.ndenumerate(counts_upp) if cu > 0], 
                       dtype = int)
 
-    # print(counts)
+    print(counts)
 
     # Number of samples not in any region (i.e. in absorbing state)
     deadlock_low = 1 - trans['memory'][counts_absorb_low][1]
@@ -399,14 +399,21 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     else:
         deadlock_upp = 1 - trans['memory'][counts_absorb_upp][0]
 
-    k_upp = np.minimum(Nsamples - counts[:, 1], Nsamples)
-    k_low = Nsamples - counts[:, 2]
+    if len(counts) > 0:
+        k_upp = np.minimum(Nsamples - counts[:, 1], Nsamples)
+        k_low = Nsamples - counts[:, 2]
+        
+        probability_low     = trans['memory'][k_upp, 0]
+        probability_upp     = trans['memory'][k_low, 1]
+        probability_approx  = counts[:, 1:3].mean(axis=1) / Nsamples
+        successor_idxs = counts[:,0]
+        
+    else:
 
-    probability_low     = trans['memory'][k_upp, 0]
-    probability_upp     = trans['memory'][k_low, 1]
-    probability_approx  = counts[:, 1:3].mean(axis=1) / Nsamples
-    
-    successor_idxs = counts[:,0]
+        probability_low     = np.array([])
+        probability_upp     = np.array([])
+        probability_approx  = np.array([])
+        successor_idxs = np.array([])
     
     nr_decimals = 5
     

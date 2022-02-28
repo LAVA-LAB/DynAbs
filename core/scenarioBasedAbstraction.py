@@ -26,11 +26,13 @@ import os                       # Import OS to allow creationg of folders
 import random                   # Import to use random variables
 import pandas as pd             # Import Pandas to store data in frames
 
+from .define_model import find_connected_components
 from .define_partition import definePartitions, defStateLabelSet
 from .compute_probabilities import computeScenarioBounds_sparse, \
     computeScenarioBounds_uncertain, computeScenarioBounds_error
 from .commons import tic, ticDiff, tocDiff, table, printWarning
-from .compute_actions import defEnabledActions, defEnabledActions_UA, def_all_BRS
+from .compute_actions import defEnabledActions, defEnabledActions_UA, \
+    def_all_BRS
 from .create_iMDP import mdp
 
 '''
@@ -60,6 +62,11 @@ class Abstraction(object):
         
         # Number of simulation time steps
         self.N = int(self.model.setup['endTime'] / self.model.setup['lump'])
+        
+        if hasattr(self.model, 'A_set'):
+            self.flags['parametric_A'] = True
+        else:
+            self.flags['parametric_A'] = False
         
         if self.model.p < self.model.n:
             print(' --- Model is not fully actuated, so set flag')
@@ -211,9 +218,9 @@ class Abstraction(object):
         if self.flags['underactuated']:
             print('- For underactuated system')
             
-            #TODO: automatically recognize where the model can be decomposed!
-            dim_n = [[0,1], [2,3]]
-            dim_p = [[0], [1]]
+            # Find the connected components of the system
+            dim_n, dim_p = find_connected_components(self.model.A, self.model.B,
+                                                     self.model.n, self.model.p)
             
             print(' -- Number of actions (target points):', self.actions['nr_actions'])
 
@@ -223,9 +230,13 @@ class Abstraction(object):
 
             for i,(dn,dp) in enumerate(zip(dim_n, dim_p)):
             
+                print(' --- In dimensions of state', dn,'and control', dp)    
+            
                 A[i], A_inv[i], CE[i] = \
-                    defEnabledActions_UA(self.partition, self.actions, self.model, dn, dp)
+                    defEnabledActions_UA(self.flags, self.partition, self.actions, self.model, dn, dp)
                     
+                    
+            self.CE = CE
             
             ### Compositional model building
                     
@@ -261,7 +272,7 @@ class Abstraction(object):
             keys_prod = itertools.product(*[A_inv[i].keys() for i in range(len(dim_n))])
             vals_inv = itertools.product(*[A_inv[i].values() for i in range(len(dim_n))])
             vals_CE = itertools.product(*[CE[i].values() for i in range(len(dim_n))])
-                
+            
             # Precompute matrix to put together control error
             mats = [None] * len(dim_n)
             for h,dim in enumerate(dim_n):
@@ -677,13 +688,13 @@ class scenarioBasedAbstraction(Abstraction):
                            'Probabilities computed (transitions: '+
                            str(nr_transitions)+')'])
                         
-                    # from .compute_probabilities import plot_transition
+                    from .compute_probabilities import plot_transition
                         
-                    # a_plot = self.partition['R']['c_tuple'][(4,0,4,0)]
-                    # if a == a_plot:
-                    #     plot_transition(samples, self.actions['control_error'][a], 
-                    #         (0,1), (2,3), self.setup, self.model, self.partition,
-                    #         np.array([]), self.actions['backreach'][a])
+                    a_plot = self.partition['R']['c_tuple'][(-8,0)]
+                    if a == a_plot:
+                        plot_transition(samples, self.actions['control_error'][a], 
+                            (0,1), (), self.setup, self.model, self.partition,
+                            np.array([]), self.actions['backreach'][a])
                     
                 # elif self.setup.parametric:
                     
