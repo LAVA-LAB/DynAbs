@@ -372,7 +372,8 @@ def writeFile(file, operation="w", content=[""]):
     filehandle = open(file, operation)
     filehandle.writelines(content)
     filehandle.close()
-    
+
+
 def setStateBlock(partition, **kwargs):
     '''
     Create a block of discrete regions for the given partition (can be used
@@ -395,16 +396,16 @@ def setStateBlock(partition, **kwargs):
     '''
     
     nrArgs = len(kwargs)
-    stateDim = len(partition['nrPerDim'])
+    stateDim = len(partition['number'])
     
-    if nrArgs != len(partition['nrPerDim']):
+    if nrArgs != len(partition['number']):
         print('State dimension is',stateDim,'but only',nrArgs,
               'arguments given.')
         sys.exit()
     
     row = [None for i in range(stateDim)]
     
-    center_domain = (np.array(partition['nrPerDim'])-1) * 0.5 * \
+    center_domain = (np.array(partition['number'])-1) * 0.5 * \
                      np.array(partition['width'])
     
     for i,value in enumerate(kwargs.values()):
@@ -414,7 +415,7 @@ def setStateBlock(partition, **kwargs):
             row[i] = np.linspace(
                         -center_domain[i] + np.array(partition['origin'][i]), 
                          center_domain[i] + np.array(partition['origin'][i]), 
-                         partition['nrPerDim'][i])
+                         partition['number'][i])
             
         else:
             

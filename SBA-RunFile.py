@@ -54,7 +54,7 @@ setup = settings(application=model_raw.name, base_dir = base_dir)
 # Manual changes in general settings
 setup.setOptions(category       = 'plotting', 
         exportFormats           = ['pdf'], 
-        partitionPlot           = False,
+        partitionPlot           = True,
         partitionPlot_plotHull  = True)
 setup.parametric = False
 

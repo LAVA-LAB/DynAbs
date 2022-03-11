@@ -187,7 +187,7 @@ def partial_model(flags, model, dim_n, dim_p):
     if flags['parametric_A']:
         model.A_set     = [A[n_start:n_end, n_start:n_end] for A in model.A_set]
     
-    model.setup['partition']['nrPerDim'] = model.setup['partition']['nrPerDim'][dim_n]
+    model.setup['partition']['number'] = model.setup['partition']['number'][dim_n]
     model.setup['partition']['width'] = model.setup['partition']['width'][dim_n]
     model.setup['partition']['origin'] = model.setup['partition']['origin'][dim_n]
     
@@ -199,7 +199,7 @@ def partial_model(flags, model, dim_n, dim_p):
 
     return model
 
-def def_all_BRS(model, partition, targets):
+def def_all_BRS(model, targets):
     
     G_zero = def_backward_reach(model)
     backreach = {}
@@ -212,7 +212,7 @@ def def_all_BRS(model, partition, targets):
 def defEnabledActions_UA(flags, partition, actions, model, dim_n=False, dim_p=False, verbose=False):
     
     full_n = model.n
-    nrPerDim = [model.setup['partition']['nrPerDim'][i] if i in dim_n else 1 for i in range(full_n)]
+    nrPerDim = [model.setup['targets']['number'][i] if i in dim_n else 1 for i in range(full_n)]
     action_range = list(itertools.product(*map(range, [0]*full_n, nrPerDim)))
     
     # Compute the backward reachable set (not accounting for target point yet)    
@@ -260,7 +260,7 @@ def defEnabledActions_UA(flags, partition, actions, model, dim_n=False, dim_p=Fa
     # For every action
     for a_tup in progressbar(action_range, redirect_stdout=True):
         
-        idx = partition['R']['idx'][a_tup]
+        idx = actions['T']['idx'][a_tup]
         
         # Get backward reachable set
         BRS = np.unique(actions['backreach'][idx][:, dim_n], axis=0)
@@ -440,7 +440,7 @@ def defEnabledActions(setup, partition, actions, model, A_idx=None, verbose=Fals
     # For every action
     for action_id in progressbar(action_range, redirect_stdout=True):
         
-        targetPoint = actions['targets'][action_id]
+        targetPoint = actions['T']['center'][action_id]
         
         if dimEqual:
         

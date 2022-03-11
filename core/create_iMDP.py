@@ -99,7 +99,7 @@ class mdp(object):
         
         return specfile, specification
     
-    def writePRISM_explicit(self, actions, trans, problem_type, mode='estimate', 
+    def writePRISM_explicit(self, actions, partition, trans, problem_type, mode='estimate', 
                             verbose=False):
         '''
         Converts the model to the PRISM language, and write the model in
@@ -129,12 +129,14 @@ class mdp(object):
         
         print(' --- Writing PRISM states file')
         
+        head = 3
+        
         ### Write states file
         PRISM_statefile = self.setup.directories['outputFcase']+ \
             self.setup.mdp['filename']+"_"+mode+".sta"
         
-        state_file_string = '\n'.join(['(x)\n0:(-1)'] + 
-              [str(i+1)+':('+str(i)+')' for i in range(self.nr_regions)])
+        state_file_string = '\n'.join(['(x)\n0:(-3)\n1:(-2)\n2:(-1)'] + 
+              [str(i+head)+':('+str(i)+')' for i in range(self.nr_regions)])
         
         # Write content to file
         writeFile(PRISM_statefile, 'w', state_file_string)
@@ -146,11 +148,11 @@ class mdp(object):
             self.setup.mdp['filename']+"_"+mode+".lab"
             
         label_file_list = ['0="init" 1="deadlock" 2="reached" 3="failed"'] + \
-                          ['0: 1 3'] + \
+                          ['0: 1 3'] + ['1: 1 3'] + ['2: 2'] + \
                           ['' for i in range(self.nr_regions)]
         
         for i in range(self.nr_regions):
-            substring = str(i+1)+': 0'
+            substring = str(i+head)+': 0'
             
             # Check if region is a deadlock state
             if len(actions['enabled'][i]) == 0:
@@ -162,7 +164,7 @@ class mdp(object):
             elif i in self.badStates: # or len(actions['enabled'][i]) == 0:
                 substring += ' 3'
             
-            label_file_list[i+2] = substring
+            label_file_list[i+head+1] = substring
             
         label_file_string = '\n'.join(label_file_list)
            
@@ -185,6 +187,13 @@ class mdp(object):
         # For every state
         for s in progressbar(range(self.nr_regions), redirect_stdout=True):
             
+            if s in partition['goal']:
+                print(' ---- Skip',s,'because it is a goal region')
+                continue
+            if s in partition['critical']:
+                print(' ---- Skip',s,'because it is a critical region')
+                continue
+            
             if s % printEvery == 0 and verbose:
                 print(' ---- Write for region',s)
             
@@ -202,7 +211,7 @@ class mdp(object):
                     # Define name of action
                     actionLabel = "a_"+str(a)
                     
-                    substring_start = str(s+1) +' '+ str(choice)
+                    substring_start = str(s+head) +' '+ str(choice)
                     
                     if self.setup.parametric:
                         P = trans['prob'][0][a][s]
@@ -225,7 +234,7 @@ class mdp(object):
                                   deadlock_string+' '+actionLabel]
                         
                         # Add resulting entries to the list
-                        substring_b = [substring_start +" "+str(i+1)+
+                        substring_b = [substring_start +" "+str(i+head)+
                                           " "+intv+" "+actionLabel 
                           for (i,intv) in zip(probability_idxs,
                                               probability_strings) if intv]
@@ -248,7 +257,7 @@ class mdp(object):
                             substring_a = []
                             
                         # Add resulting entries to the list
-                        substring_b = [substring_start +" "+str(i+1)+
+                        substring_b = [substring_start +" "+str(i+head)+
                                           " "+intv+" "+actionLabel 
                           for (i,intv) in zip(probability_idxs,
                                               probability_strings) if intv]
@@ -271,7 +280,7 @@ class mdp(object):
                     else:
                         selfloop_prob = '1.0'
                         
-                    substring = [str(s+1) +' 0 '+str(s+1)+' '+
+                    substring = [str(s+head) +' 0 '+str(s+head)+' '+
                                     selfloop_prob]
         
                     selfloop = True
@@ -293,9 +302,9 @@ class mdp(object):
         print(' ---- String ready; write to file...')
         
         # Header contains nr of states, choices, and transitions
-        size_states = self.nr_regions+1
-        size_choices = nr_choices_absolute+1
-        size_transitions = nr_transitions_absolute+1
+        size_states = self.nr_regions+head
+        size_choices = nr_choices_absolute+head
+        size_transitions = nr_transitions_absolute+head
         model_size = {'States': size_states, 
                       'Choices': size_choices, 
                       'Transitions':size_transitions}
@@ -303,9 +312,9 @@ class mdp(object):
                  str(size_transitions)+'\n'
         
         if mode == 'interval':
-            firstrow = '0 0 0 [1.0,1.0]\n'
+            firstrow = '0 0 0 [1.0,1.0]\n1 0 1 [1.0,1.0]\n2 0 2 [1.0,1.0]\n'
         else:
-            firstrow = '0 0 0 1.0\n'
+            firstrow = '0 0 0 1.0\n1 0 1 1.0\n1 0 1 1.0\n'
         
         # Write content to file
         writeFile(PRISM_transitionfile, 'w', header+firstrow+

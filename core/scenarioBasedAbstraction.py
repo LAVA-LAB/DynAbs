@@ -29,7 +29,7 @@ import pandas as pd             # Import Pandas to store data in frames
 from .define_model import find_connected_components
 from .define_partition import definePartitions, defStateLabelSet
 from .compute_probabilities import computeScenarioBounds_sparse, \
-    computeScenarioBounds_uncertain, computeScenarioBounds_error
+    computeScenarioBounds_error
 from .commons import tic, ticDiff, tocDiff, table, printWarning
 from .compute_actions import defEnabledActions, defEnabledActions_UA, \
     def_all_BRS
@@ -116,23 +116,14 @@ class Abstraction(object):
             Dictionary with all data about the target points.
 
         '''
-
-        # Width (span) between target points in every dimension
-        if self.model.setup['targets']['domain'] != 'auto':
-            targetWidth = np.array(
-                self.model.setup['targets']['domain'])*2 / \
-                self.model.setup['targets']['nrPerDim']
-        else:
-            targetWidth = np.array(
-                self.model.setup['partition']['nrPerDim']) * \
-                self.model.setup['partition']['width'] / \
-                self.model.setup['targets']['nrPerDim']
+        
+        print(' -- Compute manual target points; no. per dim:',self.model.setup['targets']['number'])
     
         # Create target points (similar to a partition of the state space)
         d = definePartitions(self.model.n,
-                self.model.setup['targets']['nrPerDim'],
-                targetWidth,
-                self.model.setup['partition']['origin'],
+                self.model.setup['targets']['number'],
+                self.model.setup['targets']['width'],
+                self.model.setup['targets']['origin'],
                 onlyCenter = True)
         
         return d
@@ -152,8 +143,13 @@ class Abstraction(object):
         # Define partitioning of state-space
         self.partition = dict()
         
+        # Determine origin of partition
+        self.model.setup['partition']['number'] = np.array(self.model.setup['partition']['number'])
+        self.model.setup['partition']['width'] = np.array([-1,1]) @ self.model.setup['partition']['boundary'].T / self.model.setup['partition']['number']
+        self.model.setup['partition']['origin'] = 0.5 * np.ones(2) @ self.model.setup['partition']['boundary'].T
+        
         self.partition['R'] = definePartitions(self.model.n,
-                            self.model.setup['partition']['nrPerDim'],
+                            self.model.setup['partition']['number'],
                             self.model.setup['partition']['width'],
                             self.model.setup['partition']['origin'],
                             onlyCenter = False)
@@ -161,14 +157,16 @@ class Abstraction(object):
         self.partition['nr_regions'] = len(self.partition['R']['center'])
         
         # Determine goal regions
-        self.partition['goal'] = defStateLabelSet(self.partition['R']['c_tuple'], 
-            self.model.setup['partition'], 
-            self.model.setup['specification']['goal'])
+        self.partition['goal'], self.partition['goal_slices'], self.partition['goal_idx'] = defStateLabelSet(
+            allCenters = self.partition['R']['c_tuple'], 
+            sets = self.model.setup['specification']['goal'],
+            partition = self.model.setup['partition'])
         
         # Determine critical regions
-        self.partition['critical'] = defStateLabelSet(self.partition['R']['c_tuple'], 
-            self.model.setup['partition'], 
-            self.model.setup['specification']['critical'])
+        self.partition['critical'], self.partition['critical_slices'], self.partition['critical_idx'] = defStateLabelSet(
+            allCenters = self.partition['R']['c_tuple'], 
+            sets = self.model.setup['specification']['critical'],
+            partition = self.model.setup['partition'])
         
         print(' -- Number of regions:',self.partition['nr_regions'])
         print(' -- Number of goal regions:',len(self.partition['goal']))
@@ -193,23 +191,32 @@ class Abstraction(object):
         self.actions = {}
         
         # Create the target point for every action (= every state)
-        if self.model.setup['targets']['nrPerDim'] == 'auto':
+        if self.model.setup['targets']['number'] == 'auto':
             # Set default target points to the center of every region
-            self.actions['targets'] = self.partition['R']['center']
+            self.model.setup['targets']['number'] = self.model.setup['partition']['number']
+            self.model.setup['targets']['width'] = self.model.setup['partition']['width']
+            self.model.setup['targets']['origin'] = self.model.setup['partition']['origin']
+            
+            self.actions['T'] = {'center': self.partition['R']['center'],
+                                 'idx': self.partition['R']['idx'] }
             
         else:
-            self.actions['targets'] = self._create_manual_targets()
+            self.model.setup['targets']['number'] = np.array(self.model.setup['targets']['number'])
+            self.model.setup['targets']['width'] = np.array([-1,1]) @ self.model.setup['targets']['boundary'].T / self.model.setup['targets']['number']
+            self.model.setup['targets']['origin'] = 0.5 * np.ones(2) @ self.model.setup['targets']['boundary'].T
+            
+            self.actions['T'] = self._create_manual_targets()
         
         # Add additional target points if this is requested
         if 'extra_targets' in self.model.setup:
-            self.actions['targets'] = np.vstack(( self.actions['targets'],
+            self.actions['T']['center'] = np.vstack(( self.actions['T']['center'],
                                                    self.model.setup['extra_targets'] ))
         
-        self.actions['nr_actions'] = len(self.actions['targets'])
+        self.actions['nr_actions'] = len(self.actions['T']['center'])
         
         print('\nComputing all backward reachable sets...')
         
-        self.actions['backreach'] = def_all_BRS(self.model, self.partition, self.actions['targets'])
+        self.actions['backreach'] = def_all_BRS(self.model, self.actions['T']['center'])
         
         print('\nComputing set of enabled actions...')
         
@@ -264,7 +271,7 @@ class Abstraction(object):
                 v_sum  = np.sum(v_list, axis=1)
                 enabled = set()
                 for v in v_sum:
-                    enabled.add( self.partition['R']['idx'][tuple(v)] )
+                    enabled.add( self.actions['T']['idx'][tuple(v)] )
                 
                 self.actions['enabled'][i] = enabled
               
@@ -287,7 +294,7 @@ class Abstraction(object):
                 
                 # Add tuples to get the compositional state
                 sum_key = np.sum(keys, axis=0)
-                a = self.partition['R']['idx'][tuple(sum_key)]
+                a = self.actions['T']['idx'][tuple(sum_key)]
                 
                 v_list = list(itertools.product(*valsA))
                 v_sum  = np.sum(v_list, axis=1)
@@ -348,7 +355,7 @@ class Abstraction(object):
         # Create PRISM file (explicit way)
         model_size, self.mdp.prism_file, self.mdp.spec_file, \
         self.mdp.specification = \
-            self.mdp.writePRISM_explicit(self.actions, self.trans, problem_type, 
+            self.mdp.writePRISM_explicit(self.actions, self.partition, self.trans, problem_type, 
                                          self.setup.mdp['mode'])   
 
         self.time['4_MDPcreated'] = tocDiff(False)
@@ -455,7 +462,7 @@ class Abstraction(object):
         self.results = dict()
         
         # Read policy CSV file
-        policy_all = pd.read_csv(policy_file, header=None).iloc[:, 1:].\
+        policy_all = pd.read_csv(policy_file, header=None).iloc[:, 3:].\
             fillna(-1).to_numpy()
             
         # Flip policy upside down (PRISM generates last time step at top!)
@@ -463,7 +470,7 @@ class Abstraction(object):
         
         self.results['optimal_policy'] = np.zeros(np.shape(policy_all), dtype=int)
         
-        rewards_k0 = pd.read_csv(vector_file, header=None).iloc[1:].to_numpy()
+        rewards_k0 = pd.read_csv(vector_file, header=None).iloc[3:].to_numpy()
         self.results['optimal_reward'] = rewards_k0.flatten()
         
         for i,row in enumerate(policy_all):    
@@ -585,9 +592,6 @@ class scenarioBasedAbstraction(Abstraction):
                 
                 strSplit = row[0].split(',')
                 
-                # key = tuple( [int(float(i)) for i in strSplit[0:2]] + 
-                #              [float(strSplit[2])] )
-                
                 value = [float(i) for i in strSplit[-2:]]
                 memory[int(strSplit[0])] = value
                     
@@ -628,7 +632,7 @@ class scenarioBasedAbstraction(Abstraction):
             if len(self.actions['enabled_inv'][a]) > 0:
                     
                 prob[a] = dict()
-                mu = self.actions['targets'][a]
+                mu = self.actions['T']['center'][a]
                 
                 if self.setup.scenarios['gaussian'] is True:
                     samples = mu + samples_zero_mean[a]                                        
@@ -655,13 +659,14 @@ class scenarioBasedAbstraction(Abstraction):
                            'Probabilities computed (transitions: '+
                            str(nr_transitions)+')'])
                         
-                    # from .compute_probabilities import plot_transition
+                    from .compute_probabilities import plot_transition
+                    
+                    a_plot = self.actions['T']['c_tuple'][(21,38.05)]
+                    if a == a_plot:
                         
-                    # a_plot = self.partition['R']['c_tuple'][(-8,0)]
-                    # if a == a_plot:
-                    #     plot_transition(samples, self.actions['control_error'][a], 
-                    #         (0,1), (), self.setup, self.model, self.partition,
-                    #         np.array([]), self.actions['backreach'][a])
+                        plot_transition(samples, self.actions['control_error'][a], 
+                            (0,1), (), self.setup, self.model, self.partition,
+                            np.array([]), self.actions['backreach'][a])
                 
                 else:
                     

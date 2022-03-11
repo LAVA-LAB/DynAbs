@@ -49,7 +49,7 @@ def computeRegionCenters(points, partition):
     
     # Retreive partition parameters
     region_width = np.array(partition['width'])
-    region_nrPerDim = partition['nrPerDim']
+    region_nrPerDim = partition['number']
     dim = len(region_width)
     
     # Boolean list per dimension if it has a region with the origin as center
@@ -97,7 +97,7 @@ def computeRegionIdx(points, partition, borderOutside=False):
     
     # Shift the points to account for a non-zero origin
     pointsZero = points - partition['origin'] + \
-                    partition['width']*partition['nrPerDim']/2
+                    partition['width']*partition['number']/2
 
     indices = (pointsZero // partition['width']).astype(int)
     
@@ -105,7 +105,7 @@ def computeRegionIdx(points, partition, borderOutside=False):
     indices -= ((pointsZero % partition['width'] == 0).T * borderOutside).T
     
     indices_nonneg = np.minimum(np.maximum(0, indices), 
-                                np.array(partition['nrPerDim'])-1).astype(int)
+                                np.array(partition['number'])-1).astype(int)
     
     return indices, indices_nonneg
 
@@ -150,35 +150,35 @@ def definePartitions(dim, nrPerDim, regionWidth, origin, onlyCenter=False):
     
     idxArrays = [range(len(arr)) for arr in widthArrays]
     
-    if onlyCenter:        
-        partition = np.array(list(itertools.product(*widthArrays))) + origin
+    
+    nr_regions = np.prod(nrPerDim)
+    partition = {'center': np.zeros((nr_regions, dim), dtype=float), 
+                 'idx': {},
+                 'c_tuple': {}}
+    
+    if not onlyCenter:
+        partition['low'] = np.zeros((nr_regions, dim), dtype=float)
+        partition['upp'] = np.zeros((nr_regions, dim), dtype=float)
         
-    else:
-        nr_regions = np.prod(nrPerDim)
-        partition = {'center': np.zeros((nr_regions, dim), dtype=float), 
-                     'low': np.zeros((nr_regions, dim), dtype=float), 
-                     'upp': np.zeros((nr_regions, dim), dtype=float), 
-                     'idx': {},
-                     'c_tuple': {}}
+    for i,(pos,idx) in enumerate(zip(itertools.product(*widthArrays),
+                                     itertools.product(*idxArrays))):
         
-        for i,(pos,idx) in enumerate(zip(itertools.product(*widthArrays),
-                                         itertools.product(*idxArrays))):
-            
-            center = np.array(pos) + origin
-            
-            dec = 5
-            
-            partition['center'][i] = np.round(center, decimals=dec)
-            partition['c_tuple'][tuple(np.round(center, decimals=dec))] = i
+        center = np.array(pos) + origin
+        
+        dec = 5
+        
+        partition['center'][i] = np.round(center, decimals=dec)
+        partition['c_tuple'][tuple(np.round(center, decimals=dec))] = i
+        if not onlyCenter:
             partition['low'][i] = np.round(center - regionWidth/2, 
                                             decimals=dec)
             partition['upp'][i] = np.round(center + regionWidth/2, 
                                             decimals=dec)
-            partition['idx'][tuple(idx)] = i
+        partition['idx'][tuple(idx)] = i
     
     return partition
 
-def defStateLabelSet(allCenters, partition, subset):
+def defStateLabelSet(allCenters, sets, partition):
     '''
     Return the indices of regions associated with the unique centers.
 
@@ -198,13 +198,42 @@ def defStateLabelSet(allCenters, partition, subset):
 
     '''
     
-    if np.shape(subset)[1] == 0:
-        return []
+    if sets is None:
+        return [], [], set()
     
     else:
     
-        # Retreive list of points and convert to array
-        points = np.array( subset ) 
+        points = [None] * len(sets)
+        slices = {'min': [None] * len(sets), 'max': [None] * len(sets)}
+        index_tuples = set()
+        
+        # Convert regions to all individual points (centers of regions)
+        for i,set_boundary in enumerate(sets):
+        
+            set_boundary = np.array([
+                            S if type(S) != str else partition['boundary'][j] 
+                            for j,S in enumerate(set_boundary) ])
+            
+            for vertex in itertools.product(*set_boundary):
+                
+                index, _ = computeRegionIdx(vertex, partition)
+            
+            vertices = np.array(list(itertools.product(*set_boundary)))
+            _, indices_nonneg = computeRegionIdx(vertices, partition)
+            
+            slices['min'][i] = indices_nonneg.min(axis=0)
+            slices['max'][i] = indices_nonneg.max(axis=0)
+            
+            index_tuples = set(itertools.product(*map(range, slices['min'][i], slices['max'][i]+1)))
+            
+            # Define iterator
+            #TODO: Avoid the hardcoded 1e-6
+            M = map(np.arange, set_boundary[:,0], set_boundary[:,1]+1e-6, partition['width'])
+            
+            # Retreive list of points and convert to array
+            points[i] = np.array(list(itertools.product(*M)))
+    
+        points = np.concatenate(points)
     
         # Compute all centers of regions associated with points
         centers = computeRegionCenters(points, partition)
@@ -214,4 +243,5 @@ def defStateLabelSet(allCenters, partition, subset):
         
         # Return the ID's of regions associated with the unique centers            
         return [allCenters[tuple(c)] for c in centers_unique 
-                           if tuple(c) in allCenters]
+                           if tuple(c) in allCenters], slices, index_tuples
+        

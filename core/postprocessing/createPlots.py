@@ -94,7 +94,7 @@ def createPartitionPlot(i_tup, j_tup, j, setup, model, \
             ax.plot([polyMat[hull.vertices[0],i0], polyMat[hull.vertices[-1],i0]], \
                       [polyMat[hull.vertices[0],i1], polyMat[hull.vertices[-1],i1]], lw=1)
         
-    for k,target_point in enumerate(actions['targets']):
+    for k,target_point in enumerate(actions['center']['targets']):
           
         if model.n <= 2 or all( partition['R']['center'][k,[j0,j1]] == model.setup['partition']['origin'][[j0,j1]] ):
         
@@ -247,7 +247,7 @@ def createProbabilityPlots(setup, N, model, results, partition, mc=None):
     
     ######################
     # Determine dimension of model
-    m = model.setup['partition']['nrPerDim']
+    m = model.setup['partition']['number']
     
     # Plot 3D probability plot for selected time steps
     if model.n > 2:
@@ -328,8 +328,8 @@ def UAV_3D_plotLayout(ScAb):
     
     cut_value = np.zeros(3)
     for i,d in enumerate(range(1, ScAb.model.n, 2)):
-        if ScAb.model.setup['partition']['nrPerDim'][d]/2 != round( 
-                ScAb.model.setup['partition']['nrPerDim'][d]/2 ):
+        if ScAb.model.setup['partition']['number'][d]/2 != round( 
+                ScAb.model.setup['partition']['number'][d]/2 ):
             cut_value[i] = 0
         else:
             cut_value[i] = ScAb.model.setup['partition']['width'][d] / 2    
@@ -369,8 +369,8 @@ def UAVplots(ScAb, case_id, writer=None, itersToSim=10000, itersToPlot=1):
             
             cut_value = np.zeros(2)
             for i,d in enumerate(range(1, ScAb.model.n, 2)):
-                if ScAb.model.setup['partition']['nrPerDim'][d]/2 != \
-                  round( ScAb.model.setup['partition']['nrPerDim'][d]/2 ):
+                if ScAb.model.setup['partition']['number'][d]/2 != \
+                  round( ScAb.model.setup['partition']['number'][d]/2 ):
                       
                     cut_value[i] = 0
                 else:
@@ -382,8 +382,8 @@ def UAVplots(ScAb, case_id, writer=None, itersToSim=10000, itersToPlot=1):
             
             cut_value = np.zeros(3)
             for i,d in enumerate(range(1, ScAb.model.n, 2)):
-                if ScAb.model.setup['partition']['nrPerDim'][d]/2 != \
-                  round( ScAb.model.setup['partition']['nrPerDim'][d]/2 ):
+                if ScAb.model.setup['partition']['number'][d]/2 != \
+                  round( ScAb.model.setup['partition']['number'][d]/2 ):
                       
                     cut_value[i] = 0
                 else:
@@ -517,7 +517,7 @@ def UAVplot2D(i_show, i_hide, setup, model, partition, traces, cut_value,
     plt.ylabel('$y$', labelpad=0)
 
     width = np.array(model.setup['partition']['width'])
-    domainMax = width * np.array(model.setup['partition']['nrPerDim']) / 2
+    domainMax = width * np.array(model.setup['partition']['number']) / 2
     
     min_xy = model.setup['partition']['origin'] - domainMax
     max_xy = model.setup['partition']['origin'] + domainMax
@@ -786,8 +786,8 @@ def load_traces_manual(ScAb, pathLow, pathHigh, idxLow=0, idxHigh=0):
     
     cut_value = np.zeros(3)
     for i,d in enumerate(range(1, ScAb.model.n, 2)):
-        if ScAb.model.setup['partition']['nrPerDim'][d]/2 != round( 
-                ScAb.model.setup['partition']['nrPerDim'][d]/2 ):
+        if ScAb.model.setup['partition']['number'][d]/2 != round( 
+                ScAb.model.setup['partition']['number'][d]/2 ):
             cut_value[i] = 0
         else:
             cut_value[i] = ScAb.model.setup['partition']['width'][d] / 2
@@ -985,39 +985,39 @@ def reachabilityHeatMap(ScAb):
 
     if ScAb.model.n == 2:
         
-        x_nr = ScAb.model.setup['partition']['nrPerDim'][0]
-        y_nr = ScAb.model.setup['partition']['nrPerDim'][1]
+        x_nr = ScAb.model.setup['partition']['number'][0]
+        y_nr = ScAb.model.setup['partition']['number'][1]
         
         cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr], 
                ScAb.model.setup['partition']['width'], 
-               ScAb.model.setup['partition']['origin'], onlyCenter=True)
+               ScAb.model.setup['partition']['origin'], onlyCenter=True)['center']
 
     if ScAb.model.name == 'building_2room':
     
-        x_nr = ScAb.model.setup['partition']['nrPerDim'][0]
-        y_nr = ScAb.model.setup['partition']['nrPerDim'][1]
+        x_nr = ScAb.model.setup['partition']['number'][0]
+        y_nr = ScAb.model.setup['partition']['number'][1]
         
         cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr, 1, 1], 
                ScAb.model.setup['partition']['width'], 
-               ScAb.model.setup['partition']['origin'], onlyCenter=True)
+               ScAb.model.setup['partition']['origin'], onlyCenter=True)['center']
         
     if ScAb.model.name == 'anaesthesia_delivery':
     
-        x_nr = ScAb.model.setup['partition']['nrPerDim'][0]
-        y_nr = ScAb.model.setup['partition']['nrPerDim'][1]
+        x_nr = ScAb.model.setup['partition']['number'][0]
+        y_nr = ScAb.model.setup['partition']['number'][1]
         
         cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr, 1], 
                ScAb.model.setup['partition']['width'], 
-               ScAb.model.setup['partition']['origin'], onlyCenter=True)
+               ScAb.model.setup['partition']['origin'], onlyCenter=True)['center']
         
     elif ScAb.model.n == 4:
         
-        x_nr = ScAb.model.setup['partition']['nrPerDim'][0]
-        y_nr = ScAb.model.setup['partition']['nrPerDim'][2]
+        x_nr = ScAb.model.setup['partition']['number'][0]
+        y_nr = ScAb.model.setup['partition']['number'][2]
         
         cut_centers = definePartitions(ScAb.model.n, [x_nr, 1, y_nr, 1], 
                ScAb.model.setup['partition']['width'], 
-               ScAb.model.setup['partition']['origin'], onlyCenter=True)
+               ScAb.model.setup['partition']['origin'], onlyCenter=True)['center']
                           
     cut_values = np.zeros((x_nr, y_nr))
     cut_coords = np.zeros((x_nr, y_nr, ScAb.model.n))

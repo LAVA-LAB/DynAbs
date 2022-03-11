@@ -37,9 +37,11 @@ def define_model(setup, model_raw):
 
     '''
     
-    model_raw.setup['partition']['nrPerDim'] = np.array(model_raw.setup['partition']['nrPerDim']).astype(int)
-    model_raw.setup['partition']['width'] = np.array(model_raw.setup['partition']['width']).astype(float)
-    model_raw.setup['partition']['origin'] = np.array(model_raw.setup['partition']['origin']).astype(float)
+    model_raw.setup['partition']['boundary'] = np.array(model_raw.setup['partition']['boundary']).astype(float)
+    model_raw.setup['partition']['number'] = np.array(model_raw.setup['partition']['number']).astype(int)
+    
+    model_raw.setup['targets']['boundary'] = np.array(model_raw.setup['targets']['boundary']).astype(float)
+    model_raw.setup['targets']['number'] = np.array(model_raw.setup['targets']['number']).astype(int)
     
     # Control limitations
     model_raw.uMin   = np.array( model_raw.setup['control']['limits']['uMin'] ).astype(float)

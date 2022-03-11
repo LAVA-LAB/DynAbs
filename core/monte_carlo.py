@@ -218,7 +218,7 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
                         tab.print_row([i, m, k, 'In state: '+str(x_region[k])+' ('+str(x[k])+'), take action: '+str(act[k])])
                 
                     # Move predicted mean to the future belief to the target point of the next state
-                    x_goal[k+1] = ScAb.actions['targets'][act[k]]
+                    x_goal[k+1] = ScAb.actions['T']['center'][act[k]]
 
                     # Reconstruct the control input required to achieve this target point
                     # Note that we do not constrain the control input; we already know that a suitable control exists!

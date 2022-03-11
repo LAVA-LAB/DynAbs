@@ -334,7 +334,7 @@ class UAV(master.LTI_master):
 
         # Covariance of the process noise
         self.noise = dict()
-        self.noise['w_cov'] = np.eye(np.size(self.A,1))*0.08
+        self.noise['w_cov'] = np.eye(np.size(self.A,1))*0.1
            
     def setTurbulenceNoise(self, folder, N):
         '''
@@ -647,7 +647,7 @@ class building_1room_1control(master.LTI_master):
         
         # Number of time steps to lump together (can be used to make the model
         # fully actuated)
-        self.setup['lump'] = 1
+        self.setup['lump'] = 2
         
         # Let the user make a choice for the model dimension
         _, gridType  = ui.user_choice('grid size',['19x20','40x40'])
@@ -657,35 +657,40 @@ class building_1room_1control(master.LTI_master):
         self.setup['control']['limits']['uMax'] = [30]
             
         if gridType == 0:
-            nrPerDim = [19, 20]
-            width = [0.2, 0.2]
-            goal = [20.8, 21, 21.2]
+            # nrPerDim = [79, 40]
+            # width = [0.05, 0.1]
+            # goal = np.round([i for i in np.arange(20.7, 21.3001, 0.05)], 5)
+            
+            partition_boundary    = np.array([[19.1, 22.9], [36, 40]])
+            partition_number      = [19, 20]
+            
+            target_boundary       = np.array([[19.1, 22.9], [36, 40]])
+            target_number         = [19, 40]
         else:
             nrPerDim = [40, 40]
             width = [0.1, 0.1]
             goal = [20.75, 20.85, 20.95, 21.05, 21.15, 21.25]
         
-        # Partition size
-        self.setup['partition']['nrPerDim']  = nrPerDim
-        self.setup['partition']['width']     = width
-        self.setup['partition']['origin']    = [21, 38]
-        
-        # Actions per dimension (if 'auto', equal to nr of regions)
-        self.setup['targets']['nrPerDim']    = 'auto'
-        self.setup['targets']['domain']      = 'auto'
+        self.setup['partition']['boundary'] = partition_boundary
+        self.setup['partition']['number']   = partition_number
+        self.setup['targets']['boundary']   = target_boundary
+        self.setup['targets']['number']     = target_number
         
         # Specification information
-        self.setup['specification']['goal'] = setStateBlock(self.setup['partition'], a=goal, b='all')
+        #self.setup['specification']['goal'] = setStateBlock(self.setup['partition'], a=goal, b='all')
         
-        self.setup['specification']['critical'] = [[]]
+        self.setup['specification']['goal'] = [
+            np.array([[20.8, 21.2], 'all'])
+            ]
+        self.setup['specification']['critical'] = None
         
         # Discretization step size
-        self.tau = 30 # NOTE: in minutes for BAS!
+        self.tau = 20 # NOTE: in minutes for BAS!
         
         # Step-bound on property
         self.setup['endTime'] = 64
         
-        self.setup['max_control_error'] = np.array([0.1, 10])
+        # self.setup['max_control_error'] = np.array([0.1, 10])
 
     def setModel(self, observer):           
         '''
@@ -707,7 +712,7 @@ class building_1room_1control(master.LTI_master):
         BAS = BAS_class.parameters()
         
         # Steady state values
-        Tswb    = BAS.Boiler['Tswbss']
+        Tswb    = 55 #BAS.Boiler['Tswbss']
         Twss    = BAS.Zone1['Twss']
         Pout1   = BAS.Radiator['Zone1']['Prad']      
         
@@ -736,9 +741,14 @@ class building_1room_1control(master.LTI_master):
                 [ (k0_a*w*Tswb) ],
                 ])
         
-        self.A = np.eye(2) + self.tau*A_cont
-        self.B = B_cont*self.tau
-        self.Q = W_cont*self.tau
+        Gears = True
+        if Gears:        
+            self.A, self.B, self.Q = discretizeGearsMethod(A_cont, B_cont, W_cont, self.tau)
+            
+        else:
+            self.A = np.eye(2) + self.tau*A_cont
+            self.B = B_cont*self.tau
+            self.Q = W_cont*self.tau
         
         # Determine system dimensions
         self.n = np.size(self.A,1)
