@@ -35,7 +35,7 @@ import cvxpy as cp
 
 from .define_partition import computeRegionIdx
 from .commons import in_hull, overapprox_box
-from .postprocessing.createPlots import createPartitionPlot
+from .postprocessing.createPlots import partition_plot
 from .cvx_opt import abstraction_error
 
 def defInvArea(model):
@@ -347,7 +347,7 @@ def defEnabledActions_UA(flags, partition, actions, model, dim_n=False, dim_p=Fa
                 
     return enabled, enabled_inv, control_error
 
-def defEnabledActions(setup, partition, actions, model, A_idx=None, verbose=False):
+def defEnabledActions(setup, partition, actions, model, A_idx=None, verbose=True):
     '''
     Define dictionaries to sture points in the preimage of a state, and
     the corresponding polytope points.
@@ -437,8 +437,13 @@ def defEnabledActions(setup, partition, actions, model, A_idx=None, verbose=Fals
     backreach = np.zeros((len(action_range), x_inv_area.shape[0],
                           x_inv_area.shape[1]))
     
+    if verbose:
+        RANGE = action_range
+    else:
+        RANGE = progressbar(action_range, redirect_stdout=True)
+    
     # For every action
-    for action_id in progressbar(action_range, redirect_stdout=True):
+    for action_id in RANGE:
         
         targetPoint = actions['T']['center'][action_id]
         
@@ -486,20 +491,16 @@ def defEnabledActions(setup, partition, actions, model, A_idx=None, verbose=Fals
         
         # Shift the inverse hull to account for the specific target point
         if setup.plotting['partitionPlot'] and \
-            action_id == 88: #int(partition['nr_regions']/2):
+            action_id == np.round(np.mean(partition['goal'])):
+
+            # Partition plot for the goal state, also showing pre-image
+            print('Create partition plot for action '+str(action_id)+'...')             
 
             if verbose:
                 print('x_inv_area:',x_inv_area)
                 print('origin shift:',A_inv_d)       
                 print('targetPoint:',targetPoint,' - drift:',
                       model.Q_flat)
-            
-                # Partition plot for the goal state, also showing pre-image
-                print('Create partition plot...')
-            
-            createPartitionPlot((0,1), (2,3), partition['goal'], 
-                setup, model, partition, 
-                partition['allCorners'], backreach[action_id], prefix=A_idx)
         
         # Retreive the ID's of all states in which the action is enabled
         enabled_in_states[action_id] = np.nonzero(enabled_in)[0]

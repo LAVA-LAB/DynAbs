@@ -34,6 +34,7 @@ from .commons import tic, ticDiff, tocDiff, table, printWarning
 from .compute_actions import defEnabledActions, defEnabledActions_UA, \
     def_all_BRS
 from .create_iMDP import mdp
+from .postprocessing.createPlots import partition_plot
 
 '''
 ------------------------------------------------------------------------------
@@ -326,7 +327,11 @@ class Abstraction(object):
         else:
             nr_A, self.actions['enabled'], \
              self.actions['enabled_inv'], _ = defEnabledActions(self.setup, self.partition, self.actions, self.model)
-                    
+              
+        a = np.round(self.actions['nr_actions'] / 2).astype(int)
+        partition_plot((0,1), (), self.setup, self.model, self.partition,
+                       np.array([]), self.actions['backreach'][a])
+                
         print(nr_A,'actions enabled')
         if nr_A == 0:
             printWarning('No actions enabled at all, so terminate')

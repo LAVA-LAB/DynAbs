@@ -555,7 +555,6 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
 import matplotlib.pyplot as plt # Import Pyplot to generate plots
 
 # Load main classes and methods
-from scipy.spatial import ConvexHull
 import matplotlib.patches as patches
 
 from .commons import cm2inch
@@ -563,29 +562,6 @@ from .commons import cm2inch
 def plot_transition(samples, error, i_show, i_hide, setup, model, partition, 
                     cut_value, backreach=False, stateLabels=False):
     '''
-    Create 2D trajectory plots for the 2D UAV benchmark
-
-    Parameters
-    ----------
-    i_show : list of ints.
-        List of indices of the state vector to show in plot.
-    i_hide : list of ints.
-        List of indices of the state vector to hide in plot.
-    setup : dict
-        Setup dictionary.
-    model : dict
-        Main dictionary of the LTI system model.
-    partition : dict
-        Dictionay containing all information of the partitioning.
-    traces : list
-        Nested list containing the trajectories (traces) to plot for
-    cut_value : array
-        Values to create the cross-section for
-    line : Boolean, optional
-        If true, also plot line that connects points of traces. 
-        The default is False.
-    stateLabels : Boolean, optional
-        If true, plot IDs of the regions as well. The default is False.
 
     Returns
     -------
@@ -686,7 +662,7 @@ def plot_transition(samples, error, i_show, i_hide, setup, model, partition,
     fig.tight_layout()
     
     # Save figure
-    filename = setup.directories['outputFcase']+'drone_trajectory'
+    filename = setup.directories['outputFcase']+'transition_plot'
     for form in setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         

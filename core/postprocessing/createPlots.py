@@ -26,139 +26,129 @@ import matplotlib.pyplot as plt # Import Pyplot to generate plots
 from matplotlib import cm
 from scipy.spatial import ConvexHull
 from matplotlib.patches import Rectangle
+import matplotlib.patches as patches
 
 from ..commons import printWarning, mat_to_vec, cm2inch
 from core.monte_carlo import monte_carlo
 
-def createPartitionPlot(i_tup, j_tup, j, setup, model, \
-                        partition, allOriginPointsNested, predecessor_set,
-                        prefix):
-    
-    '''
-    
-    Create partition plot for the current abstraction instance.
+def draw_hull(points, color, linewidth=0.1):
 
-    Parameters
-    ----------
-    i_tup : tuple
-        Tuple of indices to plot against
-    j_tup : tuple
-        Tuple of indices to create a cross-section for (i.e. are fixed)
-    j : int
-        Index of the center region of the state space partition.
-    setup : dict
-        Setup dictionary.
-    model : dict
-        Main dictionary of the LTI system model.
-    partition : dict
-        Dictionay containing all information of the partitioning.
-    allOriginPointsNested : list
-        Nested lists containing all origin points of all regions.
-    predecessor_set : array
-        Vertices of the predecessor set
+    # Plot hull of the vertices        
+    try: 
+        hull = ConvexHull(points)
+        # plt.plot(points[hull.vertices,0], 
+        #          points[hull.vertices,1], str(color)+'-', lw=linewidth)
+        # plt.plot([points[hull.vertices[0],0], 
+        #           points[hull.vertices[-1],0]],
+        #          [points[hull.vertices[0],1], 
+        #           points[hull.vertices[-1],1]], str(color)+'-', lw=linewidth)
+        
+        # Get the indices of the hull points.
+        hull_indices = hull.vertices
+        
+        # These are the actual points.
+        hull_pts = points[hull_indices, :]
+        
+        plt.fill(hull_pts[:,0], hull_pts[:,1], fill=False, edgecolor=color, lw=linewidth)
+        
+    except:
+        plt.plot(points[:,0], points[:,1],
+                 color=color, lw=linewidth)
+
+def partition_plot(i_show, i_hide, setup, model, partition, 
+                    cut_value, backreach=False, stateLabels=False):
+    '''
 
     Returns
     -------
     None.
+
     '''
+    
+    is1, is2 = i_show
+    
+    fig, ax = plt.subplots(figsize=cm2inch(6.1, 5))
+    
+    plt.xlabel('$x$', labelpad=0)
+    plt.ylabel('$y$', labelpad=0)
 
+    width = np.array(model.setup['partition']['width'])
+    domainMax = width * np.array(model.setup['partition']['number']) / 2
     
-    i0,i1 = i_tup
-    j0,j1 = j_tup
+    min_xy = model.setup['partition']['origin'] - domainMax
+    max_xy = model.setup['partition']['origin'] + domainMax
     
-    fig = plt.figure(figsize=cm2inch(12, 7))
-    ax = fig.add_subplot(111)
+    major_ticks_x = np.arange(min_xy[is1]+1, max_xy[is1]+1, 4*width[is1])
+    major_ticks_y = np.arange(min_xy[is2]+1, max_xy[is2]+1, 4*width[is2])
     
-    # If number of dimensions is 2, create 2D plot
-    if model.n <= 2:        
-        plt.xlabel('$x_1$', labelpad=0)
-        plt.ylabel('$x_2$', labelpad=-10)
-    else:
-        plt.xlabel('$x_'+str(i0)+'$', labelpad=0)
-        plt.ylabel('$x_'+str(i1)+'$', labelpad=-10)
+    minor_ticks_x = np.arange(min_xy[is1], max_xy[is1]+1, width[is1])
+    minor_ticks_y = np.arange(min_xy[is2], max_xy[is2]+1, width[is2])
+    
+    ax.set_xticks(major_ticks_x)
+    ax.set_yticks(major_ticks_y)
+    ax.set_xticks(minor_ticks_x, minor=True)
+    ax.set_yticks(minor_ticks_y, minor=True)
+    
+    for axi in (ax.xaxis, ax.yaxis):
+        for tic in axi.get_minor_ticks():
+            tic.tick1line.set_visible(False)
+            tic.tick2line.set_visible(False)
+    
+    plt.grid(which='minor', color='#CCCCCC', linewidth=0.3)
+    
+    # Goal x-y limits
+    ax.set_xlim(min_xy[is1], max_xy[is1])
+    ax.set_ylim(min_xy[is2], max_xy[is2])
+    
+    ax.set_title("Partition plot", fontsize=10)
+    
+    # Draw goal states
+    for goal in partition['goal']:
         
-    #### Partition plot v1
+        if all(partition['R']['center'][goal, list(i_hide)] == cut_value):
+        
+            goal_lower = partition['R']['low'][goal, [is1, is2]]
+            goalState = patches.Rectangle(goal_lower, width=width[is1], 
+                                  height=width[is2], color="green", 
+                                  alpha=0.3, linewidth=None)
+            ax.add_patch(goalState)
     
-    for k,poly in enumerate(allOriginPointsNested):
-
-        if model.n <= 2 or all( partition['R']['center'][k,[j0,j1]] == model.setup['partition']['origin'][[j0,j1]] ):
-
-            # Convert poly list to numpy array            
-            polyMat = np.array(poly)
-            
-            # Plot partitions and label
-            ax.text(partition['R']['center'][k,i0], partition['R']['center'][k,i1], k, \
-                      verticalalignment='center', horizontalalignment='center' )  
-            hull = ConvexHull(polyMat, qhull_options='QJ')
-            ax.plot(polyMat[hull.vertices,i0], polyMat[hull.vertices,i1], lw=1)
-            ax.plot([polyMat[hull.vertices[0],i0], polyMat[hull.vertices[-1],i0]], \
-                      [polyMat[hull.vertices[0],i1], polyMat[hull.vertices[-1],i1]], lw=1)
+    # Draw critical states
+    for crit in partition['critical']:
         
-    for k,target_point in enumerate(actions['center']['targets']):
-          
-        if model.n <= 2 or all( partition['R']['center'][k,[j0,j1]] == model.setup['partition']['origin'][[j0,j1]] ):
+        if all(partition['R']['center'][crit, list(i_hide)] == cut_value):
         
-            # Plot target point
-            plt.scatter(target_point[i0], target_point[i1], c='k', s=6)
+            critStateLow = partition['R']['low'][crit, [is1, is2]]
+            criticalState = patches.Rectangle(critStateLow, width=width[is1], 
+                                      height=width[is2], color="red", 
+                                      alpha=0.3, linewidth=None)
+            ax.add_patch(criticalState)
     
-    if setup.plotting['partitionPlot_plotHull']:
-        # Plot convex hull of the preimage of the target point
-        hull = ConvexHull(predecessor_set, qhull_options='QJ')
-        ax.plot(predecessor_set[hull.vertices,i0], 
-                predecessor_set[hull.vertices,i1], 'ro--', lw=1)
-        ax.plot([predecessor_set[hull.vertices[0],i0], 
-                 predecessor_set[hull.vertices[-1],i0]],
-                [predecessor_set[hull.vertices[0],i1], 
-                 predecessor_set[hull.vertices[-1],i1]], 'ro--', lw=1)
-        
+    with plt.rc_context({"font.size": 5}):        
+        # Draw every X-th label
+        if stateLabels:
+            skip = 1
+            for i in range(0, partition['nr_regions'], skip):
+                
+                if all(partition['R']['center'][i, list(i_hide)] == cut_value):
+                                
+                    ax.text(partition['R']['center'][i,is1], 
+                            partition['R']['center'][i,is2], i, \
+                            verticalalignment='center', 
+                            horizontalalignment='center' ) 
+    
+    if type(backreach) == np.ndarray:
+        draw_hull(backreach, color='blue')
+    
     # Set tight layout
     fig.tight_layout()
-                
+    
     # Save figure
-    filename = setup.directories['outputF']+str(prefix)+'_'+'partitioning'+ \
-                '_coords=('+str(i0)+','+str(i1)+')'
+    filename = setup.directories['output']+'partition_plot'
     for form in setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
-    
+        
     plt.show()
-    
-    # If number of dimensions is 3, create 3D plot
-    if model.n == 3:
-        
-        fig = plt.figure(figsize=cm2inch(5.33, 4))
-        ax = fig.add_subplot(111, projection="3d")
-        
-        for k,poly in enumerate(allOriginPointsNested):
-    
-            # Convert list to numpy array
-            poly = np.array(poly)
-            
-            # Create hull for this partition
-            hull = ConvexHull(poly)
-            
-            # Plot defining corner points
-            for t in range(2**model.n):
-                # If contained in the inverse image, plot green. blue otherwise
-                color = "b"
-                ax.scatter(poly[t,0], poly[t,1], poly[t,2], c=color)
-            
-        # Make axis label
-        for i in ["x", "y", "z"]:
-            eval("ax.set_{:s}label('{:s}')".format(i, i))
-    
-        # Set tight layout
-        fig.tight_layout()
-                    
-        # Save figure
-        filename = setup.directories['outputF']+'partitioning'
-        for form in setup.plotting['exportFormats']:
-            plt.savefig(filename+'.'+str(form), format=form, 
-                        bbox_inches='tight')
-        
-        plt.show()
-        
-    elif model.n > 3:
-        print('Number of dimensions is larger than 3, so partition plot omitted')
 
 def set_axes_equal(ax: plt.Axes):
     """

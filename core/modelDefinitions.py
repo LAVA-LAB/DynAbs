@@ -650,16 +650,16 @@ class building_1room_1control(master.LTI_master):
         self.setup['lump'] = 2
         
         # Let the user make a choice for the model dimension
-        _, gridType  = ui.user_choice('grid size',['19x20','40x40'])
+        _, scenario  = ui.user_choice('Select the scenario to run',['Underactuated (original)','Fully actuated (modified)'])
         
         # Authority limit for the control u, both positive and negative
         self.setup['control']['limits']['uMin'] = [15]
         self.setup['control']['limits']['uMax'] = [30]
-            
-        if gridType == 0:
-            # nrPerDim = [79, 40]
-            # width = [0.05, 0.1]
-            # goal = np.round([i for i in np.arange(20.7, 21.3001, 0.05)], 5)
+           
+        if scenario == 0:
+            # Number of time steps to lump together (can be used to make the model
+            # fully actuated)
+            self.setup['lump'] = 1
             
             partition_boundary    = np.array([[19.1, 22.9], [36, 40]])
             partition_number      = [19, 20]
@@ -667,9 +667,15 @@ class building_1room_1control(master.LTI_master):
             target_boundary       = np.array([[19.1, 22.9], [36, 40]])
             target_number         = [19, 40]
         else:
-            nrPerDim = [40, 40]
-            width = [0.1, 0.1]
-            goal = [20.75, 20.85, 20.95, 21.05, 21.15, 21.25]
+            # Number of time steps to lump together (can be used to make the model
+            # fully actuated)
+            self.setup['lump'] = 2
+            
+            partition_boundary    = np.array([[19.1, 22.9], [36, 40]])
+            partition_number      = [190, 600]
+            
+            target_boundary       = np.array([[19.1, 22.9], [36, 40]])
+            target_number         = [190, 600]
         
         self.setup['partition']['boundary'] = partition_boundary
         self.setup['partition']['number']   = partition_number
