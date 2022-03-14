@@ -86,6 +86,8 @@ if ScAb.setup.main['newRun'] is True:
     # Create actions and determine which ones are enabled
     ScAb.define_actions()
 
+assert False
+
 #-----------------------------------------------------------------------------
 # Code below is repeated every iteration of the iterative scheme
 #-----------------------------------------------------------------------------

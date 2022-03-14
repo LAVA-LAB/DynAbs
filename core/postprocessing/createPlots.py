@@ -144,7 +144,7 @@ def partition_plot(i_show, i_hide, setup, model, partition,
     fig.tight_layout()
     
     # Save figure
-    filename = setup.directories['output']+'partition_plot'
+    filename = setup.directories['outputF']+'partition_plot'
     for form in setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         

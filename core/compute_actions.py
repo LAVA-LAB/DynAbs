@@ -431,8 +431,9 @@ def defEnabledActions(setup, partition, actions, model, A_idx=None, verbose=True
     
         allRegionVertices = partition['allCornersFlat'] 
     
-    action_range = f7(np.concatenate(( partition['goal'],
-                       np.arange(actions['nr_actions']) )))
+    # action_range = f7(np.concatenate(( partition['goal'],
+    #                    np.arange(actions['nr_actions']) )))
+    action_range = np.arange(actions['nr_actions'])
     
     backreach = np.zeros((len(action_range), x_inv_area.shape[0],
                           x_inv_area.shape[1]))

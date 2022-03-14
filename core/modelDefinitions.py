@@ -675,7 +675,7 @@ class building_1room_1control(master.LTI_master):
             partition_number      = [190, 600]
             
             target_boundary       = np.array([[19.1, 22.9], [36, 40]])
-            target_number         = [190, 600]
+            target_number         = [76, 200]
         
         self.setup['partition']['boundary'] = partition_boundary
         self.setup['partition']['number']   = partition_number
