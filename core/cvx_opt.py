@@ -55,7 +55,7 @@ class abstraction_error(object):
         self.prob.solve(warm_start = True, solver='ECOS')
         
         if self.prob.status == 'infeasible':
-            return True, None, None, None
+            return True, None, None
         
         error = (self.A @ (vertices - self.x.value).T).T
         
@@ -68,4 +68,4 @@ class abstraction_error(object):
             error_pos = error.max(axis=0)
             error_neg = error.min(axis=0)
             
-            return False, self.x.value, error_pos, error_neg
+            return False, self.x.value, (error_neg, error_pos)

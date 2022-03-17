@@ -139,199 +139,7 @@ def computeScenarioBounds_sparse(setup, partition_setup, partition, trans, sampl
     
     return returnDict
 
-# def computeScenarioBounds_uncertain(setup, partition_setup, partition, trans, samples,
-#                                     brs, model):
-#     '''
-#     Compute the transition probability intervals
-
-#     Parameters
-#     ----------
-#     setup : dict
-#         Setup dictionary.
-#     partition_setup : dict
-#         Dictionary of the partition.
-#     partition : dict
-#         Dictionay containing all information of the partitioning.
-#     trans : dict
-#         Dictionary with all data for the transition probabilities
-#     samples : 2D Numpy array
-#         Numpy array, with every row being a sample of the process noise.
-
-#     Returns
-#     -------
-#     returnDict : dict
-#         Dictionary with the computed (intervals of) transition probabilities.
-
-#     '''
-    
-#     # Number of decision variables always equal to one
-#     d = 1
-#     Nsamples = setup.scenarios['samples']
-#     beta = setup.scenarios['confidence']
-    
-#     offset = np.concatenate([((A - model.A) @ brs.T).T for A in model.A_set])
-#     offset_min = np.min(offset, axis=0)
-#     offset_max = np.max(offset, axis=0)
-    
-#     # print('OFFSET:',offset_min,offset_max)
-    
-#     # Initialize counts array
-#     counts_low = np.zeros(partition_setup['number'])
-#     counts_upp = np.zeros(partition_setup['number'])
-    
-#     width       = partition_setup['width']
-#     nr_per_dim  = partition_setup['number']
-#     origin      = partition_setup['origin']
-    
-#     imin, iMin = computeRegionIdx(samples + offset_min, width, nr_per_dim, origin)
-#     imax, iMax = computeRegionIdx(samples + offset_max, width, nr_per_dim, origin,
-#                                   borderOutside=[True]*len(samples))
-    
-#     counts_absorb_low = 0
-#     counts_absorb_upp = 0
-    
-#     counts_goal_low = 0
-#     counts_goal_upp = 0
-    
-#     counts_critical_low = 0
-#     counts_critical_upp = 0
-    
-#     print('TEST')
-    
-#     for s in range(Nsamples):
-        
-#         # If all indices are outside the partition, then it is certain that 
-#         # this sample is outside the partition
-#         if any([imax[s][d] < 0 or imin[s][d] > partition_setup['number'][d] for d in range(model.n)]):
-#             # print('Fully outside; imin:',imin[s],'imax:',imax[s])
-#             counts_absorb_low += 1
-#             counts_absorb_upp += 1
-            
-#         # If not fully outside, we now that at least some samples are within 
-#         # the partition
-#         else:
-            
-#             # Create slice and add one to the upper bound
-#             slices = tuple(map(slice, iMin[s], iMax[s]+1))
-            
-#             # If we precisely know where the sample is, add one to the lower
-#             # bound of the count as well
-#             if all(imin[s] == imax[s]):
-#                 counts_low[slices] += 1
-#                 counts_upp[slices] += 1
-                
-#             else:
-#                 counts_upp[slices] += 1
-                    
-#                 # If the sample is partially outside the partition, then also add
-#                 # to the upper bound count of the absorbing region
-#                 if any([imin[s][d] < 0 or imax[s][d] > partition_setup['number'][d] for d in range(model.n)]):
-                
-#                     # print('Partially outside; imin:',imin[s],'imax:',imax[s])
-#                     counts_absorb_upp += 1
-                    
-#             index_tuples = set(itertools.product(*map(range, imin[s], imax[s]+1)))
-            
-#             # Check if all are goal states
-#             if index_tuples.subset( partition['goal_idx'] ):
-#                 counts_goal_low += 1
-#                 counts_goal_upp += 1
-                
-#             # Check if all are critical states
-#             elif index_tuples.subset( partition['critical_idx'] ):
-#                 counts_critical_low += 1
-#                 counts_critical_upp += 1
-                
-#             # Otherwise, check if part of them are goal/critical states
-#             else:
-#                 if not index_tuples.isdisjoint( partition['goal_idx'] ):
-#                     counts_critical_low += 1
-                    
-#                 if not index_tuples.isdisjoint( partition['goal_idx'] ):
-#                     counts_critical_low += 1
-                    
-#     print('counts_goal:', counts_goal_low,'-', counts_goal_upp)
-            
-#     # Number of samples not in any region (i.e. in absorbing state)
-#     deadlock_low = 1 - trans['memory'][counts_absorb_low][1]
-#     if counts_absorb_upp > Nsamples:
-#         deadlock_upp = 1
-#     else:
-#         deadlock_upp = 1 - trans['memory'][counts_absorb_upp][0]
-
-#     counts = {}
-
-#     # Convert from numpy array of counts to a sparse dictionary
-#     for i, (idx, cu) in enumerate(np.ndenumerate(counts_upp)):
-        
-#         if cu > 0:
-#             state = partition['R']['idx'][idx]
-#             counts[state] = (counts_low[idx], cu)
-
-#     # Initialize vectors for probability bounds
-#     probability_low = np.zeros(len(counts))
-#     probability_upp = np.zeros(len(counts))
-#     probability_approx = np.zeros(len(counts))
-    
-#     successor_idxs = np.zeros(len(counts), dtype=int)
-
-#     # Enumerate over all the non-zero bins
-#     for i, (region,count) in enumerate(counts.items()):
-        
-#         k_upp = Nsamples - count[0]
-#         k_low = Nsamples - count[1]
-        
-#         if k_upp > Nsamples:
-#             probability_low[i] = 0                
-#         else:
-#             probability_low[i] = trans['memory'][k_upp][0]
-#         probability_upp[i] = trans['memory'][k_low][1]
-        
-#         successor_idxs[i] = int(region)
-        
-#         # Point estimate transition probability (count / total)
-#         probability_approx[i] = np.mean(count) / Nsamples
-    
-#     nr_decimals = 5
-    
-#     #### PROBABILITY INTERVALS
-#     probs_lb = floor_decimal(probability_low, nr_decimals)
-#     probs_ub = floor_decimal(probability_upp, nr_decimals)
-    
-#     # Create interval strings (only entries for prob > 0)
-#     interval_strings = ["["+
-#                       str(floor_decimal(max(1e-4, lb),5))+","+
-#                       str(floor_decimal(min(1,    ub),5))+"]"
-#                       for (lb, ub) in zip(probs_lb, probs_ub)]
-    
-#     # Compute deadlock probability intervals
-#     deadlock_lb = floor_decimal(deadlock_low, nr_decimals)
-#     deadlock_ub = floor_decimal(deadlock_upp, nr_decimals)
-    
-#     deadlock_string = '['+ \
-#                        str(floor_decimal(max(1e-4, deadlock_lb),5))+','+ \
-#                        str(floor_decimal(min(1,    deadlock_ub),5))+']'
-    
-#     #### POINT ESTIMATE PROBABILITIES
-#     probability_approx = np.round(probability_approx, nr_decimals)
-    
-#     # Create approximate prob. strings (only entries for prob > 0)
-#     approx_strings = [str(p) for p in probability_approx]
-    
-#     # Compute approximate deadlock transition probabilities
-#     deadlock_approx = np.round(1-sum(probability_approx), nr_decimals)
-    
-#     returnDict = {
-#         'interval_strings': interval_strings,
-#         'successor_idxs': successor_idxs,
-#         'approx_strings': approx_strings,
-#         'deadlock_interval_string': deadlock_string,
-#         'deadlock_approx': deadlock_approx,
-#     }
-    
-#     return returnDict
-
-def computeScenarioBounds_error(setup, partition_setup, partition, trans, samples, error, exclude):
+def computeScenarioBounds_error(setup, partition_setup, partition, trans, samples, error, exclude, verbose=False):
     '''
     Compute the transition probability intervals
 
@@ -381,6 +189,10 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     counts_critical_upp = 0
     
     nrPerDim = np.array(partition_setup['number'])
+    
+    if verbose:
+        print('imin:', imin)
+        print('imax:', imax)
     
     # Compute number of samples fully outside of partition.
     # If all indices are outside the partition, then it is certain that 
@@ -456,15 +268,23 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     # Convert from numpy array of counts to a sparse array
     # But remove any transitions to goal/critical states (we account for these
     # separately)
-    counts = np.array([[partition['R']['idx'][idx], counts_low[idx], cu] 
-                       for idx, cu in np.ndenumerate(counts_upp) if cu > 0 
-                       and idx not in partition['goal_idx'] and idx not in partition['critical_idx']], 
-                      dtype = int)
     
-    counts_head = np.array([[-2, counts_critical_low, counts_critical_upp],
-                            [-1, counts_goal_low, counts_goal_upp]])
+    # print('abs',counts_absorb_upp)
+    # print('crit',counts_critical_upp)
+    # print('goal',counts_goal_upp)
+    # print(counts_upp)
     
-    counts = np.vstack((counts_head, counts))
+    counts_nonzero = [[partition['R']['idx'][idx], counts_low[idx], cu] 
+                        for idx, cu in np.ndenumerate(counts_upp) if cu > 0 
+                        and idx not in partition['goal_idx'] 
+                        and idx not in partition['critical_idx']]
+    
+    counts_header = [[-2, counts_critical_low, counts_critical_upp],
+                     [-1, counts_goal_low, counts_goal_upp]]
+    
+    counts = np.array(counts_header + counts_nonzero, dtype = int)
+    
+    # print(counts)
     
     # Number of samples not in any region (i.e. in absorbing state)
     deadlock_low = 1 - trans['memory'][counts_absorb_low][1]

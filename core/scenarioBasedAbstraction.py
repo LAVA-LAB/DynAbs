@@ -29,7 +29,7 @@ import pandas as pd             # Import Pandas to store data in frames
 from .define_model import find_connected_components
 from .define_partition import definePartitions, defStateLabelSet
 from .compute_probabilities import computeScenarioBounds_sparse, \
-    computeScenarioBounds_error
+    computeScenarioBounds_error, plot_transition
 from .commons import tic, ticDiff, tocDiff, table, printWarning
 from .compute_actions import defEnabledActions, defEnabledActions_UA, \
     def_all_BRS
@@ -192,7 +192,7 @@ class Abstraction(object):
         self.actions = {}
         
         # Create the target point for every action (= every state)
-        if self.model.setup['targets']['number'] == 'auto':
+        if type(self.model.setup['targets']['number']) == str:
             # Set default target points to the center of every region
             self.model.setup['targets']['number'] = self.model.setup['partition']['number']
             self.model.setup['targets']['width'] = self.model.setup['partition']['width']
@@ -242,9 +242,6 @@ class Abstraction(object):
             
                 A[i], A_inv[i], CE[i] = \
                     defEnabledActions_UA(self.flags, self.partition, self.actions, self.model, dn, dp)
-                    
-                    
-            self.CE = CE
             
             ### Compositional model building
                     
@@ -321,14 +318,15 @@ class Abstraction(object):
                     'neg': np.sum([mats[z] @ valsB[z]['neg'] for z in range(len(valsB))], axis=0)
                     }
         
-            self.CE = CE
-        
         ### 3 ###
         else:
             nr_A, self.actions['enabled'], \
              self.actions['enabled_inv'], _ = defEnabledActions(self.setup, self.partition, self.actions, self.model)
               
-        a = np.round(self.actions['nr_actions'] / 2).astype(int)
+        if 'partition_plot_action' in self.model.setup:
+            a = self.model.setup['partition_plot_action']
+        else:
+            a = np.round(self.actions['nr_actions'] / 2).astype(int)
         partition_plot((0,1), (), self.setup, self.model, self.partition,
                        np.array([]), self.actions['backreach'][a])
                 
@@ -653,6 +651,14 @@ class scenarioBasedAbstraction(Abstraction):
                     exclude = exclude_samples(samples, 
                                       self.model.setup['partition']['width'])
                     
+                    a_plot = np.round(np.mean(self.partition['nr_regions'])).astype(int)
+                    if a == a_plot:
+                        
+                        plot_transition(samples, self.actions['control_error'][a], 
+                            (0,1), (), self.setup, self.model, self.partition,
+                            np.array([]), self.actions['backreach'][a])
+                        
+                    
                     prob[a] = computeScenarioBounds_error(self.setup, 
                           self.model.setup['partition'], 
                           self.partition, self.trans, samples, self.actions['control_error'][a], exclude)
@@ -663,15 +669,6 @@ class scenarioBasedAbstraction(Abstraction):
                         tab.print_row([k, a, 
                            'Probabilities computed (transitions: '+
                            str(nr_transitions)+')'])
-                        
-                    from .compute_probabilities import plot_transition
-                    
-                    a_plot = self.actions['T']['c_tuple'][(21,38.05)]
-                    if a == a_plot:
-                        
-                        plot_transition(samples, self.actions['control_error'][a], 
-                            (0,1), (), self.setup, self.model, self.partition,
-                            np.array([]), self.actions['backreach'][a])
                 
                 else:
                     

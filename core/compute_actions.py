@@ -304,9 +304,7 @@ def defEnabledActions_UA(flags, partition, actions, model, dim_n=False, dim_p=Fa
                 vertices = np.unique(partition['allCorners'][s][:, dim_n], axis=0)
                 
                 # Compute abstraction error
-                flag, p, c_error_neg, c_error_pos = abstr_error.solve(
-                        vertices, 
-                        BRS)
+                flag, p, c_error = abstr_error.solve(vertices, BRS)
                 
                 if not flag:
                     
@@ -319,12 +317,12 @@ def defEnabledActions_UA(flags, partition, actions, model, dim_n=False, dim_p=Fa
                             e_error_neg = e_error.min(axis=0)
                             e_error_pos = e_error.max(axis=0)
                             
-                        error_neg = c_error_neg + e_error_neg
-                        error_pos = c_error_pos + e_error_pos
+                        error_neg = c_error[0] + e_error_neg
+                        error_pos = c_error[1] + e_error_pos
                         
                     else:
-                        error_neg = c_error_neg
-                        error_pos = c_error_pos
+                        error_neg = c_error[0]
+                        error_pos = c_error[1]
                     
                     if s_tup in enabled:
                         enabled[s_tup].add(a_tup)
@@ -337,13 +335,10 @@ def defEnabledActions_UA(flags, partition, actions, model, dim_n=False, dim_p=Fa
                         enabled_inv[a_tup] = {s_tup}
                     
                     if a_tup in control_error:
-                        control_error[a_tup]['pos'] = np.maximum(error_neg, control_error[a_tup]['pos'])
-                        control_error[a_tup]['neg'] = np.minimum(error_pos, control_error[a_tup]['neg'])
+                        control_error[a_tup]['neg'] = np.minimum(error_neg, control_error[a_tup]['neg'])
+                        control_error[a_tup]['pos'] = np.maximum(error_pos, control_error[a_tup]['pos'])
                     else:
                         control_error[a_tup] = {'neg': error_neg, 'pos': error_pos}
-                    
-                # else:
-                #     print('Do not enable action',a,'in state',s,'because the error is too large:',err_pos,err_neg)
                 
     return enabled, enabled_inv, control_error
 

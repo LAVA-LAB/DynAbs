@@ -51,9 +51,13 @@ def draw_hull(points, color, linewidth=0.1):
         
         plt.fill(hull_pts[:,0], hull_pts[:,1], fill=False, edgecolor=color, lw=linewidth)
         
+        print('Convex hull plotted')
+        
     except:
         plt.plot(points[:,0], points[:,1],
                  color=color, lw=linewidth)
+        
+        print('Line plotted')
 
 def partition_plot(i_show, i_hide, setup, model, partition, 
                     cut_value, backreach=False, stateLabels=False):
@@ -72,33 +76,47 @@ def partition_plot(i_show, i_hide, setup, model, partition,
     plt.xlabel('$x$', labelpad=0)
     plt.ylabel('$y$', labelpad=0)
 
-    width = np.array(model.setup['partition']['width'])
-    domainMax = width * np.array(model.setup['partition']['number']) / 2
+    width = model.setup['partition']['width']
+    number = model.setup['partition']['number']
     
-    min_xy = model.setup['partition']['origin'] - domainMax
-    max_xy = model.setup['partition']['origin'] + domainMax
+    min_xy = model.setup['partition']['boundary'][:,0]
+    max_xy = model.setup['partition']['boundary'][:,1]
     
-    major_ticks_x = np.arange(min_xy[is1]+1, max_xy[is1]+1, 4*width[is1])
-    major_ticks_y = np.arange(min_xy[is2]+1, max_xy[is2]+1, 4*width[is2])
+    # Compute where to show ticks on the axis
+    ticks_x = np.round(np.linspace(min_xy[is1], max_xy[is1], number[is1]+1), 4)
+    ticks_y = np.round(np.linspace(min_xy[is2], max_xy[is2], number[is2]+1), 4)
     
-    minor_ticks_x = np.arange(min_xy[is1], max_xy[is1]+1, width[is1])
-    minor_ticks_y = np.arange(min_xy[is2], max_xy[is2]+1, width[is2])
+    show_every = np.round(number / 5)
+    ticks_x_labels = [v if i % show_every[is1] == 0 else '' for i,v in enumerate(ticks_x)]
+    ticks_y_labels = [v if i % show_every[is2] == 0 else '' for i,v in enumerate(ticks_y)]
     
-    ax.set_xticks(major_ticks_x)
-    ax.set_yticks(major_ticks_y)
-    ax.set_xticks(minor_ticks_x, minor=True)
-    ax.set_yticks(minor_ticks_y, minor=True)
+    # Set ticks and tick labels
+    ax.set_xticks(ticks_x)
+    ax.set_yticks(ticks_y)
+    ax.set_xticklabels(ticks_x_labels)
+    ax.set_yticklabels(ticks_y_labels)
     
-    for axi in (ax.xaxis, ax.yaxis):
-        for tic in axi.get_minor_ticks():
+    # x-axis
+    for i, tic in enumerate(ax.xaxis.get_major_ticks()):
+        if ticks_x_labels[i] == '':
             tic.tick1line.set_visible(False)
             tic.tick2line.set_visible(False)
     
-    plt.grid(which='minor', color='#CCCCCC', linewidth=0.3)
+    # y-axis
+    for i, tic in enumerate(ax.yaxis.get_major_ticks()):
+        if ticks_y_labels[i] == '':
+            tic.tick1line.set_visible(False)
+            tic.tick2line.set_visible(False)
+    
+    # Show gridding of the state space
+    plt.grid(which='major', color='#CCCCCC', linewidth=0.3)
     
     # Goal x-y limits
     ax.set_xlim(min_xy[is1], max_xy[is1])
     ax.set_ylim(min_xy[is2], max_xy[is2])
+    
+    # ax.set_xlim(19.1, 22.5)
+    # ax.set_ylim(37.48, 37.54)
     
     ax.set_title("Partition plot", fontsize=10)
     

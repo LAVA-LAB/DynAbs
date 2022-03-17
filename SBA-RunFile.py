@@ -86,8 +86,6 @@ if ScAb.setup.main['newRun'] is True:
     # Create actions and determine which ones are enabled
     ScAb.define_actions()
 
-assert False
-
 #-----------------------------------------------------------------------------
 # Code below is repeated every iteration of the iterative scheme
 #-----------------------------------------------------------------------------
@@ -99,8 +97,7 @@ case_id = 0
 exporter = result_exporter()
 
 # For every iteration... (or once, if iterations are disabled)
-while (ScAb.setup.scenarios['samples'] <= ScAb.setup.scenarios['samples_max'] \
-    and case_id < ScAb.setup.scenarios['maxIters']):
+while case_id < ScAb.setup.scenarios['maxIters']:
         
     # Shortcut to the number of samples
     N = ScAb.setup.scenarios['samples']        
@@ -172,6 +169,9 @@ while (ScAb.setup.scenarios['samples'] <= ScAb.setup.scenarios['samples_max'] \
         case_id += 1
         ScAb.setup.scenarios['samples'] = \
             int(ScAb.setup.scenarios['samples']*ScAb.setup.scenarios['gamma'])
+        
+        if ScAb.setup.scenarios['samples'] > ScAb.setup.scenarios['samples_max']:
+            break
         
     else:
         print('\nITERATIVE SCHEME DISABLED, SO TERMINATE LOOP')

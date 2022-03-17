@@ -188,10 +188,10 @@ class mdp(object):
         for s in progressbar(range(self.nr_regions), redirect_stdout=True):
             
             if s in partition['goal']:
-                print(' ---- Skip',s,'because it is a goal region')
+                # print(' ---- Skip',s,'because it is a goal region')
                 continue
             if s in partition['critical']:
-                print(' ---- Skip',s,'because it is a critical region')
+                # print(' ---- Skip',s,'because it is a critical region')
                 continue
             
             if s % printEvery == 0 and verbose:

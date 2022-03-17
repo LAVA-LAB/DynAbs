@@ -48,46 +48,53 @@ class robot(master.LTI_master):
         self.setup['lump'] = 1
         
         # Authority limit for the control u, both positive and negative
-        self.setup['control']['limits']['uMin'] =  [-4]
-        self.setup['control']['limits']['uMax'] =  [4]
+        self.setup['control']['limits']['uMin'] =  [-3]
+        self.setup['control']['limits']['uMax'] =  [3]
         
-        mode = 1
+        mode = 0
         
         # Partition size
         if mode == 0:
-            self.setup['partition']['nrPerDim']  = [11, 11]
-            self.setup['partition']['width']     = [2, 2]
-            self.setup['partition']['origin']    = [0, 0]
+            self.setup['partition']['boundary']  = np.array([[-11, 11], [-11, 11]])
+            self.setup['partition']['number']  = [11, 11]
+            
+            self.setup['specification']['goal'] = [
+                np.array([[3, 9], 'all'])
+                ]
+            
+            self.setup['max_control_error'] = np.array([2, 10])
+            
         elif mode == 1:
-            self.setup['partition']['nrPerDim']  = [21, 21]
-            self.setup['partition']['width']     = [1, 1]
-            self.setup['partition']['origin']    = [0, 0]
+            self.setup['partition']['boundary']  = np.array([[-10, 10.5], [-10.5, 10.5]])
+            self.setup['partition']['number']  = [21, 21]
+            
+            self.setup['specification']['goal'] = [
+                np.array([[5, 9], 'all'])
+                ]
+            
+            self.setup['max_control_error'] = np.array([2, 10])
+            
         else:
-            self.setup['partition']['nrPerDim']  = [21, 21]
-            self.setup['partition']['width']     = [1, 1]
-            self.setup['partition']['origin']    = [0, 0]
+            self.setup['partition']['boundary']  = np.array([[-10.5, 10.5], [-10.5, 10.5]])
+            self.setup['partition']['number']  = [42, 42]
+            
+            self.setup['specification']['goal'] = [
+                np.array([[7.25, 9.25], 'all'])
+                ]
+            
+            self.setup['max_control_error'] = np.array([1, 10])
         
         # Actions per dimension (if 'auto', equal to nr of regions)
-        self.setup['targets']['nrPerDim']    = 'auto'
-        self.setup['targets']['domain']      = 'auto'
+        self.setup['targets']['boundary']    = self.setup['partition']['boundary']
+        self.setup['targets']['number']      = self.setup['partition']['number']
 
-        # Specification information
-        if mode == 0:
-            self.setup['specification']['goal']           = setStateBlock(self.setup['partition'], a=[4,6,8], b='all')
-        elif mode == 1:
-            self.setup['specification']['goal']           = setStateBlock(self.setup['partition'], a=[3.5, 4.5, 5.5, 6.5, 7.5, 8.5], b='all')
-        else:
-            self.setup['specification']['goal']           = setStateBlock(self.setup['partition'], a=[-2.5, -1.5, -0.5, 0.5, 1.5, 2.5], b=[-2.5, -1.5, -0.5, 0.5, 1.5, 2.5])
-        
-        self.setup['specification']['critical']       = [[]] #setStateBlock(self.setup['partition'], a=[-6,-4], b=[-4,-2]) #[[]]
+        self.setup['specification']['critical'] = None #setStateBlock(self.setup['partition'], a=[-6,-4], b=[-4,-2]) #[[]]
         
         # Discretization step size
         self.tau = 2
         
         # Step-bound on property
         self.setup['endTime'] = 32 
-    
-        self.setup['max_control_error'] = np.array([2, 10])
     
     def setModel(self, observer):
         '''
@@ -160,35 +167,37 @@ class UAV(master.LTI_master):
         if self.modelDim == 2:
     
             # Authority limit for the control u, both positive and negative
-            self.setup['control']['limits']['uMin'] = [-4, -4]
-            self.setup['control']['limits']['uMax'] = [4, 4]        
+            self.setup['control']['limits']['uMin'] = [-3, -3]
+            self.setup['control']['limits']['uMax'] = [3, 3]        
     
             self.setup['max_control_error'] = np.array([2, 10, 2, 10])
     
             V = 1
     
             if V == 1:
-    
-                # Partition size
-                self.setup['partition']['nrPerDim']  = [9,9,9,9]
-                self.setup['partition']['width']     = [2, 2, 2, 2]
-                self.setup['partition']['origin']    = [0, 0, 0, 0]
                 
-                # Actions per dimension (if 'auto', equal to nr of regions)
-                self.setup['targets']['nrPerDim']    = 'auto'
-                self.setup['targets']['domain']      = 'auto'
+                # Partition size
+                self.setup['partition']['boundary']  = np.array([[-11, 11], 
+                                                                 [-9, 9], 
+                                                                 [-11, 11], 
+                                                                 [-9, 9]])
+                self.setup['partition']['number']  = [11, 9, 11, 9]
+                
+                self.setup['targets']['boundary']    = self.setup['partition']['boundary']
+                self.setup['targets']['number']      = self.setup['partition']['number']
                 
                 # Specification information
-                self.setup['specification']['goal'] = setStateBlock(self.setup['partition'], a=[2,4,6], b='all', c=[2,4,6], d='all')
+                self.setup['specification']['goal'] = [
+                    np.array([[2, 6], 'all', [2, 6], 'all'])
+                    ]
                 
-                # self.setup['extra_targets'] = setStateBlock(self.setup['partition'], a=[5], b='all', c=[5], d='all')
+                self.setup['specification']['critical'] = None
+                # np.vstack((
+                #     setStateBlock(self.setup['partition'], a=[-6,-4,-2], b='all', c=[2], d='all'),
+                #     setStateBlock(self.setup['partition'], a=[4,6], b='all', c=[-8,-6], d='all')
+                #     ))
                 
-                self.setup['specification']['critical'] = np.vstack((
-                    setStateBlock(self.setup['partition'], a=[-6,-4,-2], b='all', c=[2], d='all'),
-                    setStateBlock(self.setup['partition'], a=[4,6], b='all', c=[-8,-6], d='all')
-                    ))
-                
-                self.setup['x0'] = setStateBlock(self.setup['partition'], a=[-6], b=[0], c=[-6], d=[0])
+                self.setup['x0'] = np.array([-6,0,-6,0])
                 
             elif V == 2:
                 
@@ -676,14 +685,14 @@ class building_1room_1control(master.LTI_master):
             
             target_boundary       = np.array([[19.1, 22.9], [36, 40]])
             target_number         = [76, 200]
+            
+            self.setup['partition_plot_action'] = 7700
         
         self.setup['partition']['boundary'] = partition_boundary
         self.setup['partition']['number']   = partition_number
         self.setup['targets']['boundary']   = target_boundary
         self.setup['targets']['number']     = target_number
         
-        # Specification information
-        #self.setup['specification']['goal'] = setStateBlock(self.setup['partition'], a=goal, b='all')
         
         self.setup['specification']['goal'] = [
             np.array([[20.8, 21.2], 'all'])
