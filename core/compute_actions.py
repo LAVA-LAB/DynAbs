@@ -311,14 +311,17 @@ def defEnabledActions_UA(flags, partition, actions, model, dim_n=False, dim_p=Fa
                     # Check if we also have to account for the epistemic error
                     if flags['parametric_A']:
                     
+                        e_error_neg = np.zeros((len(model.A_set), model.n))
+                        e_error_pos = np.zeros((len(model.A_set), model.n))
+                    
                         # Compute epistemic error
-                        for A_vertex in model.A_set:
+                        for i,A_vertex in enumerate(model.A_set):
                             e_error = ((A_vertex - model.A) @ vertices.T).T
-                            e_error_neg = e_error.min(axis=0)
-                            e_error_pos = e_error.max(axis=0)
+                            e_error_neg[i] = e_error.min(axis=0)
+                            e_error_pos[i] = e_error.max(axis=0)
                             
-                        error_neg = c_error[0] + e_error_neg
-                        error_pos = c_error[1] + e_error_pos
+                        error_neg = c_error[0] + e_error_neg.min(axis=0)
+                        error_pos = c_error[1] + e_error_pos.max(axis=0)
                         
                     else:
                         error_neg = c_error[0]

@@ -178,10 +178,10 @@ class UAV(master.LTI_master):
                 
                 # Partition size
                 self.setup['partition']['boundary']  = np.array([[-11, 11], 
-                                                                 [-9, 9], 
+                                                                 [-7, 7], 
                                                                  [-11, 11], 
-                                                                 [-9, 9]])
-                self.setup['partition']['number']  = [11, 9, 11, 9]
+                                                                 [-7, 7]])
+                self.setup['partition']['number']  = [11, 7, 11, 7]
                 
                 self.setup['targets']['boundary']    = self.setup['partition']['boundary']
                 self.setup['targets']['number']      = self.setup['partition']['number']
@@ -654,10 +654,6 @@ class building_1room_1control(master.LTI_master):
         # Initialize superclass
         master.LTI_master.__init__(self)
         
-        # Number of time steps to lump together (can be used to make the model
-        # fully actuated)
-        self.setup['lump'] = 2
-        
         # Let the user make a choice for the model dimension
         _, scenario  = ui.user_choice('Select the scenario to run',['Underactuated (original)','Fully actuated (modified)'])
         
@@ -756,15 +752,36 @@ class building_1room_1control(master.LTI_master):
                 [ (k0_a*w*Tswb) ],
                 ])
         
-        Gears = True
-        if Gears:        
-            self.A, self.B, self.Q = discretizeGearsMethod(A_cont, B_cont, W_cont, self.tau)
-            
-        else:
-            self.A = np.eye(2) + self.tau*A_cont
-            self.B = B_cont*self.tau
-            self.Q = W_cont*self.tau
+        self.A = np.eye(2) + self.tau*A_cont
         
+        self.B = B_cont*self.tau
+        self.Q = W_cont*self.tau
+        
+        if self.setup['lump'] == 1:
+          # Let the user make a choice for the model dimension
+          _, uncertainty  = ui.user_choice('Do you want to enable uncertainty about the radiator power output?',['No', 'Yes'])
+        
+          if uncertainty == 1:
+            
+            f1 = 0.75
+            A0_cont      = np.zeros((2,2));
+            A0_cont[0,0] = -(1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']))-((f1*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])) - ((m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz']))
+            A0_cont[0,1] = (f1*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])
+            A0_cont[1,0] = (k1_a)
+            A0_cont[1,1] = -(k0_a*w) - k1_a
+            
+            f2 = 1.25
+            A1_cont      = np.zeros((2,2));
+            A1_cont[0,0] = -(1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']))-((f2*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])) - ((m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz']))
+            A1_cont[0,1] = (f2*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])
+            A1_cont[1,0] = (k1_a)
+            A1_cont[1,1] = -(k0_a*w) - k1_a
+            
+            self.A_set = [
+                np.eye(2) + self.tau*A0_cont,
+                np.eye(2) + self.tau*A1_cont
+                        ]
+            
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)
