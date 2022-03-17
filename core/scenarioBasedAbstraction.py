@@ -648,8 +648,14 @@ class scenarioBasedAbstraction(Abstraction):
                     
                 if self.flags['underactuated']:
                     
-                    exclude = exclude_samples(samples, 
-                                      self.model.setup['partition']['width'])
+                    # Checking which samples cannot be contained in a region
+                    # at the same time is of quadratic complexity in the number
+                    # of samples. Thus, we discable this above a certain limit.
+                    if self.setup.scenarios['samples'] > 400:
+                        exclude = []
+                    else:
+                        exclude = exclude_samples(samples, 
+                                          self.model.setup['partition']['width'])
                     
                     a_plot = np.round(np.mean(self.partition['nr_regions'])).astype(int)
                     if a == a_plot:

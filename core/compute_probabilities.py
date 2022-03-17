@@ -164,6 +164,10 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     '''
     
     # tocDiff(False)
+    if len(exclude) > 0:
+        check_exclude = True
+    else:
+        check_exclude = False
     
     # Number of decision variables always equal to one
     Nsamples = setup.scenarios['samples']
@@ -214,65 +218,58 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
             counts_low[key] += 1
             counts_upp[key] += 1
             
+    iMin_rem = iMin[~in_single_region & ~fully_out]
+    iMax_rem = iMax[~in_single_region & ~fully_out]
+    c_rem    = Nrange[~in_single_region & ~fully_out]
+            
     # For the remaining samples, only increment the upper bound count
-    for c,(i,j) in enumerate(zip(iMin, iMax)):
-        # If it is not in a single region and not fully outside a region
-        if not in_single_region[c] and not fully_out[c]:
-            counts_upp[ tuple(map(slice, i, j+1)) ] += 1
+    # for c,(i,j) in enumerate(zip(iMin, iMax)):
+    for c,i,j in zip(c_rem, iMin_rem, iMax_rem):
+        counts_upp[ tuple(map(slice, i, j+1)) ] += 1
+        
+        if check_exclude:
+          for key in itertools.product(*map(np.arange, i, j+1)):
             
-            for key in itertools.product(*map(np.arange, i, j+1)):
+            # # Skip if the current state is a goal or critical state (we 
+            # # account for these samples below)
+            # if key not in partition['goal_idx'] and key not in partition['critical_idx']:
                 
-                # # Skip if the current state is a goal or critical state (we 
-                # # account for these samples below)
-                # if key not in partition['goal_idx'] and key not in partition['critical_idx']:
+                # If first occurence of this region, this just add it
+                if key not in i_excl:
+                    i_excl[key] = {c}
                     
-                    # If first occurence of this region, this just add it
-                    if key not in i_excl:
-                        i_excl[key] = {c}
+                # If not first occurence of region
+                else:
+                    # Check if there is a conflicting sample in there, then 
+                    # skip this region (ONE TIME!)
+                    union = i_excl[key] & exclude[c]
+                    
+                    if len(union) == 0:
+                        i_excl[key].add(c)
                         
-                    # If not first occurence of region
                     else:
-                        # Check if there is a conflicting sample in there, then 
-                        # skip this region (ONE TIME!)
-                        union = i_excl[key] & exclude[c]
-                        
-                        if len(union) == 0:
-                            i_excl[key].add(c)
-                            
-                        else:
-                            counts_upp[key] -= 1
-                            i_excl[key].pop()
-                    
-            index_tuples = set(itertools.product(*map(range, i, j+1)))
+                        counts_upp[key] -= 1
+                        i_excl[key].pop()
+                
+        index_tuples = set(itertools.product(*map(range, i, j+1)))
+        
+        # Check if all are goal states
+        if index_tuples.issubset( partition['goal_idx'] ):
+            counts_goal_low += 1
+            counts_goal_upp += 1
             
-            # Check if all are goal states
-            if index_tuples.issubset( partition['goal_idx'] ):
-                counts_goal_low += 1
+        # Check if all are critical states
+        elif index_tuples.issubset( partition['critical_idx'] ):
+            counts_critical_low += 1
+            counts_critical_upp += 1
+            
+        # Otherwise, check if part of them are goal/critical states
+        else:
+            if not index_tuples.isdisjoint( partition['goal_idx'] ):
                 counts_goal_upp += 1
                 
-            # Check if all are critical states
-            elif index_tuples.issubset( partition['critical_idx'] ):
-                counts_critical_low += 1
+            if not index_tuples.isdisjoint( partition['critical_idx'] ):
                 counts_critical_upp += 1
-                
-            # Otherwise, check if part of them are goal/critical states
-            else:
-                if not index_tuples.isdisjoint( partition['goal_idx'] ):
-                    counts_goal_upp += 1
-                    
-                if not index_tuples.isdisjoint( partition['critical_idx'] ):
-                    counts_critical_upp += 1
-                    
-    # print('counts_goal:', counts_goal_low,'-', counts_goal_upp)
-
-    # Convert from numpy array of counts to a sparse array
-    # But remove any transitions to goal/critical states (we account for these
-    # separately)
-    
-    # print('abs',counts_absorb_upp)
-    # print('crit',counts_critical_upp)
-    # print('goal',counts_goal_upp)
-    # print(counts_upp)
     
     counts_nonzero = [[partition['R']['idx'][idx], counts_low[idx], cu] 
                         for idx, cu in np.ndenumerate(counts_upp) if cu > 0 
