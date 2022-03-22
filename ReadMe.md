@@ -2,7 +2,7 @@
 
 This artefact contains the source code for our AAAI 2022 paper:
 
-<center>Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous Systems with Non-Gaussian Noise. AAAI 2022</center>
+[Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous Systems with Non-Gaussian Noise. AAAI 2022](https://arxiv.org/pdf/2110.12662.pdf)
 
 This folder contains everything that is needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM. Using the instructions below, the experiments may be replicated on a virtual machine, or on your own machine.
 
@@ -180,24 +180,51 @@ Here, the basic setup of the application is defined. This includes the following
 ### SetModel function
 
 In the `setModel` function, the linear dynamical system is defined in the following form (see the submitted paper for details): 
-$\mathbf{x}_{k+1} = A \mathbf{x}_k + B \mathbf{u}_k + \mathbf{q}_k + \mathbf{w}_k,$
-where:
 
-- `A` is an n x n matrix.
-- `B` is an n x p matrix.
-- `Q` is a n x 1 column vector that reflects the additive deterministic disturbance (q-term in the equation above).
-- If Gaussian noise is used, `noise['w_cov']` is the covariance matrix of the w-term in the equation above. Note that non-Gaussian noise (from the Dryden gust model) is used for the UAV case.
+```math
+\mathbf{x}_{k+1} = A \mathbf{x}_k + B \mathbf{u}_k + \mathbf{q}_k + \mathbf{w}_k,
+```
 
-Note that is the current version of the codes is not compatible (yet) with partial observability (i.e. defining an observer). Thus, make sure to set the argument `observer = False`.
+with state $`\mathbf{x}_k`$ and control input $`\mathbf{u}_k`$ at time $`k`$, and where:
+
+- $`A`$ is a fixed n x n matrix.
+- $`B`$ is a fixed n x p matrix.
+- $`q_k`$ is a n x 1 column vector that reflects the additive deterministic disturbance.
+- $`w_k`$ is an additive stochastic process noise term, which possibly has an unkown probability distribution.
+
+If Gaussian process noise is used, `noise['w_cov']` is the covariance matrix of the w-term in the equation above. 
+Note that non-Gaussian noise (from the Dryden gust model) is used for the UAV case.
+Moreover, note that in the current version of the codes is not compatible (yet) with partial observability (i.e. defining an observer). Thus, make sure to set the argument `observer = False`.
 
 For some models, the model definition is given in non-discretized form, i.e.
-$$
+
+```math
 \dot{\mathbf{x}}(t) = A_c\mathbf{x}(t) + B_c\mathbf{u}(t) + \mathbf{q}_c(t) + \mathbf{w}_c(t),
-$$
+```
+
 where subscript c indicates that these matrices and vectors differ from the ones above. If a continuous-time dynamical model is given, it is discretized using one of two methods:
 
 - Using a forward Euler method.
 - Using a Gears discretization method.
+
+------
+
+
+
+# Problem statement and assumptions
+
+For the full problem statement and the description of our approach, we refer to our paper (see the link at the top).
+However, we briefly discuss a few key assumptions required for our approach to work.
+
+Essentially, we solve **reach-avoid problems** for linear dynamical systems under stochastic uncertainty (process noise) of unknown distribution.
+More specifically, we compute a **state feedback controller** (i.e., a controller that maps any measured state to a control input) for which we guarantee that the probability to satisfy the reach-avoid problem is above a pre-defined threshold probability.
+This guarantee holds with **high confidence**, because our solution is based on a **finite number of samples** of the process noise.
+
+Our approach is shown below, and is based on abstracting the system as a Markov decision process with intervals of transition probabilities.
+For this approach to work, **we assume that the given linear dynamical system is fully actuated**, i.e., that the control matrix $`B`$ is full row rank.
+Note that an underactuated system may typically be renderred fully actuated, by grouping multiple time steps together.
+
+![alt text](img/approach.png "Title Text")
 
 ------
 
