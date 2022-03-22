@@ -224,7 +224,9 @@ Our approach is shown below, and is based on abstracting the system as a Markov 
 For this approach to work, **we assume that the given linear dynamical system is fully actuated**, i.e., that the control matrix $`B`$ is full row rank.
 Note that an underactuated system may typically be renderred fully actuated, by grouping multiple time steps together.
 
+<div align="center">
 <img src="/approach.png" alt="Flowchart of our approach" width="600"/>
+</div>
 
 ------
 
