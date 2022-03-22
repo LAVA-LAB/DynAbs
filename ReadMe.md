@@ -180,9 +180,7 @@ Here, the basic setup of the application is defined. This includes the following
 ### SetModel function
 
 In the `setModel` function, the linear dynamical system is defined in the following form (see the submitted paper for details): 
-$$
-\mathbf{x}_{k+1} = A \mathbf{x}_k + B \mathbf{u}_k + \mathbf{q}_k + \mathbf{w}_k,
-$$
+$\mathbf{x}_{k+1} = A \mathbf{x}_k + B \mathbf{u}_k + \mathbf{q}_k + \mathbf{w}_k,$
 where:
 
 - `A` is an n x n matrix.
