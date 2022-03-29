@@ -23,12 +23,13 @@ class abstraction_error(object):
         self.x = cp.Variable((no_verts, model.n))
         self.alpha = cp.Variable((no_verts, v), nonneg=True)
         
+        self.e = cp.Variable((no_verts, model.n))
+        
         # Point x is a convex combination of the backward reachable set vertices,
         # and is within the specified region
         self.constraints = [sum(self.alpha[w]) == 1 for w in range(no_verts)] + \
-            [self.x[w] == cp.sum([self.G_curr[i] * self.alpha[w][i] for i in range(v)]) for w in range(no_verts)]
-        
-        self.error_direction = [cp.sum(self.x[w] - self.vertex[w]) == 0 for w in range(no_verts)]
+            [self.x[w] == cp.sum([self.G_curr[i] * self.alpha[w][i] for i in range(v)]) for w in range(no_verts)] + \
+            [self.e[w] == self.A @ (self.vertex[w] - self.x[w]) for w in range(no_verts)]
         
         if 'max_control_error' in model.setup:
             self.constraints += \
@@ -36,9 +37,13 @@ class abstraction_error(object):
                 [self.A @ (self.vertex[w] - self.x[w]) >=-model.setup['max_control_error'] for w in range(no_verts)]
         
         # self.obj = cp.Minimize(cp.sum([cp.norm2(self.x[w] - self.vertex[w]) for w in range(no_verts)]))
+        # self.obj = cp.Minimize(cp.sum([
+        #                     cp.quad_form(self.x[w] - self.vertex[w], np.diag([10,1]))
+        #                     for w in range(no_verts)
+        #                     ]))
+        
         self.obj = cp.Minimize(cp.sum([
-                            (1/2)*cp.quad_form(self.x[w], np.eye(model.n)) - self.vertex[w].T @ self.x[w] 
-                            # + 10*cp.sum(self.x[w] - self.vertex[w])
+                            cp.quad_form(self.e[w], np.diag([5,1]))
                             for w in range(no_verts)
                             ]))
         
@@ -47,6 +52,7 @@ class abstraction_error(object):
     def solve(self, vertices, G):
         
         self.G_curr.value = G
+        
         if len(vertices.shape) == 1:
             self.vertex.value = np.array([vertices])
         else:
@@ -56,16 +62,8 @@ class abstraction_error(object):
         
         if self.prob.status == 'infeasible':
             return True, None, None
-        
-        error = (self.A @ (vertices - self.x.value).T).T
-        
-        if len(vertices.shape) == 1:
-            # If single vertex/point is provided, return for that point only
-            return False, self.x.value[0], error, error
-
-        else:
-            # If multiple vertices/points provided, return max/min among them
-            error_pos = error.max(axis=0)
-            error_neg = error.min(axis=0)
+        else: 
+            projection = self.x.value - vertices
+            project_vec = np.array([row/row[0] for row in projection])
             
-            return False, self.x.value, (error_neg, error_pos)
+            return False, project_vec, self.x.value

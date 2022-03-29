@@ -48,10 +48,10 @@ class robot(master.LTI_master):
         self.setup['lump'] = 1
         
         # Authority limit for the control u, both positive and negative
-        self.setup['control']['limits']['uMin'] =  [-3]
-        self.setup['control']['limits']['uMax'] =  [3]
+        self.setup['control']['limits']['uMin'] =  [-5]
+        self.setup['control']['limits']['uMax'] =  [5]
         
-        mode = 0
+        mode = 1
         
         # Partition size
         if mode == 0:
@@ -62,36 +62,26 @@ class robot(master.LTI_master):
                 np.array([[3, 9], 'all'])
                 ]
             
-            self.setup['max_control_error'] = np.array([2, 10])
+            # Actions per dimension (if 'auto', equal to nr of regions)
+            self.setup['targets']['boundary']    = self.setup['partition']['boundary']
+            self.setup['targets']['number']      = self.setup['partition']['number']
             
         elif mode == 1:
-            self.setup['partition']['boundary']  = np.array([[-10, 10.5], [-10.5, 10.5]])
-            self.setup['partition']['number']  = [21, 21]
-            
-            self.setup['specification']['goal'] = [
-                np.array([[5, 9], 'all'])
-                ]
-            
-            self.setup['max_control_error'] = np.array([2, 10])
-            
-        else:
             self.setup['partition']['boundary']  = np.array([[-10.5, 10.5], [-10.5, 10.5]])
-            self.setup['partition']['number']  = [42, 42]
+            self.setup['partition']['number']  = [41, 41]
             
             self.setup['specification']['goal'] = [
-                np.array([[7.25, 9.25], 'all'])
+                np.array([[-2, 2], [-2, 2]])
                 ]
             
-            self.setup['max_control_error'] = np.array([1, 10])
-        
-        # Actions per dimension (if 'auto', equal to nr of regions)
-        self.setup['targets']['boundary']    = self.setup['partition']['boundary']
-        self.setup['targets']['number']      = self.setup['partition']['number']
+            # Actions per dimension (if 'auto', equal to nr of regions)
+            self.setup['targets']['boundary']    = self.setup['partition']['boundary']
+            self.setup['targets']['number']      = [21, 21]
 
         self.setup['specification']['critical'] = None #setStateBlock(self.setup['partition'], a=[-6,-4], b=[-4,-2]) #[[]]
         
         # Discretization step size
-        self.tau = 2
+        self.tau = 1
         
         # Step-bound on property
         self.setup['endTime'] = 32 
@@ -138,7 +128,7 @@ class robot(master.LTI_master):
         
         # Covariance of the process noise
         self.noise = dict()
-        self.noise['w_cov'] = np.eye(np.size(self.A,1)) * 0.08
+        self.noise['w_cov'] = np.eye(np.size(self.A,1)) * 0.0001
         
         
 class UAV(master.LTI_master):
@@ -167,10 +157,10 @@ class UAV(master.LTI_master):
         if self.modelDim == 2:
     
             # Authority limit for the control u, both positive and negative
-            self.setup['control']['limits']['uMin'] = [-3, -3]
-            self.setup['control']['limits']['uMax'] = [3, 3]        
+            self.setup['control']['limits']['uMin'] = [-2, -2]
+            self.setup['control']['limits']['uMax'] = [2, 2]        
     
-            self.setup['max_control_error'] = np.array([2, 10, 2, 10])
+            self.setup['max_control_error'] = np.array([1, 10, 1, 10])
     
             V = 1
     
@@ -302,7 +292,7 @@ class UAV(master.LTI_master):
         
         # State transition matrix
         Ablock = np.array([[1, self.tau],
-                          [0, 0.9]])
+                          [0, 0.8]])
         
         # Input matrix
         Bblock = np.array([[self.tau**2/2],
@@ -324,10 +314,10 @@ class UAV(master.LTI_master):
             self.A  = scipy.linalg.block_diag(Ablock, Ablock)
             self.B  = scipy.linalg.block_diag(Bblock, Bblock)
             
-            self.A_set = [
-                        self.A - np.diag([0, -0.1, 0, -0.1]),
-                        self.A - np.diag([0, 0.1, 0, 0.1])
-                        ]
+            # self.A_set = [
+            #             self.A - np.diag([0, -0.1, 0, -0.1]),
+            #             self.A - np.diag([0, 0.1, 0, 0.1])
+            #             ]
         
             # Disturbance matrix
             self.Q  = np.array([[0],[0],[0],[0]])

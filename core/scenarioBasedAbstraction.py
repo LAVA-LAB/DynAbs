@@ -657,7 +657,8 @@ class scenarioBasedAbstraction(Abstraction):
                         exclude = exclude_samples(samples, 
                                           self.model.setup['partition']['width'])
                     
-                    a_plot = np.round(np.mean(self.partition['nr_regions'])).astype(int)
+                    # Plot one transition plus samples
+                    a_plot = np.round(self.partition['nr_regions'] / 2).astype(int)
                     if a == a_plot:
                         
                         plot_transition(samples, self.actions['control_error'][a], 
