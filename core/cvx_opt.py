@@ -33,8 +33,8 @@ class abstraction_error(object):
         
         if 'max_control_error' in model.setup:
             self.constraints += \
-                [self.A @ (self.vertex[w] - self.x[w]) <= model.setup['max_control_error'] for w in range(no_verts)] + \
-                [self.A @ (self.vertex[w] - self.x[w]) >=-model.setup['max_control_error'] for w in range(no_verts)]
+                [self.A @ (self.vertex[w] - self.x[w]) <= model.setup['max_control_error'][:,1] for w in range(no_verts)] + \
+                [self.A @ (self.vertex[w] - self.x[w]) >= model.setup['max_control_error'][:,0] for w in range(no_verts)]
         
         # self.obj = cp.Minimize(cp.sum([cp.norm2(self.x[w] - self.vertex[w]) for w in range(no_verts)]))
         # self.obj = cp.Minimize(cp.sum([
@@ -43,7 +43,7 @@ class abstraction_error(object):
         #                     ]))
         
         self.obj = cp.Minimize(cp.sum([
-                            cp.quad_form(self.e[w], np.diag([5,1]))
+                            cp.quad_form(self.e[w], np.eye(model.n))
                             for w in range(no_verts)
                             ]))
         
@@ -94,7 +94,7 @@ class LP_vertices_contained(object):
     def solve(self, vertices):
         
         self.P_vertices.value = vertices
-        self.prob.solve(warm_start = True, solver='GUROBI')
+        self.prob.solve(warm_start = True, solver='OSQP')
         
         if self.prob.status != "infeasible":
             return True
