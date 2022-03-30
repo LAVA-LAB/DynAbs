@@ -223,11 +223,11 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
                     # Reconstruct the control input required to achieve this target point
                     # Note that we do not constrain the control input; we already know that a suitable control exists!
                     if ScAb.flags['underactuated']:
-                        _, x_nom, _, _ = nominal_model.solve(x[k], ScAb.actions['backreach'][act[k]])
+                        _, _, x_nom = nominal_model.solve(x[k], ScAb.actions['backreach'][act[k]])
                     else:
                         x_nom = x[k]
                     
-                    u[k] = np.array(ScAb.model.B_pinv @ ( x_goal[k+1] - ScAb.model.A @ x_nom - ScAb.model.Q_flat ))
+                    u[k] = np.array(ScAb.model.B_pinv @ ( x_goal[k+1] - ScAb.model.A @ x_nom.flatten() - ScAb.model.Q_flat ))
                     
                     # Implement the control into the physical (unobservable) system
                     x_hat = ScAb.model.A @ x[k] + ScAb.model.B @ u[k] + ScAb.model.Q_flat
