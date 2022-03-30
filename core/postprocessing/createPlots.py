@@ -59,8 +59,7 @@ def draw_hull(points, color, linewidth=0.1):
         
         print('Line plotted')
 
-def partition_plot(i_show, i_hide, setup, model, partition, 
-                    cut_value, backreach=False, stateLabels=False):
+def partition_plot(i_show, i_hide, ScAb, cut_value, a=-1, stateLabels=False):
     '''
 
     Returns
@@ -76,11 +75,11 @@ def partition_plot(i_show, i_hide, setup, model, partition,
     plt.xlabel('$x$', labelpad=0)
     plt.ylabel('$y$', labelpad=0)
 
-    width = model.setup['partition']['width']
-    number = model.setup['partition']['number']
+    width = ScAb.model.setup['partition']['width']
+    number = ScAb.model.setup['partition']['number']
     
-    min_xy = model.setup['partition']['boundary'][:,0]
-    max_xy = model.setup['partition']['boundary'][:,1]
+    min_xy = ScAb.model.setup['partition']['boundary'][:,0]
+    max_xy = ScAb.model.setup['partition']['boundary'][:,1]
     
     # Compute where to show ticks on the axis
     ticks_x = np.round(np.linspace(min_xy[is1], max_xy[is1], number[is1]+1), 4)
@@ -121,22 +120,22 @@ def partition_plot(i_show, i_hide, setup, model, partition,
     ax.set_title("Partition plot", fontsize=10)
     
     # Draw goal states
-    for goal in partition['goal']:
+    for goal in ScAb.partition['goal']:
         
-        if all(partition['R']['center'][goal, list(i_hide)] == cut_value):
+        if all(ScAb.partition['R']['center'][goal, list(i_hide)] == cut_value):
         
-            goal_lower = partition['R']['low'][goal, [is1, is2]]
+            goal_lower = ScAb.partition['R']['low'][goal, [is1, is2]]
             goalState = patches.Rectangle(goal_lower, width=width[is1], 
                                   height=width[is2], color="green", 
                                   alpha=0.3, linewidth=None)
             ax.add_patch(goalState)
     
     # Draw critical states
-    for crit in partition['critical']:
+    for crit in ScAb.partition['critical']:
         
-        if all(partition['R']['center'][crit, list(i_hide)] == cut_value):
+        if all(ScAb.partition['R']['center'][crit, list(i_hide)] == cut_value):
         
-            critStateLow = partition['R']['low'][crit, [is1, is2]]
+            critStateLow = ScAb.partition['R']['low'][crit, [is1, is2]]
             criticalState = patches.Rectangle(critStateLow, width=width[is1], 
                                       height=width[is2], color="red", 
                                       alpha=0.3, linewidth=None)
@@ -146,24 +145,39 @@ def partition_plot(i_show, i_hide, setup, model, partition,
         # Draw every X-th label
         if stateLabels:
             skip = 1
-            for i in range(0, partition['nr_regions'], skip):
+            for i in range(0, ScAb.partition['nr_regions'], skip):
                 
-                if all(partition['R']['center'][i, list(i_hide)] == cut_value):
+                if all(ScAb.partition['R']['center'][i, list(i_hide)] == cut_value):
                                 
-                    ax.text(partition['R']['center'][i,is1], 
-                            partition['R']['center'][i,is2], i, \
+                    ax.text(ScAb.partition['R']['center'][i,is1], 
+                            ScAb.partition['R']['center'][i,is2], i, \
                             verticalalignment='center', 
                             horizontalalignment='center' ) 
     
-    if type(backreach) == np.ndarray:
-        draw_hull(backreach, color='blue')
+    if a != -1:
+        
+        target = ScAb.actions['T']['center'][a]
+        enabled_in = ScAb.actions['enabled_inv'][a]
+        
+        plt.scatter(target[is1], target[is2], c='red', s=20)
+        
+        draw_hull(ScAb.actions['backreach'][a], color='red')
+        
+        if 'backreach_inflated' in ScAb.actions:
+            draw_hull(ScAb.actions['backreach_inflated'][a], color='blue')
+        
+        for s in enabled_in:
+            center = ScAb.partition['R']['center'][s]
+            plt.scatter(center[is1], center[is2], c='blue', s=8)
+        
+        # for s in actions['enabled_inv'],
     
     # Set tight layout
     fig.tight_layout()
     
     # Save figure
-    filename = setup.directories['outputF']+'partition_plot'
-    for form in setup.plotting['exportFormats']:
+    filename = ScAb.setup.directories['outputF']+'partition_plot'
+    for form in ScAb.setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
     plt.show()

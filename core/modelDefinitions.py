@@ -55,33 +55,35 @@ class robot(master.LTI_master):
         
         # Partition size
         if mode == 0:
+            self.setup['partition']['boundary']  = np.array([[-15, 15], [-15, 15]])
+            self.setup['partition']['number']  = [15, 15]
+            
+            self.setup['specification']['goal'] = [
+                np.array([[8, 12], 'all'])
+                ]
+            
+            # Actions per dimension (if 'auto', equal to nr of regions)
+            self.setup['targets']['boundary']    = self.setup['partition']['boundary']
+            self.setup['targets']['number']      = [15,15]
+            
+        elif mode == 1:
             self.setup['partition']['boundary']  = np.array([[-11, 11], [-11, 11]])
             self.setup['partition']['number']  = [11, 11]
             
             self.setup['specification']['goal'] = [
-                np.array([[3, 9], 'all'])
+                np.array([[2, 6], 'all'])
                 ]
             
             # Actions per dimension (if 'auto', equal to nr of regions)
             self.setup['targets']['boundary']    = self.setup['partition']['boundary']
             self.setup['targets']['number']      = self.setup['partition']['number']
-            
-        elif mode == 1:
-            self.setup['partition']['boundary']  = np.array([[-10.5, 10.5], [-10.5, 10.5]])
-            self.setup['partition']['number']  = [41, 41]
-            
-            self.setup['specification']['goal'] = [
-                np.array([[-2, 2], [-2, 2]])
-                ]
-            
-            # Actions per dimension (if 'auto', equal to nr of regions)
-            self.setup['targets']['boundary']    = self.setup['partition']['boundary']
-            self.setup['targets']['number']      = [21, 21]
 
         self.setup['specification']['critical'] = None #setStateBlock(self.setup['partition'], a=[-6,-4], b=[-4,-2]) #[[]]
         
+        self.setup['max_control_error'] = np.array([[-1.5, 1.5], [-2.5, 2.5]])
+        
         # Discretization step size
-        self.tau = 1
+        self.tau = 2
         
         # Step-bound on property
         self.setup['endTime'] = 32 
@@ -128,7 +130,7 @@ class robot(master.LTI_master):
         
         # Covariance of the process noise
         self.noise = dict()
-        self.noise['w_cov'] = np.eye(np.size(self.A,1)) * 0.0001
+        self.noise['w_cov'] = 0.5 * np.eye(np.size(self.A,1))
         
         
 class UAV(master.LTI_master):
@@ -157,10 +159,14 @@ class UAV(master.LTI_master):
         if self.modelDim == 2:
     
             # Authority limit for the control u, both positive and negative
-            self.setup['control']['limits']['uMin'] = [-2, -2]
-            self.setup['control']['limits']['uMax'] = [2, 2]        
+            self.setup['control']['limits']['uMin'] = [-5, -5]
+            self.setup['control']['limits']['uMax'] = [5, 5]        
     
-            self.setup['max_control_error'] = np.array([1, 10, 1, 10])
+            # self.setup['max_control_error'] = np.array([1, 10, 1, 10])
+            self.setup['max_control_error'] = np.array([[-1.5, 1.5], 
+                                                        [-2.5, 2.5],
+                                                        [-1.5, 1.5], 
+                                                        [-2.5, 2.5]])
     
             V = 1
     
@@ -168,10 +174,10 @@ class UAV(master.LTI_master):
                 
                 # Partition size
                 self.setup['partition']['boundary']  = np.array([[-11, 11], 
-                                                                 [-7, 7], 
                                                                  [-11, 11], 
-                                                                 [-7, 7]])
-                self.setup['partition']['number']  = [11, 7, 11, 7]
+                                                                 [-11, 11], 
+                                                                 [-11, 11]])
+                self.setup['partition']['number']  = [11, 11, 11, 11]
                 
                 self.setup['targets']['boundary']    = self.setup['partition']['boundary']
                 self.setup['targets']['number']      = self.setup['partition']['number']
@@ -187,7 +193,7 @@ class UAV(master.LTI_master):
                 #     setStateBlock(self.setup['partition'], a=[4,6], b='all', c=[-8,-6], d='all')
                 #     ))
                 
-                self.setup['x0'] = np.array([-6,0,-6,0])
+                self.setup['x0'] = np.array([-8,0,-8,0])
                 
             elif V == 2:
                 
@@ -333,7 +339,7 @@ class UAV(master.LTI_master):
 
         # Covariance of the process noise
         self.noise = dict()
-        self.noise['w_cov'] = np.eye(np.size(self.A,1))*0.1
+        self.noise['w_cov'] = np.eye(np.size(self.A,1))*0.001
            
     def setTurbulenceNoise(self, folder, N):
         '''
@@ -684,6 +690,8 @@ class building_1room_1control(master.LTI_master):
             np.array([[20.8, 21.2], 'all'])
             ]
         self.setup['specification']['critical'] = None
+        
+        self.setup['max_control_error'] = np.array([[-.1, .1], [-.1, .1]])
         
         # Discretization step size
         self.tau = 20 # NOTE: in minutes for BAS!

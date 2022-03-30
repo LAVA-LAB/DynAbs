@@ -140,7 +140,7 @@ def tabulate(N, eps_low, eps_upp, kstep, krange):
 #####
 
 # Experiment settings
-beta_list = [0.1, 0.01]     # Confidence level
+beta_list = [0.01/(1000**2)]     # Confidence level
 d = 1                       # Nr. of decision variables (always 1 for us)
 
 # Number of trials to validate obtained guarantees
@@ -150,7 +150,7 @@ trials = 0
 kstep_list_all = np.array([1])
 
 # List of number of samples
-N_list = np.array([12800,25600,51200])
+N_list = np.array([3200])
 
 P_low = {}
 P_upp = {}

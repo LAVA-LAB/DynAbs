@@ -67,3 +67,36 @@ class abstraction_error(object):
             project_vec = np.array([row/row[0] for row in projection])
             
             return False, project_vec, self.x.value
+        
+class LP_vertices_contained(object):
+    
+    def __init__(self, model, G):
+        
+        v = model.n ** 2
+        w = len(G)
+        
+        self.G_curr     = cp.Parameter(G.shape)
+        self.P_vertices = cp.Parameter((v, model.n))
+        alpha           = cp.Variable((v, w), nonneg=True)
+        
+        constraints = [cp.sum(alpha[i]) == 1 for i in range(v)] + \
+            [self.P_vertices[j] == cp.sum([alpha[j,i] * self.G_curr[i] 
+                                       for i in range(w)]) for j in range(v)]
+            
+        obj = cp.Minimize(1)
+        self.prob = cp.Problem(obj, constraints)
+        
+    def set_backreach(self, BRS_inflated):
+        
+        # Set current backward reachable set as parameter
+        self.G_curr.value = BRS_inflated
+        
+    def solve(self, vertices):
+        
+        self.P_vertices.value = vertices
+        self.prob.solve(warm_start = True, solver='GUROBI')
+        
+        if self.prob.status != "infeasible":
+            return True
+        else:
+            return False

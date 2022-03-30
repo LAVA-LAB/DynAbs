@@ -31,8 +31,7 @@ from .define_partition import definePartitions, defStateLabelSet
 from .compute_probabilities import computeScenarioBounds_sparse, \
     computeScenarioBounds_error, plot_transition
 from .commons import tic, ticDiff, tocDiff, table, printWarning
-from .compute_actions import defEnabledActions, defEnabledActions_UA, \
-    def_all_BRS
+from .compute_actions import defEnabledActions, defEnabledActions_UA_V2, defEnabledActions_UA, def_all_BRS
 from .create_iMDP import mdp
 from .postprocessing.createPlots import partition_plot
 
@@ -217,7 +216,9 @@ class Abstraction(object):
         
         print('\nComputing all backward reachable sets...')
         
-        self.actions['backreach'] = def_all_BRS(self.model, self.actions['T']['center'])
+        self.actions['backreach'], self.actions['backreach_inflated'] = \
+            def_all_BRS(self.model, self.actions['T']['center'],
+                        self.model.setup['max_control_error'])
         
         print('\nComputing set of enabled actions...')
         
@@ -240,8 +241,8 @@ class Abstraction(object):
             
                 print(' --- In dimensions of state', dn,'and control', dp)    
             
-                A[i], A_inv[i], CE[i] = \
-                    defEnabledActions_UA(self.flags, self.partition, self.actions, self.model, dn, dp)
+                A[i], A_inv[i], CE[i] = defEnabledActions_UA_V2(self.flags, 
+                            self.partition, self.actions, self.model, dn, dp)
             
             ### Compositional model building
                     
@@ -327,8 +328,8 @@ class Abstraction(object):
             a = self.model.setup['partition_plot_action']
         else:
             a = np.round(self.actions['nr_actions'] / 2).astype(int)
-        partition_plot((0,1), (), self.setup, self.model, self.partition,
-                       np.array([]), self.actions['backreach'][a])
+            
+        partition_plot((0,1), (), self, cut_value=np.array([]), a=a )
                 
         print(nr_A,'actions enabled')
         if nr_A == 0:
