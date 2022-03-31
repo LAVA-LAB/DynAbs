@@ -48,8 +48,8 @@ class robot(master.LTI_master):
         self.setup['lump'] = 1
         
         # Authority limit for the control u, both positive and negative
-        self.setup['control']['limits']['uMin'] =  [-5]
-        self.setup['control']['limits']['uMax'] =  [5]
+        self.setup['control']['limits']['uMin'] =  [-4]
+        self.setup['control']['limits']['uMax'] =  [4]
         
         mode = 1
         
@@ -67,11 +67,11 @@ class robot(master.LTI_master):
             self.setup['targets']['number']      = [15,15]
             
         elif mode == 1:
-            self.setup['partition']['boundary']  = np.array([[-11, 11], [-11, 11]])
-            self.setup['partition']['number']  = [11, 11]
+            self.setup['partition']['boundary']  = np.array([[-13, 13], [-6, 6]])
+            self.setup['partition']['number']  = [13, 9]
             
             self.setup['specification']['goal'] = [
-                np.array([[2, 6], 'all'])
+                np.array([[6, 10], 'all'])
                 ]
             
             # Actions per dimension (if 'auto', equal to nr of regions)
@@ -80,7 +80,7 @@ class robot(master.LTI_master):
 
         self.setup['specification']['critical'] = None #setStateBlock(self.setup['partition'], a=[-6,-4], b=[-4,-2]) #[[]]
         
-        self.setup['max_control_error'] = np.array([[-1.5, 1.5], [-2.5, 2.5]])
+        self.setup['max_control_error'] = np.array([[-1.5, 1.5], [-2, 2]])
         
         # Discretization step size
         self.tau = 2
@@ -130,7 +130,7 @@ class robot(master.LTI_master):
         
         # Covariance of the process noise
         self.noise = dict()
-        self.noise['w_cov'] = 0.5 * np.eye(np.size(self.A,1))
+        self.noise['w_cov'] = np.diag([0.1, 0.01]) 
         
         
 class UAV(master.LTI_master):
@@ -159,62 +159,36 @@ class UAV(master.LTI_master):
         if self.modelDim == 2:
     
             # Authority limit for the control u, both positive and negative
-            self.setup['control']['limits']['uMin'] = [-5, -5]
-            self.setup['control']['limits']['uMax'] = [5, 5]        
+            self.setup['control']['limits']['uMin'] = [-4, -4]
+            self.setup['control']['limits']['uMax'] = [4, 4]        
     
             # self.setup['max_control_error'] = np.array([1, 10, 1, 10])
             self.setup['max_control_error'] = np.array([[-1.5, 1.5], 
-                                                        [-2.5, 2.5],
+                                                        [-2, 2],
                                                         [-1.5, 1.5], 
-                                                        [-2.5, 2.5]])
+                                                        [-2, 2]])
     
-            V = 1
-    
-            if V == 1:
-                
-                # Partition size
-                self.setup['partition']['boundary']  = np.array([[-11, 11], 
-                                                                 [-11, 11], 
-                                                                 [-11, 11], 
-                                                                 [-11, 11]])
-                self.setup['partition']['number']  = [11, 11, 11, 11]
-                
-                self.setup['targets']['boundary']    = self.setup['partition']['boundary']
-                self.setup['targets']['number']      = self.setup['partition']['number']
-                
-                # Specification information
-                self.setup['specification']['goal'] = [
-                    np.array([[2, 6], 'all', [2, 6], 'all'])
-                    ]
-                
-                self.setup['specification']['critical'] = None
-                # np.vstack((
-                #     setStateBlock(self.setup['partition'], a=[-6,-4,-2], b='all', c=[2], d='all'),
-                #     setStateBlock(self.setup['partition'], a=[4,6], b='all', c=[-8,-6], d='all')
-                #     ))
-                
-                self.setup['x0'] = np.array([-8,0,-8,0])
-                
-            elif V == 2:
-                
-                # Partition size
-                self.setup['partition']['nrPerDim']  = [15,7,15,7]
-                self.setup['partition']['width']     = [1, 1.5, 1, 1.5]
-                self.setup['partition']['origin']    = [0, 0, 0, 0]
-                
-                # Actions per dimension (if 'auto', equal to nr of regions)
-                self.setup['targets']['nrPerDim']    = 'auto'
-                self.setup['targets']['domain']      = 'auto'
-                
-                # Specification information
-                self.setup['specification']['goal'] = setStateBlock(self.setup['partition'], a=[4,5,6], b='all', c=[4,5,6], d='all')
-                
-                self.setup['specification']['critical'] = np.vstack((
-                    setStateBlock(self.setup['partition'], a=[-6,-5,-4,-3,-2], b='all', c=[2,3], d='all'),
-                    setStateBlock(self.setup['partition'], a=[5,6,7], b='all', c=[-7,-6,-5], d='all')
-                    ))
-                
-                self.setup['x0'] = setStateBlock(self.setup['partition'], a=[-5], b=[0], c=[-5], d=[0])
+            # Partition size
+            self.setup['partition']['boundary']  = np.array([[-13, 13], 
+                                                             [-6, 6], 
+                                                             [-13, 13], 
+                                                             [-6, 6]])
+            self.setup['partition']['number']  = [13, 9, 13, 9]
+            
+            self.setup['targets']['boundary']    = self.setup['partition']['boundary']
+            self.setup['targets']['number']      = self.setup['partition']['number']
+            
+            # Specification information
+            self.setup['specification']['goal'] = [
+                np.array([[-10, -6], 'all', [6, 10], 'all'])
+                ]
+            
+            self.setup['specification']['critical'] = [
+                np.array([[-12, 0], 'all', [-2, 2], 'all']),
+                np.array([[8, 12], 'all', [6, 10], 'all'])
+                ]
+            
+            self.setup['x0'] = np.array([-10,0,-10,0])
             
         elif self.modelDim == 3:
             
