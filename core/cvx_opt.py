@@ -77,10 +77,10 @@ class LP_vertices_contained(object):
         
         self.G_curr     = cp.Parameter(G.shape)
         self.P_vertices = cp.Parameter((v, model.n))
-        alpha           = cp.Variable((v, w), nonneg=True)
+        self.alpha      = cp.Variable((v, w), nonneg=True)
         
-        constraints = [cp.sum(alpha[i]) == 1 for i in range(v)] + \
-            [self.P_vertices[j] == cp.sum([alpha[j,i] * self.G_curr[i] 
+        constraints = [cp.sum(self.alpha[i]) == 1 for i in range(v)] + \
+            [self.P_vertices[j] == cp.sum([self.alpha[j,i] * self.G_curr[i] 
                                        for i in range(w)]) for j in range(v)]
             
         obj = cp.Minimize(1)
@@ -94,7 +94,7 @@ class LP_vertices_contained(object):
     def solve(self, vertices):
         
         self.P_vertices.value = vertices
-        self.prob.solve(warm_start = True, solver='GUROBI')
+        self.prob.solve(warm_start = True, solver='OSQP', eps_abs=1e-3, eps_rel=1e-3)
         
         if self.prob.status != "infeasible":
             return True

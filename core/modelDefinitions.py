@@ -158,37 +158,68 @@ class UAV(master.LTI_master):
     
         if self.modelDim == 2:
     
-            # Authority limit for the control u, both positive and negative
-            self.setup['control']['limits']['uMin'] = [-4, -4]
-            self.setup['control']['limits']['uMax'] = [4, 4]        
-    
-            # self.setup['max_control_error'] = np.array([1, 10, 1, 10])
-            self.setup['max_control_error'] = np.array([[-1.5, 1.5], 
-                                                        [-2, 2],
-                                                        [-1.5, 1.5], 
-                                                        [-2, 2]])
-    
-            # Partition size
-            self.setup['partition']['boundary']  = np.array([[-13, 13], 
-                                                             [-6, 6], 
-                                                             [-13, 13], 
-                                                             [-6, 6]])
-            self.setup['partition']['number']  = [13, 9, 13, 9]
-            
-            self.setup['targets']['boundary']    = self.setup['partition']['boundary']
-            self.setup['targets']['number']      = self.setup['partition']['number']
-            
-            # Specification information
-            self.setup['specification']['goal'] = [
-                np.array([[-10, -6], 'all', [6, 10], 'all'])
-                ]
-            
-            self.setup['specification']['critical'] = [
-                np.array([[-12, 0], 'all', [-2, 2], 'all']),
-                np.array([[8, 12], 'all', [6, 10], 'all'])
-                ]
-            
-            self.setup['x0'] = np.array([-10,0,-10,0])
+            if False:
+                # Authority limit for the control u, both positive and negative
+                self.setup['control']['limits']['uMin'] = [-4, -4]
+                self.setup['control']['limits']['uMax'] = [4, 4]        
+        
+                # self.setup['max_control_error'] = np.array([1, 10, 1, 10])
+                self.setup['max_control_error'] = np.array([[-1.5, 1.5], 
+                                                            [-2, 2],
+                                                            [-1.5, 1.5], 
+                                                            [-2, 2]])
+        
+                # Partition size
+                self.setup['partition']['boundary']  = np.array([[-7, 7], 
+                                                                 [-6, 6], 
+                                                                 [-7, 7], 
+                                                                 [-6, 6]])
+                self.setup['partition']['number']  = [7, 9, 7, 9]
+                
+                self.setup['targets']['boundary']    = self.setup['partition']['boundary']
+                self.setup['targets']['number']      = self.setup['partition']['number']
+                
+                # Specification information
+                self.setup['specification']['goal'] = [
+                    np.array([[2, 6], 'all', [2, 6], 'all'])
+                    ]
+                
+                self.setup['specification']['critical'] = None
+                
+                self.setup['x0'] = np.array([-7,0,-7,0])        
+        
+            else:
+                # Authority limit for the control u, both positive and negative
+                self.setup['control']['limits']['uMin'] = [-4, -4]
+                self.setup['control']['limits']['uMax'] = [4, 4]        
+        
+                # self.setup['max_control_error'] = np.array([1, 10, 1, 10])
+                self.setup['max_control_error'] = np.array([[-1.5, 1.5], 
+                                                            [-2, 2],
+                                                            [-1.5, 1.5], 
+                                                            [-2, 2]])
+        
+                # Partition size
+                self.setup['partition']['boundary']  = np.array([[-13, 13], 
+                                                                 [-6, 6], 
+                                                                 [-13, 13], 
+                                                                 [-6, 6]])
+                self.setup['partition']['number']  = [13, 9, 13, 9]
+                
+                self.setup['targets']['boundary']    = self.setup['partition']['boundary']
+                self.setup['targets']['number']      = self.setup['partition']['number']
+                
+                # Specification information
+                self.setup['specification']['goal'] = [
+                    np.array([[-10, -6], 'all', [6, 10], 'all'])
+                    ]
+                
+                self.setup['specification']['critical'] = [
+                    np.array([[-12, 0], 'all', [-2, 2], 'all'])
+                    #np.array([[8, 12], 'all', [6, 10], 'all'])
+                    ]
+                
+                self.setup['x0'] = np.array([-10,0,-10,0])
             
         elif self.modelDim == 3:
             

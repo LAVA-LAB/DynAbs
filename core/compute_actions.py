@@ -518,7 +518,7 @@ def defEnabledActions_UA_V2(flags, partition, actions, model, dim_n=False, dim_p
     Q = LP_vertices_contained(model, np.unique(actions['backreach_inflated'][0][:, dim_n], axis=0))
     
     # For every action
-    for a_tup in progressbar(action_range, redirect_stdout=True):
+    for a_tup in action_range: #progressbar(action_range, redirect_stdout=True):
         
         idx = actions['T']['idx'][a_tup]
         

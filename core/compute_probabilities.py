@@ -194,10 +194,6 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     
     nrPerDim = np.array(partition_setup['number'])
     
-    if verbose:
-        print('imin:', imin)
-        print('imax:', imax)
-    
     # Compute number of samples fully outside of partition.
     # If all indices are outside the partition, then it is certain that 
     # this sample is outside the partition
@@ -212,9 +208,17 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     # partition, then add one to both lower and upper bound count
     in_single_region = (imin == imax).all(axis=1) * np.bitwise_not(fully_out)
     
-    for c, key in zip(Nrange[in_single_region], imin[in_single_region]):
+    for key in imin[in_single_region]:
         key = tuple(key)
-        if key not in partition['goal_idx'] and key not in partition['critical_idx']:
+        if key in partition['goal_idx']:
+            counts_goal_low += 1
+            counts_goal_upp += 1
+        
+        elif key in partition['critical_idx']:
+            counts_critical_low += 1
+            counts_critical_upp += 1
+        
+        else:
             counts_low[key] += 1
             counts_upp[key] += 1
             
@@ -230,10 +234,6 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
         if check_exclude:
           for key in itertools.product(*map(np.arange, i, j+1)):
             
-            # # Skip if the current state is a goal or critical state (we 
-            # # account for these samples below)
-            # if key not in partition['goal_idx'] and key not in partition['critical_idx']:
-                
                 # If first occurence of this region, this just add it
                 if key not in i_excl:
                     i_excl[key] = {c}
@@ -281,23 +281,9 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     
     counts = np.array(counts_header + counts_nonzero, dtype = int)
     
-    # print(counts)
-    
     # Number of samples not in any region (i.e. in absorbing state)
     deadlock_low = 1 - trans['memory'][counts_absorb_low][1]
-    # if counts_absorb_upp > Nsamples:
-        # deadlock_upp = 1
-    # else:
     deadlock_upp = 1 - trans['memory'][counts_absorb_upp][0]
-
-    if counts_goal_low == 0:
-        goal_low = 0
-    else:
-        goal_low = 1 - trans['memory'][counts_goal_low][1]
-    goal_upp = 1 - trans['memory'][counts_goal_upp][0]
-    
-    critical_low = 1 - trans['memory'][counts_critical_low][1]
-    critical_upp = 1 - trans['memory'][counts_critical_upp][0]
 
     if len(counts) > 0:
         k_upp = np.minimum(Nsamples - counts[:, 1], Nsamples)
@@ -309,16 +295,16 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
         successor_idxs = counts[:,0]
         
     else:
-
         probability_low     = np.array([])
         probability_upp     = np.array([])
         probability_approx  = np.array([])
         successor_idxs = np.array([])
     
     nr_decimals = 5
+    Pmin = 1e-4
     
     #### PROBABILITY INTERVALS
-    probs_lb = np.maximum(1e-4, floor_decimal(probability_low, nr_decimals))
+    probs_lb = np.maximum(Pmin, floor_decimal(probability_low, nr_decimals))
     probs_ub = np.minimum(1,    floor_decimal(probability_upp, nr_decimals))
     
     # Create interval strings (only entries for prob > 0)
@@ -328,23 +314,11 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
                       for (lb, ub) in zip(probs_lb, probs_ub)]
     
     # Compute deadlock, goal, and critical probability intervals
-    deadlock_lb = np.maximum(1e-4, floor_decimal(deadlock_low, nr_decimals))
+    deadlock_lb = np.maximum(Pmin, floor_decimal(deadlock_low, nr_decimals))
     deadlock_ub = np.minimum(1,    floor_decimal(deadlock_upp, nr_decimals))
     deadlock_string = '['+ \
                        str(deadlock_lb)+','+ \
                        str(deadlock_ub)+']'
-                       
-    goal_lb = np.maximum(1e-4, floor_decimal(goal_low, nr_decimals))
-    goal_ub = np.minimum(1,    floor_decimal(goal_upp, nr_decimals))
-    goal_string = '['+ \
-                      str(goal_lb)+','+ \
-                      str(goal_ub)+']'
-                      
-    critical_lb = np.maximum(1e-4, floor_decimal(critical_low, nr_decimals))
-    critical_ub = np.minimum(1,    floor_decimal(critical_upp, nr_decimals))
-    critical_string = '['+ \
-                       str(critical_lb)+','+ \
-                       str(critical_ub)+']'
     
     #### POINT ESTIMATE PROBABILITIES
     probability_approx = np.round(probability_approx, nr_decimals)
@@ -361,19 +335,13 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
         'approx_strings': approx_strings,
         'deadlock_interval_string': deadlock_string,
         'deadlock_approx': deadlock_approx,
-        'goal_interval_string': goal_string,
-        'critical_interval_string': critical_string,
     }
     
     return returnDict
 
 
-
 import matplotlib.pyplot as plt # Import Pyplot to generate plots
-
-# Load main classes and methods
 import matplotlib.patches as patches
-
 from .commons import cm2inch
 
 def plot_transition(samples, error, i_show, i_hide, setup, model, partition, 

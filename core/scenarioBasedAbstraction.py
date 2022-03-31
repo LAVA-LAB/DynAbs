@@ -660,16 +660,20 @@ class scenarioBasedAbstraction(Abstraction):
                     
                     # Plot one transition plus samples
                     a_plot = np.round(self.partition['nr_regions'] / 2).astype(int)
-                    if a == a_plot:
+                    if a == 3136: #a_plot:
                         
                         plot_transition(samples, self.actions['control_error'][a], 
                             (0,1), (), self.setup, self.model, self.partition,
                             np.array([]), self.actions['backreach'][a])
                         
+                    if a == 3136:
+                        verb = True
+                    else:
+                        verb = False
                     
                     prob[a] = computeScenarioBounds_error(self.setup, 
                           self.model.setup['partition'], 
-                          self.partition, self.trans, samples, self.actions['control_error'][a], exclude)
+                          self.partition, self.trans, samples, self.actions['control_error'][a], exclude, verbose=verb)
                     
                     # Print normal row in table
                     if a % printEvery == 0:
