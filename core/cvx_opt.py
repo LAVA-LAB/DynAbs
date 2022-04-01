@@ -94,7 +94,7 @@ class LP_vertices_contained(object):
     def solve(self, vertices):
         
         self.P_vertices.value = vertices
-        self.prob.solve(warm_start = True, solver='OSQP', eps_abs=1e-3, eps_rel=1e-3)
+        self.prob.solve(warm_start = True, solver='GUROBI') #, eps_abs=1e-4, eps_rel=1e-4)
         
         if self.prob.status != "infeasible":
             return True

@@ -518,9 +518,10 @@ def defEnabledActions_UA_V2(flags, partition, actions, model, dim_n=False, dim_p
     Q = LP_vertices_contained(model, np.unique(actions['backreach_inflated'][0][:, dim_n], axis=0))
     
     # For every action
-    for a_tup in action_range: #progressbar(action_range, redirect_stdout=True):
+    for a_tup in progressbar(action_range, redirect_stdout=True):
         
         idx = actions['T']['idx'][a_tup]
+        a_center = actions['T']['center'][idx]
         
         # Retrieve inflated backward reachable set
         BRS = np.unique(actions['backreach_inflated'][idx][:, dim_n], axis=0)
@@ -570,6 +571,15 @@ def defEnabledActions_UA_V2(flags, partition, actions, model, dim_n=False, dim_p
                 if flags['parametric_A']:                    
                     epist_error_neg[si], epist_error_pos[si] = \
                         compute_epistemic_error(model, unique_verts)    
+                
+                if 'max_action_distance' in model.setup:
+                    s_center = partition['R']['center'][s]
+                    
+                    if any(a_center - s_center > model.setup['max_action_distance']) or \
+                       any(a_center - s_center < -model.setup['max_action_distance']):
+                           print('Disable action from', s_tup, s_center, 'to', a_tup, a_center)
+                           
+                           continue
                 
                 # Enable the current action in the current state
                 if s_tup in enabled:

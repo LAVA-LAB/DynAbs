@@ -660,7 +660,7 @@ class scenarioBasedAbstraction(Abstraction):
                     
                     # Plot one transition plus samples
                     a_plot = np.round(self.partition['nr_regions'] / 2).astype(int)
-                    if a == 3136: #a_plot:
+                    if a == a_plot:
                         
                         plot_transition(samples, self.actions['control_error'][a], 
                             (0,1), (), self.setup, self.model, self.partition,
