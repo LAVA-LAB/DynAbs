@@ -48,7 +48,7 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
     '''
     
     if ScAb.flags['underactuated']:
-        nominal_model = abstraction_error(ScAb.model, no_verts = 1)
+        nominal_model = abstraction_error(ScAb.model, ScAb.spec, no_verts = 1)
     
     tocDiff(False)
     if ScAb.setup.main['verbose']:
@@ -179,7 +179,7 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
                     
                     # Compute all centers of regions associated with points
                     center_coord = computeRegionCenters(x[k], 
-                        ScAb.prop.partition).flatten()
+                        ScAb.spec.partition).flatten()
                     
                     if tuple(center_coord) in ScAb.partition['R']['c_tuple']:
                         # Save that state is currently in region ii

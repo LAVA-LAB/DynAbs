@@ -344,7 +344,7 @@ import matplotlib.pyplot as plt # Import Pyplot to generate plots
 import matplotlib.patches as patches
 from .commons import cm2inch
 
-def plot_transition(samples, error, i_show, i_hide, setup, model, prop, partition, 
+def plot_transition(samples, error, i_show, i_hide, setup, model, spec, partition, 
                     cut_value, backreach=False, stateLabels=False):
     '''
 
@@ -361,11 +361,11 @@ def plot_transition(samples, error, i_show, i_hide, setup, model, prop, partitio
     plt.xlabel('$x$', labelpad=0)
     plt.ylabel('$y$', labelpad=0)
 
-    width = np.array(prop.partition['width'])
-    domainMax = width * np.array(prop.partition['number']) / 2
+    width = np.array(spec.partition['width'])
+    domainMax = width * np.array(spec.partition['number']) / 2
     
-    min_xy = prop.partition['origin'] - domainMax
-    max_xy = prop.partition['origin'] + domainMax
+    min_xy = spec.partition['origin'] - domainMax
+    max_xy = spec.partition['origin'] + domainMax
     
     major_ticks_x = np.arange(min_xy[is1]+1, max_xy[is1]+1, 4*width[is1])
     major_ticks_y = np.arange(min_xy[is2]+1, max_xy[is2]+1, 4*width[is2])

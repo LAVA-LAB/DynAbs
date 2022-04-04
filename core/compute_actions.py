@@ -167,7 +167,7 @@ def def_backward_reach(model):
     
     return backreach
 
-def partial_model(flags, model, prop, dim_n, dim_p):
+def partial_model(flags, model, spec, dim_n, dim_p):
     
     #TODO: improve this function.
     
@@ -186,17 +186,17 @@ def partial_model(flags, model, prop, dim_n, dim_p):
     if flags['parametric_A']:
         model.A_set     = [A[n_start:n_end, n_start:n_end] for A in model.A_set]
     
-    prop.partition['number'] = prop.partition['number'][dim_n]
-    prop.partition['width'] = prop.partition['width'][dim_n]
-    prop.partition['origin'] = prop.partition['origin'][dim_n]
+    spec.partition['number'] = spec.partition['number'][dim_n]
+    spec.partition['width'] = spec.partition['width'][dim_n]
+    spec.partition['origin'] = spec.partition['origin'][dim_n]
     
     model.uMin = model.uMin[dim_p]
     model.uMax = model.uMax[dim_p]
     
-    if 'max_control_error' in prop.error:
-        prop.error['max_control_error'] = prop.error['max_control_error'][dim_n]
+    if 'max_control_error' in spec.error:
+        spec.error['max_control_error'] = spec.error['max_control_error'][dim_n]
 
-    return model, prop
+    return model, spec
 
 def def_all_BRS(model, targets, control_error_bound=False):
     
@@ -318,11 +318,11 @@ def compute_epistemic_error(model, vertices):
         
     return e_error_neg.min(axis=0), e_error_pos.max(axis=0)
 
-def defEnabledActions_UA_V2(setup, flags, partition, actions, model, prop, 
+def defEnabledActions_UA_V2(setup, flags, partition, actions, model, spec, 
                             dim_n=False, dim_p=False, verbose=False):
     
     full_n = model.n
-    nrPerDim = [prop.targets['number'][i] if i in dim_n else 1 for i in range(full_n)]
+    nrPerDim = [spec.targets['number'][i] if i in dim_n else 1 for i in range(full_n)]
     action_range = list(itertools.product(*map(range, [0]*full_n, nrPerDim)))
     
     # Compute the backward reachable set (not accounting for target point yet)    
@@ -333,7 +333,7 @@ def defEnabledActions_UA_V2(setup, flags, partition, actions, model, prop,
         compositional = False
         
     else:
-        model, prop = partial_model(flags, deepcopy(model), deepcopy(prop), dim_n, dim_p)
+        model, spec = partial_model(flags, deepcopy(model), deepcopy(spec), dim_n, dim_p)
     
         compositional = True
     
@@ -341,8 +341,8 @@ def defEnabledActions_UA_V2(setup, flags, partition, actions, model, prop,
     enabled_inv = {}   
     control_error = {}
     
-    control_error_neg = prop.error['max_control_error'][:,0]
-    control_error_pos = prop.error['max_control_error'][:,1]
+    control_error_neg = spec.error['max_control_error'][:,0]
+    control_error_pos = spec.error['max_control_error'][:,1]
     
     # Create LP object
     Q = LP_vertices_contained(model, np.unique(actions['backreach_inflated'][0][:, dim_n], axis=0), solver=setup.cvx['solver'])
@@ -364,7 +364,7 @@ def defEnabledActions_UA_V2(setup, flags, partition, actions, model, prop,
         
         # Determine set of regions that potentially intersect with G
         _, idx_edgeV = computeRegionIdx(BRS_overapprox_box, 
-                                        prop.partition,
+                                        spec.partition,
                                         borderOutside=[False,True])
         
         # Transpose because we want the min/max combinations per dimension
@@ -402,11 +402,11 @@ def defEnabledActions_UA_V2(setup, flags, partition, actions, model, prop,
                     epist_error_neg[si], epist_error_pos[si] = \
                         compute_epistemic_error(model, unique_verts)    
                 
-                if 'max_action_distance' in prop.error:
+                if 'max_action_distance' in spec.error:
                     s_center = partition['R']['center'][s]
                     
-                    if any(a_center - s_center > prop.error['max_action_distance']) or \
-                       any(a_center - s_center < -prop.error['max_action_distance']):
+                    if any(a_center - s_center > spec.error['max_action_distance']) or \
+                       any(a_center - s_center < -spec.error['max_action_distance']):
                            print('Disable action from', s_tup, s_center, 'to', a_tup, a_center)
                            
                            continue

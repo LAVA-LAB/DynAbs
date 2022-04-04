@@ -21,7 +21,7 @@ ______________________________________________________________________________
 import numpy as np              # Import Numpy for computations
 from scipy.sparse.csgraph import connected_components
 
-def define_model(setup, model_raw, prop):
+def define_model(setup, model_raw, spec):
     '''
     Define model within abstraction object for given value of lump
 
@@ -37,15 +37,15 @@ def define_model(setup, model_raw, prop):
 
     '''
     
-    prop.partition['boundary'] = np.array(prop.partition['boundary']).astype(float)
-    prop.partition['number'] = np.array(prop.partition['number']).astype(int)
+    spec.partition['boundary'] = np.array(spec.partition['boundary']).astype(float)
+    spec.partition['number'] = np.array(spec.partition['number']).astype(int)
     
-    prop.targets['boundary'] = np.array(prop.targets['boundary']).astype(float)
-    prop.targets['number'] = np.array(prop.targets['number']).astype(int)
+    spec.targets['boundary'] = np.array(spec.targets['boundary']).astype(float)
+    spec.targets['number'] = np.array(spec.targets['number']).astype(int)
     
     # Control limitations
-    model_raw.uMin   = np.array( prop.control['uMin'] ).astype(float)
-    model_raw.uMax   = np.array( prop.control['uMax'] ).astype(float)
+    model_raw.uMin   = np.array( spec.control['uMin'] ).astype(float)
+    model_raw.uMax   = np.array( spec.control['uMax'] ).astype(float)
     
     lump = model_raw.lump
     
@@ -93,7 +93,7 @@ def define_model(setup, model_raw, prop):
         model.equilibrium = np.linalg.inv(np.eye(model.n) - model.A) @ \
             (model.B @ uAvg + model.Q_flat)
     
-    return {'model': model, 'prop': prop}
+    return {'model': model, 'spec': spec}
 
 def find_connected_components(A, B, n, p):
     

@@ -58,7 +58,7 @@ class mdp(object):
     
     def writePRISM_specification(self, mode, problem_type):
         '''
-        Write the PRISM specificatoin / property to a file
+        Write the PRISM specification to a file
 
         Parameters
         ----------

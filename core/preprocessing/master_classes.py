@@ -307,7 +307,7 @@ class LTI_master(object):
         
         self.name = type(self).__name__
         
-class property_master(object):
+class spec_master(object):
     
     def __init__(self):
         '''

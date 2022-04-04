@@ -10,7 +10,7 @@ import numpy as np
 
 class abstraction_error(object):
     
-    def __init__(self, model, prop, no_verts):
+    def __init__(self, model, spec, no_verts):
         
         self.A = model.A
         
@@ -31,10 +31,10 @@ class abstraction_error(object):
             [self.x[w] == cp.sum([self.G_curr[i] * self.alpha[w][i] for i in range(v)]) for w in range(no_verts)] + \
             [self.e[w] == self.A @ (self.vertex[w] - self.x[w]) for w in range(no_verts)]
         
-        if 'max_control_error' in prop.error:
+        if 'max_control_error' in spec.error:
             self.constraints += \
-                [self.A @ (self.vertex[w] - self.x[w]) <= prop.error['max_control_error'][:,1] for w in range(no_verts)] + \
-                [self.A @ (self.vertex[w] - self.x[w]) >= prop.error['max_control_error'][:,0] for w in range(no_verts)]
+                [self.A @ (self.vertex[w] - self.x[w]) <= spec.error['max_control_error'][:,1] for w in range(no_verts)] + \
+                [self.A @ (self.vertex[w] - self.x[w]) >= spec.error['max_control_error'][:,0] for w in range(no_verts)]
         
         # self.obj = cp.Minimize(cp.sum([cp.norm2(self.x[w] - self.vertex[w]) for w in range(no_verts)]))
         # self.obj = cp.Minimize(cp.sum([
@@ -103,6 +103,8 @@ class LP_vertices_contained(object):
             self.prob.solve(warm_start = True, solver='ECOS')
         elif self.solver == 'OSQP':
             self.prob.solve(warm_start = True, solver='OSQP', eps_abs=1e-4, eps_rel=1e-4)
+        elif self.solver == 'SCS':
+            self.prob.solve(warm_start = True, solver='SCS')
         else:
             self.prob.solve(warm_start = True)
         

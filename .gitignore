@@ -4,6 +4,9 @@ __pycache__/
 *.pyo
 *.DS_Store
 
+# Ignore options file
+options.txt
+
 output/*
 !output/.keep
 

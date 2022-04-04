@@ -8,14 +8,14 @@ Created on Mon Apr  4 07:29:04 2022
 import numpy as np
 import core.preprocessing.master_classes as master
 
-class robot_prop(master.property_master):
+class robot_spec(master.spec_master):
     
     def __init__(self, mode = 1):
 
         # Initialize superclass
-        master.property_master.__init__(self)        
+        master.spec_master.__init__(self)        
         
-        # Step-bound on property
+        # Step-bound on spec
         self.end_time = 32 
 
         # Authority limit for the control u, both positive and negative
@@ -53,12 +53,12 @@ class robot_prop(master.property_master):
         self.error['max_control_error'] = np.array([[-2, 2], [-4/3, 4/3]])
         self.error['max_action_distance'] = np.array([6,8])
         
-class UAV_2D_prop(master.property_master):
+class UAV_2D_spec(master.spec_master):
     
     def __init__(self):
         
         # Initialize superclass
-        master.property_master.__init__(self)   
+        master.spec_master.__init__(self)   
         
         self.end_time = 32
         
@@ -95,12 +95,12 @@ class UAV_2D_prop(master.property_master):
         
         self.x0 = np.array([-8,0,-8,0])                
         
-class UAV_3D_prop(master.property_master):
+class UAV_3D_spec(master.spec_master):
     
     def __init__(self):
         
         # Initialize superclass
-        master.property_master.__init__(self)   
+        master.spec_master.__init__(self)   
         
         self.end_time = 32
         
@@ -149,12 +149,12 @@ class UAV_3D_prop(master.property_master):
         
         self.x0 = [ np.array([[-10, -2], 'all', [-2, 2], 'all']) ]
         
-class building_2room_prop(master.property_master):
+class building_2room_spec(master.spec_master):
     
     def __init__(self, T_boiler):
         
         # Initialize superclass
-        master.property_master.__init__(self)   
+        master.spec_master.__init__(self)   
         
         self.end_time = 32
         
@@ -178,14 +178,14 @@ class building_2room_prop(master.property_master):
             ]
         self.critical = None
         
-class building_1room_prop(master.property_master):
+class building_1room_spec(master.spec_master):
     
     def __init__(self, scenario):
 
         # Initialize superclass
-        master.property_master.__init__(self)        
+        master.spec_master.__init__(self)        
         
-        # Step-bound on property
+        # Step-bound on spec
         self.end_time = 64
 
         # Authority limit for the control u, both positive and negative
@@ -216,14 +216,14 @@ class building_1room_prop(master.property_master):
         
         self.error['max_control_error'] = np.array([[-.1, .1], [-.3, .3]])     
         
-class shuttle_prop(master.property_master):
+class shuttle_spec(master.spec_master):
     
     def __init__(self):
 
         # Initialize superclass
-        master.property_master.__init__(self)        
+        master.spec_master.__init__(self)        
         
-        # Step-bound on property
+        # Step-bound on spec
         self.end_time = 64
 
         # Authority limit for the control u, both positive and negative
@@ -259,14 +259,14 @@ class shuttle_prop(master.property_master):
         
         self.end_time = 16
         
-class anaesthesia_delivery_prop(master.property_master):
+class anaesthesia_delivery_spec(master.spec_master):
     
     def __init__(self):
 
         # Initialize superclass
-        master.property_master.__init__(self)        
+        master.spec_master.__init__(self)        
         
-        # Step-bound on property
+        # Step-bound on spec
         self.end_time = 10
 
         # Authority limit for the control u, both positive and negative

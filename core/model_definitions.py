@@ -74,13 +74,13 @@ class robot(master.LTI_master):
         self.noise = dict()
         self.noise['w_cov'] = np.diag([0.1, 0.01]) 
         
-    def set_property(self):
+    def set_spec(self):
         
-        from core.property_definitions import robot_prop
+        from core.spec_definitions import robot_spec
         
-        prop = robot_prop()
+        spec = robot_spec()
         
-        return prop
+        return spec
         
 class UAV(master.LTI_master):
     
@@ -147,22 +147,22 @@ class UAV(master.LTI_master):
         self.noise = dict()
         self.noise['w_cov'] = np.eye(np.size(self.A,1))*0.001
            
-    def set_property(self):
+    def set_spec(self):
     
         if self.modelDim == 2:
             
-            from core.property_definitions import UAV_2D_prop
-            prop = UAV_2D_prop()        
+            from core.spec_definitions import UAV_2D_spec
+            spec = UAV_2D_spec()        
             
         elif self.modelDim == 3:
             
             # Let the user make a choice for the model dimension
             self.setup['noiseMultiplier'], _  = ui.user_choice('process noise multiplier',[1,0.1])
             
-            from core.property_definitions import UAV_3D_prop
-            prop = UAV_3D_prop(self.setup['noiseMultiplier'])   
+            from core.spec_definitions import UAV_3D_spec
+            spec = UAV_3D_spec(self.setup['noiseMultiplier'])   
             
-        return prop
+        return spec
         
     def setTurbulenceNoise(self, folder, N):
         '''
@@ -293,15 +293,15 @@ class building_2room(master.LTI_master):
         self.B_cont = B_cont
         self.Q_cont = W_cont
         
-    def set_property(self):
+    def set_spec(self):
         
         # Shortcut to boiler temperature        
         T_boiler = self.BAS.Boiler['Tswbss']
         
-        from core.property_definitions import building_2room_prop
-        prop = building_2room_prop(T_boiler)        
+        from core.spec_definitions import building_2room_spec
+        spec = building_2room_spec(T_boiler)        
             
-        return prop
+        return spec
         
 class building_1room(master.LTI_master):
     
@@ -408,12 +408,12 @@ class building_1room(master.LTI_master):
         self.noise = dict()
         self.noise['w_cov'] = np.diag([ BAS.Zone1['Tz']['sigma'], BAS.Radiator['rw']['sigma'] ])
 
-    def set_property(self):
+    def set_spec(self):
         
-        from core.property_definitions import building_1room_prop
-        prop = building_1room_prop(self.scenario)        
+        from core.spec_definitions import building_1room_spec
+        spec = building_1room_spec(self.scenario)        
             
-        return prop
+        return spec
 
 class shuttle(master.LTI_master):
     
@@ -463,12 +463,12 @@ class shuttle(master.LTI_master):
         self.noise = dict()
         self.noise['w_cov'] = 10*np.diag([ 1e-4, 1e-4, 5e-8, 5e-8 ])
         
-    def set_property(self):
+    def set_spec(self):
         
-        from core.property_definitions import shuttle_prop
-        prop = shuttle_prop()        
+        from core.spec_definitions import shuttle_spec
+        spec = shuttle_spec()        
             
-        return prop
+        return spec
         
 class anaesthesia_delivery(master.LTI_master):
     
@@ -507,9 +507,9 @@ class anaesthesia_delivery(master.LTI_master):
         self.noise = dict()
         self.noise['w_cov'] = np.eye(np.size(self.A,1))*1e-3
         
-    def set_property(self):
+    def set_spec(self):
         
-        from core.property_definitions import anaesthesia_delivery_prop
-        prop = anaesthesia_delivery_prop()        
+        from core.spec_definitions import anaesthesia_delivery_spec
+        spec = anaesthesia_delivery_spec()        
             
-        return prop
+        return spec

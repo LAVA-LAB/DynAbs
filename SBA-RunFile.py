@@ -37,10 +37,10 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 #-----------------------------------------------------------------------------
 
 # Define model
-model_raw = set_model_class()
+model = set_model_class()
 
 # Define property
-prop = model_raw.set_property()
+prop = model.set_property()
 
 prop.problem_type = 'reachavoid'
 
@@ -49,14 +49,13 @@ prop.problem_type = 'reachavoid'
 #-----------------------------------------------------------------------------
 
 # Create settings object
-setup = settings(application=model_raw.name, base_dir = base_dir)
+setup = settings(application=model.name, base_dir = base_dir)
 
 # Manual changes in general settings
 setup.setOptions(category       = 'plotting', 
         exportFormats           = ['pdf'], 
         partitionPlot           = True,
         partitionPlot_plotHull  = True)
-setup.cvx['solver'] = 'GUROBI'
 setup.parametric = False
 
 # Give some user prompts
@@ -68,7 +67,7 @@ print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\
       '\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
     
 # Create the main object for the current instance
-ScAb = scenarioBasedAbstraction(setup, define_model(setup, model_raw, prop))
+ScAb = scenarioBasedAbstraction(setup, define_model(setup, model, prop))
 ScAb.define_states()
 
 #-----------------------------------------------------------------------------
