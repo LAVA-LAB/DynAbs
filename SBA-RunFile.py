@@ -68,6 +68,8 @@ print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\
 
 # Set LTI model in main object
 model_raw.setModel(observer=False)
+
+assert False
     
 # Create the main object for the current instance
 ScAb = scenarioBasedAbstraction(setup, define_model(setup, model_raw))

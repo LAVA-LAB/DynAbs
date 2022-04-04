@@ -93,7 +93,7 @@ class robot(master.LTI_master):
 
         self.setup['specification']['critical'] = None #setStateBlock(self.setup['partition'], a=[-6,-4], b=[-4,-2]) #[[]]
         
-        self.setup['max_control_error'] = np.array([[-2, 2], [-2, 2]])
+        self.setup['max_control_error'] = np.array([[-2, 2], [-4/3, 4/3]])
         
         self.setup['max_action_distance'] = np.array([6,8])
         
@@ -122,10 +122,10 @@ class robot(master.LTI_master):
         self.A  = np.array([[1, self.tau],
                             [0, .8]])
         
-        self.A_set = [
-                    np.array([[1, self.tau],[0,0.7]]),
-                    np.array([[1, self.tau],[0,0.9]])
-                    ]
+        # self.A_set = [
+        #             np.array([[1, self.tau],[0,0.7]]),
+        #             np.array([[1, self.tau],[0,0.9]])
+        #             ]
         
         # Input matrix
         self.B  = np.array([[self.tau**2/2],
@@ -194,9 +194,9 @@ class UAV(master.LTI_master):
                 self.setup['partition']['number']  = [11, 9, 11, 9]
                 
                 self.setup['targets']['boundary']    = np.array([[-9, 9], 
-                                                                 [-6+8/3, 6-8/4], 
+                                                                 [-6+8/3, 6-8/3], 
                                                                  [-9, 9], 
-                                                                 [-6+8/3, 6-8/4]])
+                                                                 [-6+8/3, 6-8/3]])
                 self.setup['targets']['number']      = [9, 5, 9, 5]
                 
                 # Specification information
@@ -719,7 +719,7 @@ class building_1room_1control(master.LTI_master):
             ]
         self.setup['specification']['critical'] = None
         
-        self.setup['max_control_error'] = np.array([[-.1, .1], [-.1, .1]])
+        self.setup['max_control_error'] = np.array([[-.1, .1], [-.3, .3]])
         
         # Discretization step size
         self.tau = 20 # NOTE: in minutes for BAS!
