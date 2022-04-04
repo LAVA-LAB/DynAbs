@@ -72,14 +72,14 @@ def partition_plot(i_show, i_hide, ScAb, cut_value, a=-1, stateLabels=False):
     
     fig, ax = plt.subplots(figsize=cm2inch(6.1, 5))
     
-    plt.xlabel('$x$', labelpad=0)
-    plt.ylabel('$y$', labelpad=0)
+    plt.xlabel('Var $1$', labelpad=0)
+    plt.ylabel('Var $2$', labelpad=0)
 
-    width = ScAb.model.setup['partition']['width']
-    number = ScAb.model.setup['partition']['number']
+    width = ScAb.prop.partition['width']
+    number = ScAb.prop.partition['number']
     
-    min_xy = ScAb.model.setup['partition']['boundary'][:,0]
-    max_xy = ScAb.model.setup['partition']['boundary'][:,1]
+    min_xy = ScAb.prop.partition['boundary'][:,0]
+    max_xy = ScAb.prop.partition['boundary'][:,1]
     
     # Compute where to show ticks on the axis
     ticks_x = np.round(np.linspace(min_xy[is1], max_xy[is1], number[is1]+1), 4)
@@ -205,7 +205,7 @@ def _set_axes_radius(ax, origin, radius):
     ax.set_xlim3d([x - radius, x + radius])
     ax.set_ylim3d([y - radius, y + radius])
 
-def createProbabilityPlots(setup, N, model, results, partition, mc=None):
+def createProbabilityPlots(setup, N, model, prop, results, partition, mc=None):
     '''
     Create the result plots for the partitionaction instance.
 
@@ -269,7 +269,7 @@ def createProbabilityPlots(setup, N, model, results, partition, mc=None):
     
     ######################
     # Determine dimension of model
-    m = model.setup['partition']['number']
+    m = prop.partition['number']
     
     # Plot 3D probability plot for selected time steps
     if model.n > 2:
@@ -350,13 +350,13 @@ def UAV_3D_plotLayout(ScAb):
     
     cut_value = np.zeros(3)
     for i,d in enumerate(range(1, ScAb.model.n, 2)):
-        if ScAb.model.setup['partition']['number'][d]/2 != round( 
-                ScAb.model.setup['partition']['number'][d]/2 ):
+        if ScAb.prop.partition['number'][d]/2 != round( 
+                ScAb.prop.partition['number'][d]/2 ):
             cut_value[i] = 0
         else:
-            cut_value[i] = ScAb.model.setup['partition']['width'][d] / 2    
+            cut_value[i] = ScAb.prop.partition['width'][d] / 2    
     
-    UAVplot3d_visvis( ScAb.setup, ScAb.model, ScAb.partition, 
+    UAVplot3d_visvis( ScAb.setup, ScAb.model, ScAb.prop, ScAb.partition, 
                       traces=[], cut_value=cut_value ) 
 
 def UAVplots(ScAb, case_id, writer=None, itersToSim=10000, itersToPlot=1):
@@ -387,40 +387,40 @@ def UAVplots(ScAb, case_id, writer=None, itersToSim=10000, itersToPlot=1):
     # Determine desired state IDs
     if ScAb.model.name == 'UAV':
         if ScAb.model.modelDim == 2:
-            x_init = ScAb.model.setup['x0']
+            x_init = ScAb.prop.x0
             
             cut_value = np.zeros(2)
             for i,d in enumerate(range(1, ScAb.model.n, 2)):
-                if ScAb.model.setup['partition']['number'][d]/2 != \
-                  round( ScAb.model.setup['partition']['number'][d]/2 ):
+                if ScAb.prop.partition['number'][d]/2 != \
+                  round( ScAb.prop.partition['number'][d]/2 ):
                       
                     cut_value[i] = 0
                 else:
-                    cut_value[i] = ScAb.model.setup['partition'][
+                    cut_value[i] = ScAb.prop.partition[
                                     'width'][d] / 2                
             
         elif ScAb.model.modelDim == 3:
-            x_init = ScAb.model.setup['x0']
+            x_init = ScAb.prop.x0
             
             cut_value = np.zeros(3)
             for i,d in enumerate(range(1, ScAb.model.n, 2)):
-                if ScAb.model.setup['partition']['number'][d]/2 != \
-                  round( ScAb.model.setup['partition']['number'][d]/2 ):
+                if ScAb.prop.partition['number'][d]/2 != \
+                  round( ScAb.prop.partition['number'][d]/2 ):
                       
                     cut_value[i] = 0
                 else:
-                    cut_value[i] = ScAb.model.setup['partition'][
+                    cut_value[i] = ScAb.prop.partition[
                                     'width'][d] / 2         
                     
     elif ScAb.model.name == 'shuttle':
-        x_init = setStateBlock(ScAb.model.setup['partition'], 
+        x_init = setStateBlock(ScAb.prop.partition, 
                                a=[-.75], b=[-.85], c=[0], d=[0])
         
         cut_value = np.array([0.005, 0.005])
             
     # Compute all centers of regions associated with points
     x_init_centers = computeRegionCenters(np.array(x_init), 
-                                          ScAb.model.setup['partition'])
+                                          ScAb.prop.partition)
     
     # Filter to only keep unique centers
     x_init_unique = np.unique(x_init_centers, axis=0)
@@ -465,20 +465,20 @@ def UAVplots(ScAb, case_id, writer=None, itersToSim=10000, itersToPlot=1):
             i_show = (0,2)
             i_hide = (1,3)
             
-            UAVplot2D( i_show, i_hide, ScAb.setup, ScAb.model, 
+            UAVplot2D( i_show, i_hide, ScAb.setup, ScAb.model, ScAb.prop, 
                        ScAb.partition, traces, cut_value )
             
         elif ScAb.model.name == 'shuttle':
             i_show = (2,3)
             i_hide = (0,1)
         
-            UAVplot2D( i_show, i_hide, ScAb.setup, ScAb.model, 
+            UAVplot2D( i_show, i_hide, ScAb.setup, ScAb.model, ScAb.prop,
                        ScAb.partition, traces, cut_value )
     
             i_show = (0,1)
             i_hide = (2,3)
         
-            UAVplot2D( i_show, i_hide, ScAb.setup, ScAb.model, 
+            UAVplot2D( i_show, i_hide, ScAb.setup, ScAb.model, ScAb.prop,
                        ScAb.partition, traces, cut_value )
     
     elif ScAb.model.modelDim == 3:
@@ -487,7 +487,7 @@ def UAVplots(ScAb, case_id, writer=None, itersToSim=10000, itersToPlot=1):
         
             # Only plot trajectory plot in non-iterative mode (because it 
             # pauses the script)
-            UAVplot3d_visvis( ScAb.setup, ScAb.model, ScAb.partition, 
+            UAVplot3d_visvis( ScAb.setup, ScAb.model, ScAb.prop, ScAb.partition, 
                               traces, cut_value ) 
     
     traces_df = pd.DataFrame(alltraces)
@@ -495,7 +495,7 @@ def UAVplots(ScAb, case_id, writer=None, itersToSim=10000, itersToPlot=1):
     
     return performance_df
     
-def UAVplot2D(i_show, i_hide, setup, model, partition, traces, cut_value, 
+def UAVplot2D(i_show, i_hide, setup, model, prop, partition, traces, cut_value, 
               line=False, stateLabels=False):
     '''
     Create 2D trajectory plots for the 2D UAV benchmark
@@ -538,11 +538,11 @@ def UAVplot2D(i_show, i_hide, setup, model, partition, traces, cut_value,
     plt.xlabel('$x$', labelpad=0)
     plt.ylabel('$y$', labelpad=0)
 
-    width = np.array(model.setup['partition']['width'])
-    domainMax = width * np.array(model.setup['partition']['number']) / 2
+    width = np.array(prop.partition['width'])
+    domainMax = width * np.array(prop.partition['number']) / 2
     
-    min_xy = model.setup['partition']['origin'] - domainMax
-    max_xy = model.setup['partition']['origin'] + domainMax
+    min_xy = prop.partition['origin'] - domainMax
+    max_xy = prop.partition['origin'] + domainMax
     
     major_ticks_x = np.arange(min_xy[is1]+1, max_xy[is1]+1, 4*width[is1])
     major_ticks_y = np.arange(min_xy[is2]+1, max_xy[is2]+1, 4*width[is2])
@@ -649,7 +649,7 @@ def UAVplot2D(i_show, i_hide, setup, model, partition, traces, cut_value,
         
     plt.show()
     
-def UAVplot3d_visvis(setup, model, partition, traces, cut_value):
+def UAVplot3d_visvis(setup, model, prop, partition, traces, cut_value):
     '''
     Create 3D trajectory plots for the 3D UAV benchmark
 
@@ -685,9 +685,9 @@ def UAVplot3d_visvis(setup, model, partition, traces, cut_value):
     iy = 2
     iz = 4
     
-    regionWidth_xyz = np.array([model.setup['partition']['width'][0], 
-                                model.setup['partition']['width'][2], 
-                                model.setup['partition']['width'][4]])    
+    regionWidth_xyz = np.array([prop.partition['width'][0], 
+                                prop.partition['width'][2], 
+                                prop.partition['width'][4]])    
     
     # Draw goal states
     for goal in partition['goal']:
@@ -808,16 +808,16 @@ def load_traces_manual(ScAb, pathLow, pathHigh, idxLow=0, idxHigh=0):
     
     cut_value = np.zeros(3)
     for i,d in enumerate(range(1, ScAb.model.n, 2)):
-        if ScAb.model.setup['partition']['number'][d]/2 != round( 
-                ScAb.model.setup['partition']['number'][d]/2 ):
+        if ScAb.prop.partition['number'][d]/2 != round( 
+                ScAb.prop.partition['number'][d]/2 ):
             cut_value[i] = 0
         else:
-            cut_value[i] = ScAb.model.setup['partition']['width'][d] / 2
+            cut_value[i] = ScAb.prop.partition['width'][d] / 2
     
-    UAVplot3d_visvis_manual( ScAb.setup, ScAb.model, ScAb.partition, 
+    UAVplot3d_visvis_manual( ScAb.setup, ScAb.model, ScAb.prop, ScAb.partition, 
                              cut_value, traceLow, traceHigh) 
     
-def UAVplot3d_visvis_manual(setup, model, partition, cut_value, traceLow, 
+def UAVplot3d_visvis_manual(setup, model, prop, partition, cut_value, traceLow, 
                             traceHigh):
     '''
     Create 3D trajectory plots for the 3D UAV benchmark
@@ -854,9 +854,9 @@ def UAVplot3d_visvis_manual(setup, model, partition, cut_value, traceLow,
     iy = 2
     iz = 4
     
-    regionWidth_xyz = np.array([model.setup['partition']['width'][0], 
-                                model.setup['partition']['width'][2], 
-                                model.setup['partition']['width'][4]])    
+    regionWidth_xyz = np.array([prop.partition['width'][0], 
+                                prop.partition['width'][2], 
+                                prop.partition['width'][4]])    
     
     # Draw goal states
     for goal in partition['goal']:
@@ -1007,39 +1007,39 @@ def reachabilityHeatMap(ScAb):
 
     if ScAb.model.n == 2:
         
-        x_nr = ScAb.model.setup['partition']['number'][0]
-        y_nr = ScAb.model.setup['partition']['number'][1]
+        x_nr = ScAb.prop.partition['number'][0]
+        y_nr = ScAb.prop.partition['number'][1]
         
         cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr], 
-               ScAb.model.setup['partition']['width'], 
-               ScAb.model.setup['partition']['origin'], onlyCenter=True)['center']
+               ScAb.prop.partition['width'], 
+               ScAb.prop.partition['origin'], onlyCenter=True)['center']
 
     if ScAb.model.name == 'building_2room':
     
-        x_nr = ScAb.model.setup['partition']['number'][0]
-        y_nr = ScAb.model.setup['partition']['number'][1]
+        x_nr = ScAb.prop.partition['number'][0]
+        y_nr = ScAb.prop.partition['number'][1]
         
         cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr, 1, 1], 
-               ScAb.model.setup['partition']['width'], 
-               ScAb.model.setup['partition']['origin'], onlyCenter=True)['center']
+               ScAb.prop.partition['width'], 
+               ScAb.prop.partition['origin'], onlyCenter=True)['center']
         
     if ScAb.model.name == 'anaesthesia_delivery':
     
-        x_nr = ScAb.model.setup['partition']['number'][0]
-        y_nr = ScAb.model.setup['partition']['number'][1]
+        x_nr = ScAb.prop.partition['number'][0]
+        y_nr = ScAb.prop.partition['number'][1]
         
         cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr, 1], 
-               ScAb.model.setup['partition']['width'], 
-               ScAb.model.setup['partition']['origin'], onlyCenter=True)['center']
+               ScAb.prop.partition['width'], 
+               ScAb.prop.partition['origin'], onlyCenter=True)['center']
         
     elif ScAb.model.n == 4:
         
-        x_nr = ScAb.model.setup['partition']['number'][0]
-        y_nr = ScAb.model.setup['partition']['number'][2]
+        x_nr = ScAb.prop.partition['number'][0]
+        y_nr = ScAb.prop.partition['number'][2]
         
         cut_centers = definePartitions(ScAb.model.n, [x_nr, 1, y_nr, 1], 
-               ScAb.model.setup['partition']['width'], 
-               ScAb.model.setup['partition']['origin'], onlyCenter=True)['center']
+               ScAb.prop.partition['width'], 
+               ScAb.prop.partition['origin'], onlyCenter=True)['center']
                           
     cut_values = np.zeros((x_nr, y_nr))
     cut_coords = np.zeros((x_nr, y_nr, ScAb.model.n))

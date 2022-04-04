@@ -167,7 +167,7 @@ def def_backward_reach(model):
     
     return backreach
 
-def partial_model(flags, model, dim_n, dim_p):
+def partial_model(flags, model, prop, dim_n, dim_p):
     
     #TODO: improve this function.
     
@@ -186,31 +186,38 @@ def partial_model(flags, model, dim_n, dim_p):
     if flags['parametric_A']:
         model.A_set     = [A[n_start:n_end, n_start:n_end] for A in model.A_set]
     
-    model.setup['partition']['number'] = model.setup['partition']['number'][dim_n]
-    model.setup['partition']['width'] = model.setup['partition']['width'][dim_n]
-    model.setup['partition']['origin'] = model.setup['partition']['origin'][dim_n]
+    prop.partition['number'] = prop.partition['number'][dim_n]
+    prop.partition['width'] = prop.partition['width'][dim_n]
+    prop.partition['origin'] = prop.partition['origin'][dim_n]
     
     model.uMin = model.uMin[dim_p]
     model.uMax = model.uMax[dim_p]
     
-    if 'max_control_error' in model.setup:
-        model.setup['max_control_error'] = model.setup['max_control_error'][dim_n]
+    if 'max_control_error' in prop.error:
+        prop.error['max_control_error'] = prop.error['max_control_error'][dim_n]
 
-    return model
+    return model, prop
 
-def def_all_BRS(model, targets, control_error_bound):
+def def_all_BRS(model, targets, control_error_bound=False):
     
     G_zero = def_backward_reach(model)
-    G_infl_zero = compute_BRS_inflated(model, G_zero, control_error_bound)
     backreach = {}
-    backreach_inflated = {}
+    
+    if type(control_error_bound) != bool:
+        G_infl_zero = compute_BRS_inflated(model, G_zero, control_error_bound)
+        backreach_inflated = {}
 
     for a in range(len(targets)):
         shift = model.A_inv @ targets[a]
         backreach[a] = G_zero + shift
-        backreach_inflated[a] = G_infl_zero + shift
         
-    return backreach, backreach_inflated
+        if type(control_error_bound) != bool:
+            backreach_inflated[a] = G_infl_zero + shift
+        
+    if type(control_error_bound) != bool:
+        return backreach, backreach_inflated
+    else: 
+        return backreach
 
 def rotate_BRS(vector):
     '''
@@ -270,184 +277,6 @@ def project_to_line(BRS, points):
     
     return proj_points
 
-def defEnabledActions_UA(flags, partition, actions, model, dim_n=False, dim_p=False, verbose=False):
-    
-    MODE = 'rotate'
-    
-    full_n = model.n
-    nrPerDim = [model.setup['targets']['number'][i] if i in dim_n else 1 for i in range(full_n)]
-    action_range = list(itertools.product(*map(range, [0]*full_n, nrPerDim)))
-    
-    # Compute the backward reachable set (not accounting for target point yet)    
-    if dim_n is False or dim_p is False:
-        dim_n = np.array(model.n)
-        dim_p = np.array(model.p)
-        
-        compositional = False
-        
-    else:
-        model = partial_model(flags, deepcopy(model), dim_n, dim_p)
-    
-        compositional = True
-    
-    G_zero = def_backward_reach(model)
-    
-    ROTMAT = rotate_BRS( G_zero[1]-G_zero[0] )
-    
-    # Number of vertices in backward reachable set
-    v = len(G_zero)
-    
-    # Define optimization problem (with region as a parameter)
-    region_min = cp.Parameter(model.n)
-    region_max = cp.Parameter(model.n)
-    G_curr = cp.Parameter(G_zero.shape)
-    
-    x = cp.Variable(model.n)
-    alpha = cp.Variable(v, nonneg=True)
-    
-    # Point x is a convex combination of the backward reachable set vertices,
-    # and is within the specified region
-    constraints = [sum(alpha) == 1,
-                   x == cp.sum([G_curr[i] * alpha[i] for i in range(v)]),
-                   x >= region_min,
-                   x <= region_max]
-    
-    obj = cp.Minimize(0)
-    prob = cp.Problem(obj, constraints)
-    
-    # Initialize object to compute abstraction errors
-    abstr_error = abstraction_error(model, no_verts = 2**model.n)
-    
-    enabled = {}
-    enabled_inv = {}   
-    control_error = {}
-    
-    # For every action
-    for a_tup in progressbar(action_range, redirect_stdout=True):
-        
-        idx = actions['T']['idx'][a_tup]
-        
-        # Get backward reachable set
-        BRS = np.unique(actions['backreach'][idx][:, dim_n], axis=0)
-        
-        # Overapproximate the backward reachable set
-        G_curr_box = overapprox_box(BRS)
-        
-        # Determine set of regions that potentially intersect with G
-        _, idx_edgeV = computeRegionIdx(G_curr_box, model.setup['partition'],
-                                       borderOutside=[False,True])
-        
-        idx_edge = np.zeros((full_n, 2))
-        idx_edge[dim_n] += idx_edgeV.T
-        
-        # Transpose because we want the min/max combinations per dimension
-        # (not per point)
-        idx_mat = [np.arange(low, high+1).astype(int) for low,high in idx_edge]
-        
-        if verbose:
-            print('Evaluate action',a_tup,'(try',
-              len(list(itertools.product(*idx_mat))),'potential predecessors)')
-        
-        # Initialize control error 
-        nr_idx_mat = np.product(list(map(len, idx_mat)))
-        control_error[a_tup] = {'neg': np.zeros((nr_idx_mat, model.n)),
-                                'pos': np.zeros((nr_idx_mat, model.n)) }
-        
-        # Set current backward reachable set as parameter
-        G_curr.value = BRS
-        
-        for si, s_tup in enumerate(itertools.product(*idx_mat)):
-            
-            s = partition['R']['idx'][s_tup]
-            
-            # Skip if this is a critical state
-            if s in partition['critical'] and not compositional:
-                continue
-            
-            region_min.value = partition['R']['low'][s][dim_n]
-            region_max.value = partition['R']['upp'][s][dim_n]
-            
-            prob.solve(warm_start=True, solver='ECOS')
-            
-            # print('a_tup',a_tup,'s_tup',s_tup,'feasible?',prob.status)
-            
-            if prob.status != "infeasible":
-                # If problem not infeasible, then action enabled in this state
-                # But we do another step to limit the abstraction error
-                
-                vertices = np.unique(partition['allCorners'][s][:, dim_n], axis=0)
-                
-                if MODE == 'optimize':
-                    # Compute abstraction error
-                    flag, project_vec, projected_points = abstr_error.solve(vertices, BRS)
-                    
-                    # Skip this action if flag is set or if not all projections 
-                    # are along the same vector
-                    if flag or not np.isclose(project_vec, project_vec[0], 
-                                    rtol=1e-1, atol=1e-2).all():
-                        continue
-                    
-                else:
-                    shift_vertices = vertices - BRS[0]
-                    norm_vertices = (ROTMAT @ shift_vertices.T).T
-                    vertices_x = norm_vertices[:,0]
-                    
-                    if np.any(vertices_x > 1) or np.any(vertices_x < 0):                        
-                        continue
-                    
-                    # Project points
-                    projected_points = project_to_line(BRS, vertices)
-                    
-                    if a_tup == (5,5) and s_tup == (5,5):
-                        print('---')
-                        print('s:', s,' s_tup:', s_tup)
-                        print('vertices:', vertices)
-                        print('norm_vertices:', norm_vertices)
-                        print('BRS:', BRS)
-                        print('projected points:', projected_points)
-                        print('---')
-                #####
-                # Compute control error
-                projected_diff = vertices - projected_points
-                c_error = (model.A @ (projected_diff).T).T
-                
-                control_error[a_tup]['neg'][si] = c_error.min(axis=0)
-                control_error[a_tup]['pos'][si] = c_error.max(axis=0)
-                
-                if a_tup == (5,5) and s_tup == (5,5):
-                    print('difference:', projected_diff)
-                    print('control error:', c_error)
-                
-                # Check if we also have to account for the epistemic error
-                if flags['parametric_A']:
-                
-                    e_error_neg = np.zeros((len(model.A_set), model.n))
-                    e_error_pos = np.zeros((len(model.A_set), model.n))
-                
-                    # Compute epistemic error
-                    for i,A_vertex in enumerate(model.A_set):
-                        e_error = ((A_vertex - model.A) @ vertices.T).T
-                        e_error_neg[i] = e_error.min(axis=0)
-                        e_error_pos[i] = e_error.max(axis=0)
-                        
-                    control_error[a_tup]['neg'][si] += e_error_neg.min(axis=0)
-                    control_error[a_tup]['pos'][si] += e_error_pos.max(axis=0)
-                
-                if s_tup in enabled:
-                    enabled[s_tup].add(a_tup)
-                else:
-                    enabled[s_tup] = {a_tup}
-                    
-                if a_tup in enabled_inv:
-                    enabled_inv[a_tup].add(s_tup)
-                else:
-                    enabled_inv[a_tup] = {s_tup}
-                        
-        control_error[a_tup] = {'neg': control_error[a_tup]['neg'].min(axis=0),
-                                'pos': control_error[a_tup]['pos'].max(axis=0)}
-            
-    return enabled, enabled_inv, control_error
-
 def find_backward(A_hat, error, alpha, G):
 
     x = cp.Variable(len(A_hat))
@@ -489,10 +318,11 @@ def compute_epistemic_error(model, vertices):
         
     return e_error_neg.min(axis=0), e_error_pos.max(axis=0)
 
-def defEnabledActions_UA_V2(flags, partition, actions, model, dim_n=False, dim_p=False, verbose=False):
+def defEnabledActions_UA_V2(setup, flags, partition, actions, model, prop, 
+                            dim_n=False, dim_p=False, verbose=False):
     
     full_n = model.n
-    nrPerDim = [model.setup['targets']['number'][i] if i in dim_n else 1 for i in range(full_n)]
+    nrPerDim = [prop.targets['number'][i] if i in dim_n else 1 for i in range(full_n)]
     action_range = list(itertools.product(*map(range, [0]*full_n, nrPerDim)))
     
     # Compute the backward reachable set (not accounting for target point yet)    
@@ -503,7 +333,7 @@ def defEnabledActions_UA_V2(flags, partition, actions, model, dim_n=False, dim_p
         compositional = False
         
     else:
-        model = partial_model(flags, deepcopy(model), dim_n, dim_p)
+        model, prop = partial_model(flags, deepcopy(model), deepcopy(prop), dim_n, dim_p)
     
         compositional = True
     
@@ -511,11 +341,11 @@ def defEnabledActions_UA_V2(flags, partition, actions, model, dim_n=False, dim_p
     enabled_inv = {}   
     control_error = {}
     
-    control_error_neg = model.setup['max_control_error'][:,0]
-    control_error_pos = model.setup['max_control_error'][:,1]
+    control_error_neg = prop.error['max_control_error'][:,0]
+    control_error_pos = prop.error['max_control_error'][:,1]
     
     # Create LP object
-    Q = LP_vertices_contained(model, np.unique(actions['backreach_inflated'][0][:, dim_n], axis=0))
+    Q = LP_vertices_contained(model, np.unique(actions['backreach_inflated'][0][:, dim_n], axis=0), solver=setup.cvx['solver'])
     
     # For every action
     for a_tup in progressbar(action_range, redirect_stdout=True):
@@ -534,7 +364,7 @@ def defEnabledActions_UA_V2(flags, partition, actions, model, dim_n=False, dim_p
         
         # Determine set of regions that potentially intersect with G
         _, idx_edgeV = computeRegionIdx(BRS_overapprox_box, 
-                                        model.setup['partition'],
+                                        prop.partition,
                                         borderOutside=[False,True])
         
         # Transpose because we want the min/max combinations per dimension
@@ -572,11 +402,11 @@ def defEnabledActions_UA_V2(flags, partition, actions, model, dim_n=False, dim_p
                     epist_error_neg[si], epist_error_pos[si] = \
                         compute_epistemic_error(model, unique_verts)    
                 
-                if 'max_action_distance' in model.setup:
+                if 'max_action_distance' in prop.error:
                     s_center = partition['R']['center'][s]
                     
-                    if any(a_center - s_center > model.setup['max_action_distance']) or \
-                       any(a_center - s_center < -model.setup['max_action_distance']):
+                    if any(a_center - s_center > prop.error['max_action_distance']) or \
+                       any(a_center - s_center < -prop.error['max_action_distance']):
                            print('Disable action from', s_tup, s_center, 'to', a_tup, a_center)
                            
                            continue

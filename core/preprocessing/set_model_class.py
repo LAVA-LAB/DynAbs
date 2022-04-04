@@ -19,14 +19,14 @@ ______________________________________________________________________________
 """
 
 import numpy as np
-from core import modelDefinitions
+from core import model_definitions
 from core.preprocessing.user_interface import user_choice
 from inspect import getmembers, isclass # To get list of all available models
 
 def set_model_class():
 
     # Retreive a list of all available models
-    modelClasses = np.array(getmembers(modelDefinitions, isclass))
+    modelClasses = np.array(getmembers(model_definitions, isclass))
     application, application_id  = user_choice('application',
                                                list(modelClasses[:,0]))
     model = modelClasses[application_id, 1]()

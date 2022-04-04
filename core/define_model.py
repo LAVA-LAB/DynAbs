@@ -21,7 +21,7 @@ ______________________________________________________________________________
 import numpy as np              # Import Numpy for computations
 from scipy.sparse.csgraph import connected_components
 
-def define_model(setup, model_raw):
+def define_model(setup, model_raw, prop):
     '''
     Define model within abstraction object for given value of lump
 
@@ -37,17 +37,17 @@ def define_model(setup, model_raw):
 
     '''
     
-    model_raw.setup['partition']['boundary'] = np.array(model_raw.setup['partition']['boundary']).astype(float)
-    model_raw.setup['partition']['number'] = np.array(model_raw.setup['partition']['number']).astype(int)
+    prop.partition['boundary'] = np.array(prop.partition['boundary']).astype(float)
+    prop.partition['number'] = np.array(prop.partition['number']).astype(int)
     
-    model_raw.setup['targets']['boundary'] = np.array(model_raw.setup['targets']['boundary']).astype(float)
-    model_raw.setup['targets']['number'] = np.array(model_raw.setup['targets']['number']).astype(int)
+    prop.targets['boundary'] = np.array(prop.targets['boundary']).astype(float)
+    prop.targets['number'] = np.array(prop.targets['number']).astype(int)
     
     # Control limitations
-    model_raw.uMin   = np.array( model_raw.setup['control']['limits']['uMin'] ).astype(float)
-    model_raw.uMax   = np.array( model_raw.setup['control']['limits']['uMax'] ).astype(float)
+    model_raw.uMin   = np.array( prop.control['uMin'] ).astype(float)
+    model_raw.uMax   = np.array( prop.control['uMax'] ).astype(float)
     
-    lump = model_raw.setup['lump']
+    lump = model_raw.lump
     
     # Create noise samples (for 3D UAV benchmark)
     if model_raw.name in ['UAV'] and model_raw.modelDim == 3:
@@ -93,7 +93,7 @@ def define_model(setup, model_raw):
         model.equilibrium = np.linalg.inv(np.eye(model.n) - model.A) @ \
             (model.B @ uAvg + model.Q_flat)
     
-    return model
+    return {'model': model, 'prop': prop}
 
 def find_connected_components(A, B, n, p):
     

@@ -31,7 +31,7 @@ from .define_partition import definePartitions, defStateLabelSet
 from .compute_probabilities import computeScenarioBounds_sparse, \
     computeScenarioBounds_error, plot_transition
 from .commons import tic, ticDiff, tocDiff, table, printWarning
-from .compute_actions import defEnabledActions, defEnabledActions_UA_V2, defEnabledActions_UA, def_all_BRS
+from .compute_actions import defEnabledActions, defEnabledActions_UA_V2, def_all_BRS
 from .create_iMDP import mdp
 from .postprocessing.createPlots import partition_plot
 
@@ -61,7 +61,7 @@ class Abstraction(object):
         print(' -- Dimension of the control input:',self.model.p)
         
         # Number of simulation time steps
-        self.N = int(self.model.setup['endTime'] / self.model.setup['lump'])
+        self.N = int(self.prop.end_time / self.model.lump)
         
         if hasattr(self.model, 'A_set'):
             self.flags['parametric_A'] = True
@@ -117,13 +117,13 @@ class Abstraction(object):
 
         '''
         
-        print(' -- Compute manual target points; no. per dim:',self.model.setup['targets']['number'])
+        print(' -- Compute manual target points; no. per dim:',self.prop.targets['number'])
     
         # Create target points (similar to a partition of the state space)
         d = definePartitions(self.model.n,
-                self.model.setup['targets']['number'],
-                self.model.setup['targets']['width'],
-                self.model.setup['targets']['origin'],
+                self.prop.targets['number'],
+                self.prop.targets['width'],
+                self.prop.targets['origin'],
                 onlyCenter = True)
         
         return d
@@ -144,14 +144,14 @@ class Abstraction(object):
         self.partition = dict()
         
         # Determine origin of partition
-        self.model.setup['partition']['number'] = np.array(self.model.setup['partition']['number'])
-        self.model.setup['partition']['width'] = np.array([-1,1]) @ self.model.setup['partition']['boundary'].T / self.model.setup['partition']['number']
-        self.model.setup['partition']['origin'] = 0.5 * np.ones(2) @ self.model.setup['partition']['boundary'].T
+        self.prop.partition['number'] = np.array(self.prop.partition['number'])
+        self.prop.partition['width'] = np.array([-1,1]) @ self.prop.partition['boundary'].T / self.prop.partition['number']
+        self.prop.partition['origin'] = 0.5 * np.ones(2) @ self.prop.partition['boundary'].T
         
         self.partition['R'] = definePartitions(self.model.n,
-                            self.model.setup['partition']['number'],
-                            self.model.setup['partition']['width'],
-                            self.model.setup['partition']['origin'],
+                            self.prop.partition['number'],
+                            self.prop.partition['width'],
+                            self.prop.partition['origin'],
                             onlyCenter = False)
         
         self.partition['nr_regions'] = len(self.partition['R']['center'])
@@ -159,14 +159,14 @@ class Abstraction(object):
         # Determine goal regions
         self.partition['goal'], self.partition['goal_slices'], self.partition['goal_idx'] = defStateLabelSet(
             allCenters = self.partition['R']['c_tuple'], 
-            sets = self.model.setup['specification']['goal'],
-            partition = self.model.setup['partition'])
+            sets = self.prop.goal,
+            partition = self.prop.partition)
         
         # Determine critical regions
         self.partition['critical'], self.partition['critical_slices'], self.partition['critical_idx'] = defStateLabelSet(
             allCenters = self.partition['R']['c_tuple'], 
-            sets = self.model.setup['specification']['critical'],
-            partition = self.model.setup['partition'])
+            sets = self.prop.critical,
+            partition = self.prop.partition)
         
         print(' -- Number of regions:',self.partition['nr_regions'])
         print(' -- Number of goal regions:',len(self.partition['goal']))
@@ -191,34 +191,39 @@ class Abstraction(object):
         self.actions = {}
         
         # Create the target point for every action (= every state)
-        if type(self.model.setup['targets']['number']) == str:
+        if type(self.prop.targets['number']) == str:
             # Set default target points to the center of every region
-            self.model.setup['targets']['number'] = self.model.setup['partition']['number']
-            self.model.setup['targets']['width'] = self.model.setup['partition']['width']
-            self.model.setup['targets']['origin'] = self.model.setup['partition']['origin']
+            self.prop.targets['number'] = self.prop.partition['number']
+            self.prop.targets['width'] = self.prop.partition['width']
+            self.prop.targets['origin'] = self.prop.partition['origin']
             
             self.actions['T'] = {'center': self.partition['R']['center'],
                                  'idx': self.partition['R']['idx'] }
             
         else:
-            self.model.setup['targets']['number'] = np.array(self.model.setup['targets']['number'])
-            self.model.setup['targets']['width'] = np.array([-1,1]) @ self.model.setup['targets']['boundary'].T / self.model.setup['targets']['number']
-            self.model.setup['targets']['origin'] = 0.5 * np.ones(2) @ self.model.setup['targets']['boundary'].T
+            self.prop.targets['number'] = np.array(self.prop.targets['number'])
+            self.prop.targets['width'] = np.array([-1,1]) @ self.prop.targets['boundary'].T / self.prop.targets['number']
+            self.prop.targets['origin'] = 0.5 * np.ones(2) @ self.prop.targets['boundary'].T
             
             self.actions['T'] = self._create_manual_targets()
         
         # Add additional target points if this is requested
-        if 'extra_targets' in self.model.setup:
+        if 'extra' in self.prop.targets:
             self.actions['T']['center'] = np.vstack(( self.actions['T']['center'],
-                                                   self.model.setup['extra_targets'] ))
+                                                   self.prop['extra'] ))
         
         self.actions['nr_actions'] = len(self.actions['T']['center'])
         
         print('\nComputing all backward reachable sets...')
         
-        self.actions['backreach'], self.actions['backreach_inflated'] = \
-            def_all_BRS(self.model, self.actions['T']['center'],
-                        self.model.setup['max_control_error'])
+        if self.flags['underactuated']:
+            self.actions['backreach'], self.actions['backreach_inflated'] = \
+                def_all_BRS(self.model, self.actions['T']['center'],
+                            self.prop.error['max_control_error'])
+                
+        else:
+            self.actions['backreach'] = \
+                def_all_BRS(self.model, self.actions['T']['center'])
         
         print('\nComputing set of enabled actions...')
         
@@ -241,8 +246,9 @@ class Abstraction(object):
             
                 print(' --- In dimensions of state', dn,'and control', dp)    
             
-                A[i], A_inv[i], CE[i] = defEnabledActions_UA_V2(self.flags, 
-                            self.partition, self.actions, self.model, dn, dp)
+                A[i], A_inv[i], CE[i] = defEnabledActions_UA_V2(self.setup, 
+                          self.flags, self.partition, self.actions, self.model, 
+                          self.prop, dn, dp)
             
             ### Compositional model building
                     
@@ -341,7 +347,7 @@ class Abstraction(object):
         
         # assert False
         
-    def build_iMDP(self, problem_type='reachavoid'):
+    def build_iMDP(self):
         '''
         Build the (i)MDP and create all respective PRISM files.
 
@@ -352,6 +358,8 @@ class Abstraction(object):
             transitions.
 
         '''
+        
+        problem_type = self.prop.problem_type
         
         # Initialize MDP object
         self.mdp = mdp(self.setup, self.N, self.partition, self.actions)
@@ -505,7 +513,7 @@ class Abstraction(object):
                 self.mc = None    
         
             if self.setup.plotting['probabilityPlots']:
-                createProbabilityPlots(self.setup, self.N, self.model,
+                createProbabilityPlots(self.setup, self.N, self.model, self.prop,
                                        self.results, self.partition, self.mc)
                     
         else:
@@ -534,7 +542,7 @@ class Abstraction(object):
 ###############################
 
 class scenarioBasedAbstraction(Abstraction):
-    def __init__(self, setup, model):
+    def __init__(self, setup, model_prop):
         '''
         Initialize scenario-based abstraction (ScAb) object
 
@@ -553,7 +561,8 @@ class scenarioBasedAbstraction(Abstraction):
         
         # Copy setup to internal variable
         self.setup = setup
-        self.model = model
+        self.model = model_prop['model']
+        self.prop  = model_prop['prop']
         
         # Start timer
         tic()
@@ -656,14 +665,14 @@ class scenarioBasedAbstraction(Abstraction):
                         exclude = []
                     else:
                         exclude = exclude_samples(samples, 
-                                          self.model.setup['partition']['width'])
+                                          self.prop.partition['width'])
                     
                     # Plot one transition plus samples
                     a_plot = np.round(self.actions['nr_actions'] / 2).astype(int)
                     if a == a_plot:
                         
                         plot_transition(samples, self.actions['control_error'][a], 
-                            (0,1), (), self.setup, self.model, self.partition,
+                            (0,1), (), self.setup, self.model, self.prop, self.partition,
                             np.array([]), self.actions['backreach'][a])
                         
                     if a == 3136:
@@ -672,7 +681,7 @@ class scenarioBasedAbstraction(Abstraction):
                         verb = False
                     
                     prob[a] = computeScenarioBounds_error(self.setup, 
-                          self.model.setup['partition'], 
+                          self.prop.partition, 
                           self.partition, self.trans, samples, self.actions['control_error'][a], exclude, verbose=verb)
                     
                     # Print normal row in table
@@ -685,7 +694,7 @@ class scenarioBasedAbstraction(Abstraction):
                 else:
                     
                     prob[a] = computeScenarioBounds_sparse(self.setup, 
-                          self.model.setup['partition'], 
+                          self.prop.partition, 
                           self.partition, self.trans, samples)
                 
                     # Print normal row in table

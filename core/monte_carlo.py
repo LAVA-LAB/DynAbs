@@ -179,7 +179,7 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
                     
                     # Compute all centers of regions associated with points
                     center_coord = computeRegionCenters(x[k], 
-                        ScAb.model.setup['partition']).flatten()
+                        ScAb.prop.partition).flatten()
                     
                     if tuple(center_coord) in ScAb.partition['R']['c_tuple']:
                         # Save that state is currently in region ii

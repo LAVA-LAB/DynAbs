@@ -159,7 +159,7 @@ def def_backward_reach(model):
         
     return backreach
 
-def defEnabledActions_UA(partition, model, verbose=False):
+def defEnabledActions_UA(partition, model, prop, verbose=False):
     
     # Compute the backward reachable set (not accounting for target point yet)
     G_zero = def_backward_reach(model)
@@ -212,7 +212,7 @@ def defEnabledActions_UA(partition, model, verbose=False):
         G_curr_box = overapprox_box(backreach[a])
         
         # Determine set of regions that potentially intersect with G
-        _, idx_edge = computeRegionIdx(G_curr_box, model.setup['partition'],
+        _, idx_edge = computeRegionIdx(G_curr_box, prop.partition,
                                        borderOutside=[False,True])
         
         # Transpose because we want the min/max combinations per dimension

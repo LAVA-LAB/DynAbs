@@ -10,7 +10,7 @@ import numpy as np
 
 class abstraction_error(object):
     
-    def __init__(self, model, no_verts):
+    def __init__(self, model, prop, no_verts):
         
         self.A = model.A
         
@@ -31,10 +31,10 @@ class abstraction_error(object):
             [self.x[w] == cp.sum([self.G_curr[i] * self.alpha[w][i] for i in range(v)]) for w in range(no_verts)] + \
             [self.e[w] == self.A @ (self.vertex[w] - self.x[w]) for w in range(no_verts)]
         
-        if 'max_control_error' in model.setup:
+        if 'max_control_error' in prop.error:
             self.constraints += \
-                [self.A @ (self.vertex[w] - self.x[w]) <= model.setup['max_control_error'][:,1] for w in range(no_verts)] + \
-                [self.A @ (self.vertex[w] - self.x[w]) >= model.setup['max_control_error'][:,0] for w in range(no_verts)]
+                [self.A @ (self.vertex[w] - self.x[w]) <= prop.error['max_control_error'][:,1] for w in range(no_verts)] + \
+                [self.A @ (self.vertex[w] - self.x[w]) >= prop.error['max_control_error'][:,0] for w in range(no_verts)]
         
         # self.obj = cp.Minimize(cp.sum([cp.norm2(self.x[w] - self.vertex[w]) for w in range(no_verts)]))
         # self.obj = cp.Minimize(cp.sum([
@@ -70,9 +70,11 @@ class abstraction_error(object):
         
 class LP_vertices_contained(object):
     
-    def __init__(self, model, G):
+    def __init__(self, model, G, solver):
         
-        v = model.n ** 2
+        self.solver = solver
+        
+        v = 2 ** model.n
         w = len(G)
         
         self.G_curr     = cp.Parameter(G.shape)
@@ -94,7 +96,15 @@ class LP_vertices_contained(object):
     def solve(self, vertices):
         
         self.P_vertices.value = vertices
-        self.prob.solve(warm_start = True, solver='GUROBI') #, eps_abs=1e-4, eps_rel=1e-4)
+        
+        if self.solver == 'GUROBI':
+            self.prob.solve(warm_start = True, solver='GUROBI')
+        elif self.solver == 'ECOS':
+            self.prob.solve(warm_start = True, solver='ECOS')
+        elif self.solver == 'OSQP':
+            self.prob.solve(warm_start = True, solver='OSQP', eps_abs=1e-4, eps_rel=1e-4)
+        else:
+            self.prob.solve(warm_start = True)
         
         if self.prob.status != "infeasible":
             return True

@@ -6,15 +6,6 @@
 |                                      |
 |  SCENARIO-BASED ABSTRACTION PROGRAM  |
 |______________________________________|
-
-Implementation of the method proposed in the paper:
-
-  Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & 
-  Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous 
-  Systems with Non-Gaussian Noise. AAAI 2022.
-
-Originally coded by:        Thom S. Badings
-Contact e-mail address:     thom.badings@ru.nl>
 ______________________________________________________________________________
 """
 
@@ -26,9 +17,7 @@ import pandas as pd             # Import Pandas to store data in frames
 import numpy as np              # Import Numpy for computations
 import matplotlib.pyplot as plt # Import Pyplot to generate plots
 import os
-
 import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 300
 
 # Load main classes and methods
 from core.define_model import define_model
@@ -40,15 +29,26 @@ from core.commons import createDirectory
 from core.preprocessing.master_classes import settings, result_exporter
 
 np.random.seed(1)
+mpl.rcParams['figure.dpi'] = 300
+base_dir = os.path.dirname(os.path.abspath(__file__))
 
 #-----------------------------------------------------------------------------
-# Create model and settings object
+# Create model and set specification/property
 #-----------------------------------------------------------------------------
 
+# Define model
 model_raw = set_model_class()
 
+# Define property
+prop = model_raw.set_property()
+
+prop.problem_type = 'reachavoid'
+
+#-----------------------------------------------------------------------------
+# Load default settings and overwrite by options provided by the user
+#-----------------------------------------------------------------------------
+
 # Create settings object
-base_dir = os.path.dirname(os.path.abspath(__file__))
 setup = settings(application=model_raw.name, base_dir = base_dir)
 
 # Manual changes in general settings
@@ -56,35 +56,29 @@ setup.setOptions(category       = 'plotting',
         exportFormats           = ['pdf'], 
         partitionPlot           = True,
         partitionPlot_plotHull  = True)
+setup.cvx['solver'] = 'GUROBI'
 setup.parametric = False
 
-# Provide some user prompts
+# Give some user prompts
 setup.set_monte_carlo()
 setup.set_new_abstraction()
 
-print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
-print('PROGRAM STARTED AT \n'+setup.time['datetime'])
-print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
-
-# Set LTI model in main object
-model_raw.setModel(observer=False)
-
-assert False
+print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n' +
+      'PROGRAM STARTED AT \n'+setup.time['datetime'] +
+      '\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
     
 # Create the main object for the current instance
-ScAb = scenarioBasedAbstraction(setup, define_model(setup, model_raw))
+ScAb = scenarioBasedAbstraction(setup, define_model(setup, model_raw, prop))
 ScAb.define_states()
-del setup
 
 #-----------------------------------------------------------------------------
 # Define actions (only required once outside iterative scheme)
 #-----------------------------------------------------------------------------
 
 if ScAb.setup.main['newRun'] is True:        
-
     # Create directories
-    createDirectory(ScAb.setup.directories['outputF'])    
-
+    createDirectory(ScAb.setup.directories['outputF']) 
+    
     # Create actions and determine which ones are enabled
     ScAb.define_actions()
 
@@ -100,13 +94,11 @@ exporter = result_exporter()
 
 # For every iteration... (or once, if iterations are disabled)
 while case_id < ScAb.setup.scenarios['maxIters']:
-        
     # Shortcut to the number of samples
     N = ScAb.setup.scenarios['samples']        
         
     # Only perform code below is a new run is chosen
     if ScAb.setup.main['newRun'] is True:
-    
         print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
         print('START ITERATION WITH NUMBER OF SAMPLES N = '+str(N))
     
@@ -117,7 +109,7 @@ while case_id < ScAb.setup.scenarios['maxIters']:
         ScAb.define_probabilities()
         
         # Build and solve interval MDP
-        model_size = ScAb.build_iMDP(problem_type='reachavoid')
+        model_size = ScAb.build_iMDP()
         ScAb.solve_iMDP()
         
         # Export the results of the current iteration
@@ -125,14 +117,10 @@ while case_id < ScAb.setup.scenarios['maxIters']:
         
     # If no new run was chosen, load the results from existing data files
     else:
-        
         # Load results from existing PRISM results files
         ScAb.setup.directories['outputFcase'], policy_file, vector_file = \
             load_PRISM_result_file(ScAb.setup.directories['output'], 
                                    ScAb.model.name, N)
-        
-        print(' -- Load policy file:',policy_file, '\n',
-              ' -- Load vector file:',vector_file)
     
         # Save case-specific data in Excel
         output_file = ScAb.setup.directories['outputFcase'] + \
@@ -143,8 +131,6 @@ while case_id < ScAb.setup.scenarios['maxIters']:
     
         # Load results
         ScAb.loadPRISMresults(policy_file, vector_file)
-    
-    # %%
     
     if ScAb.setup.montecarlo['enabled']:
         ScAb.mc = monte_carlo(ScAb, writer=writer)
@@ -157,8 +143,6 @@ while case_id < ScAb.setup.scenarios['maxIters']:
     # Store run times of current iterations        
     time_df = pd.DataFrame( data=ScAb.time, index=[case_id] )
     time_df.to_excel(writer, sheet_name='Run time')
-    
-    # Close the Pandas Excel writer and output the Excel file.
     writer.save()
     plt.close('all')
     
@@ -167,7 +151,6 @@ while case_id < ScAb.setup.scenarios['maxIters']:
         exporter.add_to_df(pd.DataFrame(data=N, index=[case_id], columns=['N']), 'general')
         exporter.add_to_df(time_df, 'run_times')
         exporter.add_to_df(pd.DataFrame(data=model_size, index=[case_id]), 'model_size')
-        
         case_id += 1
         ScAb.setup.scenarios['samples'] = \
             int(ScAb.setup.scenarios['samples']*ScAb.setup.scenarios['gamma'])

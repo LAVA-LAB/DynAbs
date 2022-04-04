@@ -142,4 +142,7 @@ def load_PRISM_result_file(output_folder, model_name, N):
         policy_file = None
         vector_file = None
         
+    print(' -- Load policy file:',policy_file, '\n',
+          ' -- Load vector file:',vector_file)
+        
     return folder_to_load, policy_file, vector_file

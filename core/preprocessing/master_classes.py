@@ -221,6 +221,8 @@ class settings(object):
         self.directories = directories
         self.main = main
         
+        self.cvx = {'solver': 'ECOS'}
+        
         loadOptions(base_dir+'/options.txt', self)
 
     def set_monte_carlo(self):
@@ -301,16 +303,28 @@ class LTI_master(object):
 
         '''
         
-        self.setup = {
-                'partition' :       {},
-                'specification' :   {},
-                'targets' :         {},
-                'noise' :           {},
-                'control' :         {'limits': {} },
-                'endTime' :         32
-            }
+        self.setup = {}
         
         self.name = type(self).__name__
+        
+class property_master(object):
+    
+    def __init__(self):
+        '''
+        Initialize the model object
+
+        Returns
+        -------
+        None.
+
+        '''
+        
+        self.partition = {}
+        self.specification = {}
+        self.targets = {}
+        self.noise = {}
+        self.control = {}
+        self.error = {}
         
 class result_exporter(object):
     
