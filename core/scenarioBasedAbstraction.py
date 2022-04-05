@@ -684,6 +684,9 @@ class scenarioBasedAbstraction(Abstraction):
                           self.spec.partition, 
                           self.partition, self.trans, samples, self.actions['control_error'][a], exclude, verbose=verb)
                     
+                    if verb:
+                        assert False
+                    
                     # Print normal row in table
                     if a % printEvery == 0:
                         nr_transitions = len(prob[a]['successor_idxs'])

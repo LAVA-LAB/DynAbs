@@ -206,6 +206,9 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     
     # Determine samples that are partially outside
     partially_out = (imin < 0).any(axis=1) + (imax > nrPerDim - 1).any(axis=1)
+    
+    print('Partially out sum:', partially_out.sum())
+    
     counts_absorb_upp = partially_out.sum()
     
     # If we precisely know where the sample is, and it is not outside the
