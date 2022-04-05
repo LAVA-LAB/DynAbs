@@ -675,7 +675,7 @@ class scenarioBasedAbstraction(Abstraction):
                             (0,1), (), self.setup, self.model, self.spec, self.partition,
                             np.array([]), self.actions['backreach'][a])
                         
-                    if a == 3136:
+                    if a == 977:
                         verb = True
                     else:
                         verb = False

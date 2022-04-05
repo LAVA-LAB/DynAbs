@@ -9,7 +9,8 @@
 ______________________________________________________________________________
 """
 
-# %run "/home/thom/Documents/Abstractions/sample-abstract/SBA-RunFile.py"
+# %run "/home/thom/Documents/Abstractions/sample-abstract/RunFile.py"
+# %run "/home/tbadings/Documents/SBA/sample-abstract/RunFile.py"
 
 # Load general packages
 from datetime import datetime   # Import Datetime to get current date/time

@@ -232,6 +232,8 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
                     # Implement the control into the physical (unobservable) system
                     x_hat = ScAb.model.A @ x[k] + ScAb.model.B @ u[k] + ScAb.model.Q_flat
                     
+                    print('Diff:', x_hat - x_goal[k+1])
+                    
                     if ScAb.setup.scenarios['gaussian'] is True:
                         # Use Gaussian process noise
                         x[k+1] = x_hat + w_array[i_abs, m, k]

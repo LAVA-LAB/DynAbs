@@ -183,6 +183,10 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     imax, iMax = computeRegionIdx(samples + error['pos'], partition_setup,
                                   borderOutside=[True]*len(samples))
     
+    if verbose:
+        print('error:', error)
+        print(imin, imax)
+    
     counts_absorb_low = 0
     counts_absorb_upp = 0
     

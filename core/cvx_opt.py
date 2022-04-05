@@ -33,14 +33,8 @@ class abstraction_error(object):
         
         if 'max_control_error' in spec.error:
             self.constraints += \
-                [self.A @ (self.vertex[w] - self.x[w]) <= spec.error['max_control_error'][:,1] for w in range(no_verts)] + \
-                [self.A @ (self.vertex[w] - self.x[w]) >= spec.error['max_control_error'][:,0] for w in range(no_verts)]
-        
-        # self.obj = cp.Minimize(cp.sum([cp.norm2(self.x[w] - self.vertex[w]) for w in range(no_verts)]))
-        # self.obj = cp.Minimize(cp.sum([
-        #                     cp.quad_form(self.x[w] - self.vertex[w], np.diag([10,1]))
-        #                     for w in range(no_verts)
-        #                     ]))
+                [self.e[w] <= spec.error['max_control_error'][:,1] for w in range(no_verts)] + \
+                [self.e[w] >= spec.error['max_control_error'][:,0] for w in range(no_verts)]
         
         self.obj = cp.Minimize(cp.sum([
                             cp.quad_form(self.e[w], np.eye(model.n))
