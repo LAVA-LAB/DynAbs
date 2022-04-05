@@ -345,8 +345,6 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
         'deadlock_approx': deadlock_approx,
     }
     
-    print('Return:', returnDict)
-    
     return returnDict
 
 

@@ -79,8 +79,8 @@ if ScAb.setup.main['newRun'] is True:
     # Create directories
     createDirectory(ScAb.setup.directories['outputF']) 
     
-    # Create actions and determine which ones are enabled
-    ScAb.define_actions()
+# Create actions and determine which ones are enabled
+ScAb.define_actions()
 
 #-----------------------------------------------------------------------------
 # Code below is repeated every iteration of the iterative scheme
