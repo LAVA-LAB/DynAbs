@@ -230,17 +230,19 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
             counts_low[key] += 1
             counts_upp[key] += 1
             
-    iMin_rem = iMin[~in_single_region & ~fully_out]
-    iMax_rem = iMax[~in_single_region & ~fully_out]
-    c_rem    = Nrange[~in_single_region & ~fully_out]
+    keep = ~in_single_region & ~fully_out
+    iMin_rem = iMin[keep]
+    iMax_rem = iMax[keep]
+    c_rem    = Nrange[keep]
             
     # For the remaining samples, only increment the upper bound count
     # for c,(i,j) in enumerate(zip(iMin, iMax)):
-    for c,i,j in zip(c_rem, iMin_rem, iMax_rem):
-        counts_upp[ tuple(map(slice, i, j+1)) ] += 1
+    for x,c in enumerate(c_rem):        
+    # for c,i,j in zip(c_rem, iMin_rem, iMax_rem):
+        counts_upp[ tuple(map(slice, iMin_rem[x], iMax_rem[x]+1)) ] += 1
         
         if check_exclude:
-          for key in itertools.product(*map(np.arange, i, j+1)):
+          for key in itertools.product(*map(np.arange, iMin_rem[x], iMax_rem[x]+1)):
             
                 # If first occurence of this region, this just add it
                 if key not in i_excl:
@@ -259,15 +261,15 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
                         counts_upp[key] -= 1
                         i_excl[key].pop()
                 
-        index_tuples = set(itertools.product(*map(range, i, j+1)))
+        index_tuples = set(itertools.product(*map(range, iMin_rem[x], iMax_rem[x]+1)))
         
         # Check if all are goal states
-        if index_tuples.issubset( partition['goal_idx'] ):
+        if index_tuples.issubset( partition['goal_idx'] ) and not partially_out[x]:
             counts_goal_low += 1
             counts_goal_upp += 1
             
         # Check if all are critical states
-        elif index_tuples.issubset( partition['critical_idx'] ):
+        elif index_tuples.issubset( partition['critical_idx'] ) and not partially_out[x]:
             counts_critical_low += 1
             counts_critical_upp += 1
             

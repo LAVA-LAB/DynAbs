@@ -330,12 +330,13 @@ class Abstraction(object):
             nr_A, self.actions['enabled'], \
              self.actions['enabled_inv'], _ = defEnabledActions(self.setup, self.partition, self.actions, self.model)
               
-        if 'partition_plot_action' in self.model.setup:
-            a = self.model.setup['partition_plot_action']
-        else:
-            a = np.round(self.actions['nr_actions'] / 2).astype(int)
-            
-        partition_plot((0,1), (), self, cut_value=np.array([]), a=a )
+        if self.setup.plotting['partitionPlot']:
+            if 'partition_plot_action' in self.model.setup:
+                a = self.model.setup['partition_plot_action']
+            else:
+                a = np.round(self.actions['nr_actions'] / 2).astype(int)
+                
+            partition_plot((0,1), (), self, cut_value=np.array([]), a=a )
                 
         print(nr_A,'actions enabled')
         if nr_A == 0:
