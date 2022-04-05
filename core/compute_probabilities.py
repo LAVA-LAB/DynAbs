@@ -207,7 +207,8 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     # Determine samples that are partially outside
     partially_out = (imin < 0).any(axis=1) + (imax > nrPerDim - 1).any(axis=1)
     
-    print('Partially out sum:', partially_out.sum())
+    if verbose:
+        print('Partially out sum:', partially_out.sum())
     
     counts_absorb_upp = partially_out.sum()
     
@@ -343,6 +344,8 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
         'deadlock_interval_string': deadlock_string,
         'deadlock_approx': deadlock_approx,
     }
+    
+    print('Return:', returnDict)
     
     return returnDict
 
