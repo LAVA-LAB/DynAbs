@@ -52,16 +52,29 @@ class robot(master.LTI_master):
         
         # State transition matrix
         self.A  = np.array([[1, self.tau],
-                            [0, .8]])
+                            [0, .9]])
+        
+        mass_min = 0.95
+        mass_max = 1.05
         
         # self.A_set = [
         #             np.array([[1, self.tau],[0,0.7]]),
         #             np.array([[1, self.tau],[0,0.9]])
         #             ]
         
+        self.A_set = [
+                    np.array([[1, self.tau],[0,1-0.1/mass_min]]),
+                    np.array([[1, self.tau],[0,1-0.1/mass_max]])
+                    ]
+        
+        self.B_set = [
+                    np.array([[self.tau**2/2], [self.tau]]) * mass_min,
+                    np.array([[self.tau**2/2], [self.tau]]) * mass_max
+                    ]
+        
         # Input matrix
         self.B  = np.array([[self.tau**2/2],
-                                [self.tau]])
+                            [self.tau]])
         
         # Disturbance matrix
         self.Q  = np.array([[0],[0]])
@@ -110,7 +123,7 @@ class UAV(master.LTI_master):
         
         # State transition matrix
         Ablock = np.array([[1, self.tau],
-                          [0, 0.8]])
+                          [0, 0.9]])
         
         # Input matrix
         Bblock = np.array([[self.tau**2/2],
@@ -127,10 +140,21 @@ class UAV(master.LTI_master):
             self.A  = scipy.linalg.block_diag(Ablock, Ablock)
             self.B  = scipy.linalg.block_diag(Bblock, Bblock)
             
-            # self.A_set = [
-            #             self.A - np.diag([0, -0.1, 0, -0.1]),
-            #             self.A - np.diag([0, 0.1, 0, 0.1])
-            #             ]
+            mass_min = 0.95
+            mass_max = 1.05
+            
+            self.A_set = [
+                        self.A + np.diag([0, -0.9 + 1-0.1/mass_min, 0, -0.9 + 1-0.1/mass_min]),
+                        self.A + np.diag([0, -0.9 + 1-0.1/mass_max, 0, -0.9 + 1-0.1/mass_max])
+                        ]
+            
+            B_min = np.array([[self.tau**2/2], [self.tau]]) * mass_min
+            B_max = np.array([[self.tau**2/2], [self.tau]]) * mass_max
+            
+            self.B_set = [
+                        scipy.linalg.block_diag(B_min, B_min),
+                        scipy.linalg.block_diag(B_max, B_max)
+                        ]
         
             # Disturbance matrix
             self.Q  = np.array([[0],[0],[0],[0]])
@@ -400,6 +424,11 @@ class building_1room(master.LTI_master):
                 np.eye(2) + self.tau*A0_cont,
                 np.eye(2) + self.tau*A1_cont
                         ]
+            
+            self.B_set = [
+                self.B,
+                self.B
+                ]
             
         # Determine system dimensions
         self.n = np.size(self.A,1)

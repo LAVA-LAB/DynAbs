@@ -35,7 +35,7 @@ import cvxpy as cp
 
 from .define_partition import computeRegionIdx
 from .commons import in_hull, overapprox_box
-from .cvx_opt import abstraction_error, LP_vertices_contained
+from .cvx_opt import LP_vertices_contained
 
 def defInvArea(model):
     '''
@@ -185,6 +185,7 @@ def partial_model(flags, model, spec, dim_n, dim_p):
     
     if flags['parametric_A']:
         model.A_set     = [A[n_start:n_end, n_start:n_end] for A in model.A_set]
+        model.B_set     = [B[n_start:n_end, p_start:p_end] for B in model.B_set]
     
     spec.partition['number'] = spec.partition['number'][dim_n]
     spec.partition['width'] = spec.partition['width'][dim_n]
@@ -306,15 +307,24 @@ def compute_BRS_inflated(model, G, control_error_bound):
     return np.array(BRS_inflated)
 
 def compute_epistemic_error(model, vertices):
+
+    # Compute matrix of all possible control inputs
+    control_mat = [[model.uMin[i], model.uMax[i]] for i in 
+          range(model.p)]
     
-    e_error_neg = np.zeros((len(model.A_set), model.n))
-    e_error_pos = np.zeros((len(model.A_set), model.n))
+    e_error_neg = np.zeros((len(model.A_set) * 2**model.p, model.n))
+    e_error_pos = np.zeros((len(model.A_set) * 2**model.p, model.n))
+    
+    i = 0
 
     # Compute epistemic error
-    for i,A_vertex in enumerate(model.A_set):
-        e_error = ((A_vertex - model.A) @ vertices.T).T
-        e_error_neg[i] = e_error.min(axis=0)
-        e_error_pos[i] = e_error.max(axis=0)
+    for A_vertex, B_vertex in zip(model.A_set, model.B_set):
+        for u in itertools.product(*control_mat):
+        
+            e_error = ((A_vertex - model.A) @ vertices.T).T + (B_vertex - model.B) @ u
+            e_error_neg[i] = e_error.min(axis=0)
+            e_error_pos[i] = e_error.max(axis=0)
+            i += 1
         
     return e_error_neg.min(axis=0), e_error_pos.max(axis=0)
 
@@ -421,6 +431,8 @@ def defEnabledActions_UA_V2(setup, flags, partition, actions, model, spec,
                     enabled_inv[a_tup].add(s_tup)
                 else:
                     enabled_inv[a_tup] = {s_tup}
+                    
+        print('Epistemic error:', epist_error_neg.min(axis=0), '-', epist_error_pos.max(axis=0))
                     
         control_error[a_tup] = {'neg': control_error_neg + epist_error_neg.min(axis=0),
                                 'pos': control_error_pos + epist_error_pos.max(axis=0)}

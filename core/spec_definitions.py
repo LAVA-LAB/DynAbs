@@ -73,11 +73,11 @@ class UAV_2D_spec(master.spec_master):
                                                 [-6, 6]])
         self.partition['number']  = [11, 9, 11, 9]
         
-        self.targets['boundary']    = np.array([[-9, 9], 
-                                                [-6+8/3, 6-8/3], 
-                                                [-9, 9], 
-                                                [-6+8/3, 6-8/3]])
-        self.targets['number']      = [9, 7, 9, 7]
+        self.targets['boundary']    = np.array([[-11, 11], 
+                                                [-6, 6], 
+                                                [-11, 11], 
+                                                [-6, 6]])
+        self.targets['number']      = [11, 9, 11, 9]
         
         # Specification information
         self.goal = [
@@ -88,12 +88,12 @@ class UAV_2D_spec(master.spec_master):
             ]
         
         self.error['max_control_error'] = np.array([[-2, 2], 
-                                                [-4/3, 4/3],
+                                                [-1.5, 1.5],
                                                 [-2, 2], 
-                                                [-4/3, 4/3]])
-        self.error['max_action_distance'] = np.array([6,8,6,8])
+                                                [-1.5, 1.5]])
+        #self.error['max_action_distance'] = np.array([6,8,6,8])
         
-        self.x0 = np.array([-8,0,-8,0])                
+        self.x0 = np.array([-8,0,-8,0])  
         
 class UAV_3D_spec(master.spec_master):
     
