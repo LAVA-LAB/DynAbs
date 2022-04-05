@@ -346,8 +346,6 @@ class Abstraction(object):
         self.time['2_enabledActions'] = tocDiff(False)
         print('Enabled actions define - time:',self.time['2_enabledActions'])
         
-        # assert False
-        
     def build_iMDP(self):
         '''
         Build the (i)MDP and create all respective PRISM files.
@@ -684,9 +682,6 @@ class scenarioBasedAbstraction(Abstraction):
                     prob[a] = computeScenarioBounds_error(self.setup, 
                           self.spec.partition, 
                           self.partition, self.trans, samples, self.actions['control_error'][a], exclude, verbose=verb)
-                    
-                    if verb:
-                        assert False
                     
                     # Print normal row in table
                     if a % printEvery == 0:
