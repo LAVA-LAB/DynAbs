@@ -79,6 +79,9 @@ if ScAb.setup.main['newRun'] is True:
     # Create directories
     createDirectory(ScAb.setup.directories['outputF']) 
     
+else:
+    setup.plotting['partitionPlot'] = False
+    
 # Create actions and determine which ones are enabled
 ScAb.define_actions()
 
