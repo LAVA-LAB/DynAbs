@@ -83,9 +83,9 @@ class UAV_2D_spec(master.spec_master):
         self.goal = [
             np.array([[-10, -6], 'all', [6, 10], 'all'])
             ]
-        self.critical = [
-            np.array([[-10, -2], 'all', [-2, 2], 'all'])
-            ]
+        self.critical = None #[
+            # np.array([[-10, -2], 'all', [-2, 2], 'all'])
+            # ]
         
         self.x0 = np.array([-8,0,-8,0]) 
         
@@ -105,11 +105,11 @@ class UAV_2D_spec(master.spec_master):
         #     ]
         # self.critical = None
         
-        # self.error['max_control_error'] = np.array([[-2, 2], 
-        #                                         [-1.5, 1.5],
-        #                                         [-2, 2], 
-        #                                         [-1.5, 1.5]])
-        # #self.error['max_action_distance'] = np.array([6,8,6,8])
+        self.error['max_control_error'] = np.array([[-2, 2], 
+                                                [-1.5, 1.5],
+                                                [-2, 2], 
+                                                [-1.5, 1.5]])
+        #self.error['max_action_distance'] = np.array([6,8,6,8])
         
         self.x0 = np.array([-2,0,-2,0])  
         
