@@ -1,4 +1,5 @@
 # List of used packages
+cvxpy==1.2.0
 imageio==2.9.0
 matplotlib==3.3.4
 numpy==1.20.1
@@ -8,6 +9,7 @@ pyopengl==3.1.5
 pyqt5==5.15.2
 scipy==1.6.2
 seaborn==0.11.2
+spyder-kernels==2.3.0
 visvis==1.12.4
 xlrd==2.0.1
 xlsxwriter==3.0.1

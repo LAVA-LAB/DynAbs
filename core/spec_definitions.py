@@ -50,7 +50,7 @@ class robot_spec(master.spec_master):
         
         self.critical = None
         
-        self.error['max_control_error'] = np.array([[-2, 2], [-4/3, 4/3]])
+        self.error['max_control_error'] = np.array([[-2, 2], [-1, 1]])
         self.error['max_action_distance'] = np.array([6,8])
         
 class UAV_2D_spec(master.spec_master):
@@ -67,51 +67,33 @@ class UAV_2D_spec(master.spec_master):
         self.control['uMax'] = [4, 4]        
         
         # Partition size
-        self.partition['boundary']  = np.array([[-13, 13], 
+        self.partition['boundary']  = np.array([[-9, 9], 
                                                 [-6-4/3, 6+4/3], 
-                                                [-13, 13], 
+                                                [-13, 11], 
                                                 [-6-4/3, 6+4/3]])
-        self.partition['number']  = [13, 11, 13, 11]
+        self.partition['number']    = [9, 11, 12, 11]
         
-        self.targets['boundary']    = np.array([[-9, 9], 
+        self.targets['boundary']    = np.array([[-7, 7], 
                                                 [-6+4/3, 6-4/3], 
-                                                [-9, 9], 
+                                                [-11, 9], 
                                                 [-6+4/3, 6-4/3]])
-        self.targets['number']      = [9, 7, 9, 7]
+        self.targets['number']      = [7, 7, 10, 7]
         
         # Specification information
         self.goal = [
-            np.array([[-10, -6], 'all', [6, 10], 'all'])
+            np.array([[-6, -2], 'all', [4, 8], 'all'])
             ]
         self.critical = None #[
-            # np.array([[-10, -2], 'all', [-2, 2], 'all'])
-            # ]
+            #np.array([[-8, -6], 'all', [-2, 0], 'all'])
+            #]
         
-        self.x0 = np.array([-8,0,-8,0]) 
-        
-        # # Partition size
-        # self.partition['boundary']  = np.array([[-7, 7], 
-        #                                         [-6, 6], 
-        #                                         [-11, 5], 
-        #                                         [-6, 6]])
-        # self.partition['number']  = [7, 9, 8, 9]
-        
-        # self.targets['boundary']    = self.partition['boundary']
-        # self.targets['number']      = self.partition['number']
-        
-        # # Specification information
-        # self.goal = [
-        #     np.array([[-2, 2], 'all', [0, 4], 'all'])
-        #     ]
-        # self.critical = None
+        self.x0 = np.array([-6,0,-8,0]) 
         
         self.error['max_control_error'] = np.array([[-2, 2], 
-                                                [-1.5, 1.5],
+                                                [-1, 1],
                                                 [-2, 2], 
-                                                [-1.5, 1.5]])
+                                                [-1, 1]])
         #self.error['max_action_distance'] = np.array([6,8,6,8])
-        
-        self.x0 = np.array([-2,0,-2,0])  
         
 class UAV_3D_spec(master.spec_master):
     
