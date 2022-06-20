@@ -727,7 +727,7 @@ def UAVplot2D(i_show, i_hide, setup, model, abstr, traces, cut_value,
         
     plt.show()
     
-def UAVplot3d_visvis(setup, model, abstr, traces, cut_value):
+def UAVplot3d_visvis(setup, model, abstr, traces, cut_value, view='3D'):
     '''
     Create 3D trajectory plots for the 3D UAV benchmark
 
@@ -848,12 +848,15 @@ def UAVplot3d_visvis(setup, model, abstr, traces, cut_value):
     
     vv.axis('tight', axes=ax)
     
-    fig.position.w = 700
-    fig.position.h = 600
+    fig.position.w = 1400
+    fig.position.h = 2000
     
     im = vv.getframe(vv.gcf())
     
-    ax.SetView({'zoom':0.042, 'elevation':25, 'azimuth':-35})
+    if view == '3D':
+        ax.SetView({'zoom':0.042, 'elevation':25, 'azimuth':-35})
+    elif view == 'topdown':
+        ax.SetView({'zoom':0.042, 'elevation':90, 'azimuth':0})
     
     if 'outputFcase' in setup.directories:
     

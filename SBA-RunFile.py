@@ -133,6 +133,8 @@ if ScAb.setup.main['newRun'] is True:
     # Create directories
     createDirectory(ScAb.setup.directories['outputF'])    
 
+    assert False
+
     # Create actions and determine which ones are enabled
     ScAb.defActions()
 
