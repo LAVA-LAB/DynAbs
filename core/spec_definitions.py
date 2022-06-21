@@ -19,8 +19,8 @@ class robot_spec(master.spec_master):
         self.end_time = 32 
 
         # Authority limit for the control u, both positive and negative
-        self.control['uMin'] = [-4]
-        self.control['uMax'] = [4]
+        self.control['uMin'] = [-4, -2]
+        self.control['uMax'] = [4, 5]
         
         # Partition size
         if mode == 0:

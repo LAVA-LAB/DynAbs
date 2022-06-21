@@ -42,7 +42,6 @@ model = set_model_class()
 
 # Define specification
 spec = model.set_spec()
-
 spec.problem_type = 'reachavoid'
 
 #-----------------------------------------------------------------------------
@@ -71,6 +70,7 @@ print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\
 ScAb = scenarioBasedAbstraction(setup, define_model(setup, model, spec))
 ScAb.define_states()
 
+# %%
 #-----------------------------------------------------------------------------
 # Define actions (only required once outside iterative scheme)
 #-----------------------------------------------------------------------------
@@ -83,8 +83,13 @@ else:
     setup.plotting['partitionPlot'] = False
     
 # Create actions and determine which ones are enabled
+ScAb.define_target_points()
+
+# %%
 ScAb.define_actions()
 
+
+# %%
 #-----------------------------------------------------------------------------
 # Code below is repeated every iteration of the iterative scheme
 #-----------------------------------------------------------------------------

@@ -31,7 +31,8 @@ from .define_partition import definePartitions, defStateLabelSet
 from .compute_probabilities import computeScenarioBounds_sparse, \
     computeScenarioBounds_error, plot_transition
 from .commons import tic, ticDiff, tocDiff, table, printWarning
-from .compute_actions import defEnabledActions, defEnabledActions_UA_V2, def_all_BRS
+from .compute_actions import enabledActions, enabledActionsImprecise, \
+    def_backreach, def_backreach_inflated
 from .create_iMDP import mdp
 from .postprocessing.createPlots import partition_plot
 
@@ -63,15 +64,20 @@ class Abstraction(object):
         # Number of simulation time steps
         self.N = int(self.spec.end_time / self.model.lump)
         
+        # Determine if model has parametric uncertainty
         if hasattr(self.model, 'A_set'):
+            print(' --- Model has parametric uncertainty, so set flag')
             self.flags['parametric_A'] = True
         else:
+            print(' --- Model does not have parametric uncertainty')
             self.flags['parametric_A'] = False
         
+        # Determine if model is underactuated
         if self.model.p < self.model.n:
             print(' --- Model is not fully actuated, so set flag')
             self.flags['underactuated'] = True
         else:
+            print(' --- Model is fully actuated')
             self.flags['underactuated'] = False
         
         self.time['0_init'] = tocDiff(False)
@@ -178,14 +184,7 @@ class Abstraction(object):
         self.partition['allCorners']     = self._defAllCorners()
         self.partition['allCornersFlat'] = np.concatenate(self.partition['allCorners'])
 
-    def define_actions(self):
-        ''' 
-        Determine which actions are actually enabled.
-        
-        Returns
-        -------
-        None.
-        '''
+    def define_target_points(self):
         
         print('\nDefining target points...')
         self.actions = {}
@@ -213,24 +212,27 @@ class Abstraction(object):
                                                    self.spec['extra'] ))
         
         self.actions['nr_actions'] = len(self.actions['T']['center'])
+
+    def define_actions(self):
+        ''' 
+        Determine which actions are actually enabled.
         
-        print('\nComputing all backward reachable sets...')
-        
-        if self.flags['underactuated']:
-            self.actions['backreach'], self.actions['backreach_inflated'] = \
-                def_all_BRS(self.model, self.actions['T']['center'],
-                            self.spec.error['max_control_error'])
-                
-        else:
-            self.actions['backreach'] = \
-                def_all_BRS(self.model, self.actions['T']['center'])
-        
-        print('\nComputing set of enabled actions...')
+        Returns
+        -------
+        None.
+        '''
         
         ### 1 ###
         # If underactuated...
-        if self.flags['underactuated']:
-            print('- For underactuated system')
+        if self.flags['underactuated']:            
+            
+            print('\nComputing all backward reachable sets...')
+            
+            self.actions['backreach'], self.actions['backreach_inflated'] = \
+                def_backreach_inflated(self.model, self.actions['T']['center'],
+                            self.spec.error['max_control_error'])
+            
+            print('\nComputing set of enabled actions...')
             
             # Find the connected components of the system
             dim_n, dim_p = find_connected_components(self.model.A, self.model.B,
@@ -246,12 +248,13 @@ class Abstraction(object):
             
                 print(' --- In dimensions of state', dn,'and control', dp)    
             
-                A[i], A_inv[i], CE[i] = defEnabledActions_UA_V2(self.setup, 
+                A[i], A_inv[i], CE[i] = enabledActionsImprecise(self.setup, 
                           self.flags, self.partition, self.actions, self.model, 
                           self.spec, dn, dp)
             
             ### Compositional model building
-                    
+                
+            #TODO: Improve this compositional step
             # Initialize variables
             self.actions['enabled'] = [set() for i in range(self.partition['nr_regions'])]
             self.actions['enabled_inv'] = [set() for i in range(self.actions['nr_actions'])]
@@ -325,12 +328,21 @@ class Abstraction(object):
                     'neg': np.sum([mats[z] @ valsB[z]['neg'] for z in range(len(valsB))], axis=0)
                     }
         
-        ### 3 ###
+        ### 2 ###
         else:
+            
+            print('\nComputing all backward reachable sets...')
+            
+            self.actions['backreach'] = \
+                def_backreach(self.model, self.actions['T']['center'])
+            
+            print('\nComputing set of enabled actions...')
+            
             nr_A, self.actions['enabled'], \
-             self.actions['enabled_inv'], _ = defEnabledActions(self.setup, self.partition, self.actions, self.model)
+             self.actions['enabled_inv'], _ = enabledActions(self.setup, self.partition, self.actions, self.model)
               
         if self.setup.plotting['partitionPlot']:
+            
             if 'partition_plot_action' in self.model.setup:
                 a = self.model.setup['partition_plot_action']
             else:

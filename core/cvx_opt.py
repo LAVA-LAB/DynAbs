@@ -20,24 +20,24 @@ class abstraction_error(object):
         self.vertex = cp.Parameter((no_verts, model.n))
         self.G_curr = cp.Parameter((v, model.n))
         
-        self.x = cp.Variable((no_verts, model.n))
+        self.x_plus = cp.Variable((no_verts, model.n))
         self.alpha = cp.Variable((no_verts, v), nonneg=True)
         
-        self.e = cp.Variable((no_verts, model.n))
+        self.error = cp.Variable((no_verts, model.n))
         
         # Point x is a convex combination of the backward reachable set vertices,
         # and is within the specified region
         self.constraints = [sum(self.alpha[w]) == 1 for w in range(no_verts)] + \
-            [self.x[w] == cp.sum([self.G_curr[i] * self.alpha[w][i] for i in range(v)]) for w in range(no_verts)] + \
-            [self.e[w] == self.A @ (self.vertex[w] - self.x[w]) for w in range(no_verts)]
+            [self.x_plus[w] == cp.sum([self.G_curr[i] * self.alpha[w][i] for i in range(v)]) for w in range(no_verts)] + \
+            [self.error[w] == self.A @ (self.vertex[w] - self.x_plus[w]) for w in range(no_verts)]
         
         if 'max_control_error' in spec.error:
             self.constraints += \
-                [self.e[w] <= spec.error['max_control_error'][:,1] for w in range(no_verts)] + \
-                [self.e[w] >= spec.error['max_control_error'][:,0] for w in range(no_verts)]
+                [self.error[w] <= spec.error['max_control_error'][:,1] for w in range(no_verts)] + \
+                [self.error[w] >= spec.error['max_control_error'][:,0] for w in range(no_verts)]
         
         self.obj = cp.Minimize(cp.sum([
-                            cp.quad_form(self.e[w], np.eye(model.n))
+                            cp.quad_form(self.error[w], np.eye(model.n))
                             for w in range(no_verts)
                             ]))
         
@@ -57,21 +57,21 @@ class abstraction_error(object):
         if self.prob.status == 'infeasible':
             return True, None, None
         else: 
-            projection = self.x.value - vertices
+            projection = self.x_plus.value - vertices
             project_vec = np.array([row/row[0] for row in projection])
             
-            return False, project_vec, self.x.value
+            return False, project_vec, self.x_plus.value
         
 class LP_vertices_contained(object):
     
-    def __init__(self, model, G, solver):
+    def __init__(self, model, G_shape, solver):
         
         self.solver = solver
         
         v = 2 ** model.n
-        w = len(G)
+        w = G_shape[0]
         
-        self.G_curr     = cp.Parameter(G.shape)
+        self.G_curr     = cp.Parameter(G_shape)
         self.P_vertices = cp.Parameter((v, model.n))
         self.alpha      = cp.Variable((v, w), nonneg=True)
         
