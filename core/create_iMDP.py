@@ -213,11 +213,7 @@ class mdp(object):
                     
                     substring_start = str(s+head) +' '+ str(choice)
                     
-                    if self.setup.parametric:
-                        P = trans['prob'][0][a][s]
-                        
-                    else:
-                        P = trans['prob'][0][a]
+                    P = trans['prob'][0][a]
                     
                     if mode == 'interval':
                     

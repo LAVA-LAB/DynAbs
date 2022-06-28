@@ -65,9 +65,6 @@ def define_model(setup, model_raw, spec):
     # Determine inverse A matrix
     model.A_inv  = np.linalg.inv(model.A)
     
-    if setup.parametric:
-        model.A_set_inv = [np.linalg.inv(mat) for mat in model_raw.A_set]
-    
     # Determine pseudo-inverse B matrix
     model.B_pinv = np.linalg.pinv(model.B)
     

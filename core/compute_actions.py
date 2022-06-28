@@ -70,6 +70,7 @@ def defInvArea(model):
 
     return x_inv_area
 
+
 def defInvHull(x_inv_area):
     '''
     Define the convex hull object of the predecessor set        
@@ -89,6 +90,7 @@ def defInvHull(x_inv_area):
     x_inv_hull = Delaunay(x_inv_area, qhull_options='QJ')
     
     return x_inv_hull
+
 
 def defBasisVectors(model, verbose=False):
     '''
@@ -130,10 +132,12 @@ def defBasisVectors(model, verbose=False):
     
     return basis_vectors
 
+
 def f7(seq):
     seen = set()
     seen_add = seen.add
     return [int(x) for x in seq if not (x in seen or seen_add(x))]
+
 
 def def_backward_reach(model):
     '''
@@ -167,6 +171,7 @@ def def_backward_reach(model):
     
     return backreach
 
+
 def partial_model(flags, model, spec, dim_n, dim_p):
     
     #TODO: improve this function.
@@ -183,7 +188,7 @@ def partial_model(flags, model, spec, dim_n, dim_p):
     model.n         = len(dim_n)
     model.p         = len(dim_p)
     
-    if flags['parametric_A']:
+    if flags['parametric']:
         model.A_set     = [A[n_start:n_end, n_start:n_end] for A in model.A_set]
         model.B_set     = [B[n_start:n_end, p_start:p_end] for B in model.B_set]
     
@@ -193,13 +198,11 @@ def partial_model(flags, model, spec, dim_n, dim_p):
     
     model.uMin = model.uMin[dim_p]
     model.uMax = model.uMax[dim_p]
-    
-    if 'max_control_error' in spec.error:
-        spec.error['max_control_error'] = spec.error['max_control_error'][dim_n]
 
     return model, spec
 
-def def_backreach_inflated(model, targets, control_error_bound):
+
+def def_backreach_inflated(model, targets, control_error_bounds):
     '''
     Compute the inflated backward reachable set for every target point
 
@@ -217,18 +220,31 @@ def def_backreach_inflated(model, targets, control_error_bound):
     '''
     
     G_zero = def_backward_reach(model)
+    alphas = np.eye(len(G_zero))
+
     backreach = {}
-    
-    G_infl_zero = compute_BRS_inflated(model, G_zero, control_error_bound)
     backreach_inflated = {}
 
+    # For every action
     for a in range(len(targets)):
+        
+        BRS_inflated = []
+        
+        # Compute the control error
+        for err in itertools.product(*control_error_bounds[a]):
+            for alpha in alphas:
+                prob,x,_ = find_backward_inflated(model.A, np.array(err), 
+                                                  alpha, G_zero)
+                
+                BRS_inflated += [x]
+        
         shift = model.A_inv @ targets[a]
         backreach[a] = G_zero + shift
         
-        backreach_inflated[a] = G_infl_zero + shift
+        backreach_inflated[a] = np.array(BRS_inflated) + shift
         
     return backreach, backreach_inflated
+
 
 def def_backreach(model, targets, control_error_bound=False):
     '''
@@ -251,6 +267,7 @@ def def_backreach(model, targets, control_error_bound=False):
                  range(len(targets))}
         
     return backreach
+
 
 def rotate_BRS(vector):
     '''
@@ -284,6 +301,7 @@ def rotate_BRS(vector):
     
     return matrix
 
+
 def project_to_line(BRS, points):
     '''
     Project given points to the line spanned by a 2-point backward reach set
@@ -310,7 +328,8 @@ def project_to_line(BRS, points):
     
     return proj_points
 
-def find_backward(A_hat, error, alpha, G):
+
+def find_backward_inflated(A_hat, error, alpha, G):
 
     x = cp.Variable(len(A_hat))
     y = cp.Variable(len(A_hat))
@@ -325,18 +344,6 @@ def find_backward(A_hat, error, alpha, G):
     
     return prob, x.value, y.value
 
-def compute_BRS_inflated(model, G, control_error_bound):
-    
-    BRS_inflated = []
-    alphas = np.eye(len(G))
-    
-    for err in itertools.product(*control_error_bound):
-        for alpha in alphas:
-            prob,x,_ = find_backward(model.A, np.array(err), alpha, G)
-            
-            BRS_inflated += [x]
-    
-    return np.array(BRS_inflated)
 
 class epistemic_error(object):
     
@@ -369,6 +376,7 @@ class epistemic_error(object):
                 self.mult[i] = A_vertex - model.A
                 self.plus[i,:] = (B_vertex - model.B) @ u
                 i+=1
+       
         
     def compute(self, vertices):
         '''
@@ -388,6 +396,7 @@ class epistemic_error(object):
                               for m,p in zip(self.mult, self.plus) ])
 
         return e_error.min(axis=0), e_error.max(axis=0)
+
 
 def compute_epistemic_error(model, vertices):
 
@@ -411,12 +420,12 @@ def compute_epistemic_error(model, vertices):
         
     return e_error_neg.min(axis=0), e_error_pos.max(axis=0)
 
+
 def enabledActionsImprecise(setup, flags, partition, actions, model, spec, 
                             dim_n=False, dim_p=False, verbose=False):
     
-    full_n = model.n
-    nrPerDim = [spec.targets['number'][i] if i in dim_n else 1 for i in range(full_n)]
-    action_range = list(itertools.product(*map(range, [0]*full_n, nrPerDim)))
+    nrPerDim = [spec.targets['number'][i] if i in dim_n else 1 for i in range(model.n)]
+    action_range = list(itertools.product(*map(range, [0]*model.n, nrPerDim)))
     
     # Compute the backward reachable set (not accounting for target point yet)    
     if dim_n is False or dim_p is False:
@@ -430,7 +439,7 @@ def enabledActionsImprecise(setup, flags, partition, actions, model, spec,
     
     enabled = {}
     enabled_inv = {}   
-    control_error = {}
+    error = {}
     
     # Create LP object
     BRS = actions['backreach_inflated']
@@ -438,18 +447,17 @@ def enabledActionsImprecise(setup, flags, partition, actions, model, spec,
                                np.unique(BRS[0][:, dim_n], axis=0).shape, 
                                solver=setup.cvx['solver'])
     
-    # Retrieve control error negative/positive
-    control_error_neg = spec.error['max_control_error'][:,0]
-    control_error_pos = spec.error['max_control_error'][:,1]
-    
-    epist = epistemic_error(model)
+    if flags['parametric']:
+        epist = epistemic_error(model)
+    else:
+        epist = None
     
     # For every action
     for a_tup in progressbar(action_range, redirect_stdout=True):
         
-        idx = actions['T']['idx'][a_tup]
-        BRS_i = np.unique(BRS[idx][:, dim_n], axis=0)
-        target_center = actions['T']['center'][idx]
+        a_idx = actions['tup2idx'][a_tup]
+        BRS_i = np.unique(BRS[a_idx][:, dim_n], axis=0)
+        target_center = actions['T']['center'][a_idx]
         
         # Set current backward reachable set as parameter
         LP.set_backreach(BRS_i)
@@ -458,9 +466,9 @@ def enabledActionsImprecise(setup, flags, partition, actions, model, spec,
         BRS_overapprox_box = overapprox_box(BRS_i)
         
         if 'max_action_distance' in spec.error:
-            BRS_overapprox_box = np.maximum(np.minimum(BRS_overapprox_box - target_center, 
-                                        spec.error['max_action_distance']), 
-                                        -spec.error['max_action_distance']) + target_center
+            BRS_overapprox_box = np.maximum(np.minimum(BRS_overapprox_box - target_center[dim_n], 
+                                    spec.error['max_action_distance']), 
+                                   -spec.error['max_action_distance']) + target_center[dim_n]
         
         # Determine set of regions that potentially intersect with G
         _, idx_edgeV = computeRegionIdx(BRS_overapprox_box, 
@@ -469,14 +477,10 @@ def enabledActionsImprecise(setup, flags, partition, actions, model, spec,
         
         # Transpose because we want the min/max combinations per dimension
         # (not per point)
-        idx_edge = np.zeros((full_n, 2))
-        idx_edge[dim_n] += idx_edgeV.T
+        idx_edge = np.zeros((model.n, 2))
+        idx_edge[dim_n] = idx_edgeV.T
         
         idx_mat = [np.arange(low, high+1).astype(int) for low,high in idx_edge]
-        
-        if verbose:
-            print('Evaluate action',a_tup,'(try',
-              len(list(itertools.product(*idx_mat))),'potential predecessors)')
         
         s_plus_list = []
         
@@ -509,32 +513,33 @@ def enabledActionsImprecise(setup, flags, partition, actions, model, spec,
                     enabled_inv[a_tup].add(s_tup)
                 else:
                     enabled_inv[a_tup] = {s_tup}
-                    
+                
+        # Retrieve control error negative/positive
+        control_error = np.zeros((model.n, 2))
+        control_error[dim_n] = actions['T']['control_error'][a_idx][dim_n, :]
+                
         # If a parametric model is used
-        if flags['parametric_A']:
+        if not epist is None and len(s_plus_list) > 0:
             
             # Retrieve list of unique vertices of predecessor states
-            s_vertices = partition['allCorners'][s_plus_list][:, dim_n]
+            s_vertices = partition['allCorners'][s_plus_list][:, :, dim_n]
             s_vertices_unique = np.unique(np.vstack(s_vertices), axis=0)
         
+            # Compute the epistemic error
             epist_error_neg, epist_error_pos = epist.compute(s_vertices_unique)
-            # print('\nEpistemic error:', epist_error_neg, '-', epist_error_pos)
-            
-            # old_neg, old_pos = compute_epistemic_error(model, s_vertices_unique)
-            # print('\nOld computation:', old_neg, '-', old_pos)
             
             # Store the control error for this action
-            control_error[a_tup] = {'neg': control_error_neg + epist_error_neg,
-                                    'pos': control_error_pos + epist_error_pos}
+            error[a_tup] = {'neg': control_error[:,0] + epist_error_neg,
+                            'pos': control_error[:,1] + epist_error_pos}
             
         else:
             
             # Store the control error for this action
-            control_error[a_tup] = {'neg': control_error_neg,
-                                    'pos': control_error_pos}
-        
+            error[a_tup] = {'neg': control_error[:,0],
+                            'pos': control_error[:,1]}        
             
-    return enabled, enabled_inv, control_error
+    return enabled, enabled_inv, error
+
 
 def enabledActions(setup, partition, actions, model, A_idx=None, verbose=True):
     '''

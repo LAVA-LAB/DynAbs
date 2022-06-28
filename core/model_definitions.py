@@ -50,31 +50,39 @@ class robot(master.LTI_master):
         # Discretization step size
         self.tau = 2
         
+        mass_min = 1
+        mass_max = 1
+        mass_nom = 1
+        
+        spring_min = 0.1
+        spring_max = 0.1
+        spring_nom = 0.1
+        
         # State transition matrix
         self.A  = np.array([[1, self.tau],
-                            [0, .9]])
-        
-        mass_min = 0.95
-        mass_max = 1.05
-        
-        # self.A_set = [
-        #             np.array([[1, self.tau],[0,0.7]]),
-        #             np.array([[1, self.tau],[0,0.9]])
-        #             ]
+                            [-spring_nom/mass_nom, 1-0.1/mass_nom]])
         
         self.A_set = [
-                    np.array([[1, self.tau],[0,1-0.1/mass_min]]),
-                    np.array([[1, self.tau],[0,1-0.1/mass_max]])
+                    np.array([[1, self.tau],
+                              [-spring_min/mass_min, 1-0.1/mass_min]]),
+                    np.array([[1, self.tau],
+                              [-spring_min/mass_max, 1-0.1/mass_max]]),
+                    np.array([[1, self.tau],
+                              [-spring_max/mass_min, 1-0.1/mass_min]]),
+                    np.array([[1, self.tau],
+                              [-spring_max/mass_max, 1-0.1/mass_max]]),
                     ]
         
         self.B_set = [
-                    np.array([[self.tau**2/2], [self.tau]]) * mass_min,
-                    np.array([[self.tau**2/2], [self.tau]]) * mass_max
+                    np.array([[self.tau**2/(2*mass_min)], [self.tau/mass_min]]),
+                    np.array([[self.tau**2/(2*mass_max)], [self.tau/mass_max]]),
+                    np.array([[self.tau**2/(2*mass_min)], [self.tau/mass_min]]),
+                    np.array([[self.tau**2/(2*mass_max)], [self.tau/mass_max]])
                     ]
         
         # Input matrix
-        self.B  = np.array([[self.tau**2/2],
-                            [self.tau]])
+        self.B  = np.array([[self.tau**2/(2*mass_nom)],
+                            [self.tau/mass_nom]])
         
         # Disturbance matrix
         self.Q  = np.array([[0],[0]])
@@ -116,18 +124,36 @@ class UAV(master.LTI_master):
         self.lump = 1
         
         # Let the user make a choice for the model dimension
-        self.modelDim, _  = ui.user_choice('model dimension',[2,3])
+        self.modelDim, _  = ui.user_choice('model dimension',[1,2,3])
         
         # Discretization step size
         self.tau = 2.0
         
+        mass_min = 0.9
+        mass_max = 1.1
+        mass_nom = 1
+        
         # State transition matrix
         Ablock = np.array([[1, self.tau],
-                          [0, 0.9]])
+                           [-0.1/mass_nom, 1-0.1/mass_nom]])
+        
+        Ablock_set = [
+                     np.array([[1, self.tau],
+                               [-0.1/mass_min, 1-0.1/mass_min]]),
+                     np.array([[1, self.tau],
+                               [-0.1/mass_max, 1-0.1/mass_max]])
+                    ]
         
         # Input matrix
-        Bblock = np.array([[self.tau**2/2],
-                           [self.tau]])
+        Bblock = np.array([[self.tau**2/(2*mass_nom)],
+                           [self.tau/mass_nom]])
+        
+        Bblock_set = [
+                    np.array([[self.tau**2/(2*mass_min)], 
+                              [self.tau/mass_min]]),
+                    np.array([[self.tau**2/(2*mass_max)], 
+                              [self.tau/mass_max]]),
+                    ]
         
         if self.modelDim==3:
             self.A  = scipy.linalg.block_diag(Ablock, Ablock, Ablock)
@@ -135,29 +161,38 @@ class UAV(master.LTI_master):
             
             # Disturbance matrix
             self.Q  = np.array([[0],[0],[0],[0],[0],[0]])
+            
+            # Covariance of the process noise
+            self.noise = dict()
+            self.noise['w_cov'] = np.diag([0.1, 0.01] * 3)
                 
         elif self.modelDim==2:
             self.A  = scipy.linalg.block_diag(Ablock, Ablock)
             self.B  = scipy.linalg.block_diag(Bblock, Bblock)
             
-            mass_min = 0.95
-            mass_max = 1.05
-            
-            self.A_set = [
-                        self.A + np.diag([0, -0.9 + 1-0.1/mass_min, 0, -0.9 + 1-0.1/mass_min]),
-                        self.A + np.diag([0, -0.9 + 1-0.1/mass_max, 0, -0.9 + 1-0.1/mass_max])
-                        ]
-            
-            B_min = np.array([[self.tau**2/2], [self.tau]]) * mass_min
-            B_max = np.array([[self.tau**2/2], [self.tau]]) * mass_max
-            
-            self.B_set = [
-                        scipy.linalg.block_diag(B_min, B_min),
-                        scipy.linalg.block_diag(B_max, B_max)
-                        ]
+            self.A_set = [scipy.linalg.block_diag(A, A) for A in Ablock_set]
+            self.B_set = [scipy.linalg.block_diag(B, B) for B in Bblock_set]
         
             # Disturbance matrix
             self.Q  = np.array([[0],[0],[0],[0]])
+            
+            # Covariance of the process noise
+            self.noise = dict()
+            self.noise['w_cov'] = np.diag([0.1, 0.01] * 2)
+            
+        elif self.modelDim==1:
+            self.A = Ablock
+            self.B = Bblock
+            
+            self.A_set = Ablock_set
+            self.B_set = Bblock_set
+            
+            # Disturbance matrix
+            self.Q  = np.array([[0],[0]])
+            
+            # Covariance of the process noise
+            self.noise = dict()
+            self.noise['w_cov'] = np.diag([0.1, 0.01]) * 0.001 
             
         else:
             print('No valid dimension for the drone model was provided')
@@ -166,14 +201,15 @@ class UAV(master.LTI_master):
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)
-
-        # Covariance of the process noise
-        self.noise = dict()
-        self.noise['w_cov'] = np.eye(np.size(self.A,1))*0.001
            
     def set_spec(self):
     
-        if self.modelDim == 2:
+        if self.modelDim == 1:
+            
+            from core.spec_definitions import robot_spec
+            spec = robot_spec()
+    
+        elif self.modelDim == 2:
             
             from core.spec_definitions import UAV_2D_spec
             spec = UAV_2D_spec()        
@@ -357,7 +393,6 @@ class building_1room(master.LTI_master):
             self.lump = 2
             
             self.setup['partition_plot_action'] = 7700
-        
         
         # Discretization step size
         self.tau = 20 # NOTE: in minutes for BAS!

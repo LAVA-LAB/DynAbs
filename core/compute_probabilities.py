@@ -21,6 +21,7 @@ ______________________________________________________________________________
 import numpy as np
 import itertools
 from .commons import floor_decimal
+from .postprocessing.createPlots import draw_hull
 from .define_partition import computeRegionCenters, computeRegionIdx
 
 def computeScenarioBounds_sparse(setup, partition_setup, partition, trans, samples):
@@ -355,7 +356,8 @@ import matplotlib.patches as patches
 from .commons import cm2inch
 
 def plot_transition(samples, error, i_show, i_hide, setup, model, spec, partition, 
-                    cut_value, backreach=False, stateLabels=False):
+                    cut_value, backreach=False, backreach_inflated=False,
+                    stateLabels=False):
     '''
 
     Returns
@@ -452,7 +454,11 @@ def plot_transition(samples, error, i_show, i_hide, setup, model, spec, partitio
         
         plt.plot(backreach[:,0], backreach[:,1],
                  color='blue')
-    
+        
+    if type(backreach_inflated) == np.ndarray:
+        
+        draw_hull(backreach_inflated, color='blue')
+            
     # Set tight layout
     fig.tight_layout()
     

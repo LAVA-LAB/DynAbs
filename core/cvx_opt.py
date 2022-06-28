@@ -75,7 +75,7 @@ class LP_vertices_contained(object):
         self.P_vertices = cp.Parameter((v, model.n))
         self.alpha      = cp.Variable((v, w), nonneg=True)
         
-        constraints = [cp.sum(self.alpha[i]) == 1 for i in range(v)] + \
+        constraints = [cp.abs(cp.sum(self.alpha[i]) - 1) <= 1e-4 for i in range(v)] + \
             [self.P_vertices[j] == cp.sum([self.alpha[j,i] * self.G_curr[i] 
                                        for i in range(w)]) for j in range(v)]
             

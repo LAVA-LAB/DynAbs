@@ -111,8 +111,8 @@ def partition_plot(i_show, i_hide, ScAb, cut_value, a=-1, stateLabels=False):
     plt.grid(which='major', color='#CCCCCC', linewidth=0.3)
     
     # Goal x-y limits
-    ax.set_xlim(min_xy[is1], max_xy[is1])
-    ax.set_ylim(min_xy[is2], max_xy[is2])
+    ax.set_xlim(1.5*min_xy[is1], 1.5*max_xy[is1])
+    ax.set_ylim(1.5*min_xy[is2], 1.5*max_xy[is2])
     
     # ax.set_xlim(19.1, 22.5)
     # ax.set_ylim(37.48, 37.54)
@@ -161,6 +161,7 @@ def partition_plot(i_show, i_hide, ScAb, cut_value, a=-1, stateLabels=False):
         
         plt.scatter(target[is1], target[is2], c='red', s=20)
         
+        print(' - Print backward reachable set of action', a)
         draw_hull(ScAb.actions['backreach'][a], color='red')
         
         if 'backreach_inflated' in ScAb.actions:

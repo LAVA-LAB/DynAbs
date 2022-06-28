@@ -178,7 +178,7 @@ def definePartitions(dim, nrPerDim, regionWidth, origin, onlyCenter=False):
     
     return partition
 
-def defStateLabelSet(allCenters, sets, partition):
+def defStateLabelSet(allCenters, sets, partition, borderOutside=False):
     '''
     Return the indices of regions associated with the unique centers.
 
@@ -214,27 +214,26 @@ def defStateLabelSet(allCenters, sets, partition):
                             S if type(S) != str else partition['boundary'][j] 
                             for j,S in enumerate(set_boundary) ])
             
-            for vertex in itertools.product(*set_boundary):
-                
-                index, _ = computeRegionIdx(vertex, partition)
-            
             vertices = np.array(list(itertools.product(*set_boundary)))
-            _, indices_nonneg = computeRegionIdx(vertices, partition)
+            
+            _, indices_nonneg = computeRegionIdx(vertices, partition, borderOutside)
             
             slices['min'][i] = indices_nonneg.min(axis=0)
             slices['max'][i] = indices_nonneg.max(axis=0)
             
-            index_tuples = set(itertools.product(*map(range, slices['min'][i], slices['max'][i]+1)))
+            index_tuples = set(itertools.product(*map(range, slices['min'][i], slices['max'][i])))
             
             # Define iterator
-            #TODO: Avoid the hardcoded 1e-6
-            M = map(np.arange, set_boundary[:,0], set_boundary[:,1]+1e-6, partition['width'])
+            if borderOutside:
+                M = map(np.arange, set_boundary[:,0]+1e-5, set_boundary[:,1]-1e-5, partition['width']/2)
+            else:
+                M = map(np.arange, set_boundary[:,0], set_boundary[:,1], partition['width']/2)
             
             # Retreive list of points and convert to array
             points[i] = np.array(list(itertools.product(*M)))
-    
+            
         points = np.concatenate(points)
-    
+        
         # Compute all centers of regions associated with points
         centers = computeRegionCenters(points, partition)
         

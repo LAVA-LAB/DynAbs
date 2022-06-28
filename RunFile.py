@@ -9,8 +9,7 @@
 ______________________________________________________________________________
 """
 
-# %run "/home/thom/Documents/Abstractions/sample-abstract/RunFile.py"
-# %run "/home/tbadings/Documents/SBA/sample-abstract/RunFile.py"
+# %run "/home/thom/Documents/aaai23_2/RunFile.py"
 
 # Load general packages
 from datetime import datetime   # Import Datetime to get current date/time
@@ -32,6 +31,8 @@ from core.preprocessing.master_classes import settings, result_exporter
 np.random.seed(1)
 mpl.rcParams['figure.dpi'] = 300
 base_dir = os.path.dirname(os.path.abspath(__file__))
+
+print('Base_dir:', base_dir)
 
 #-----------------------------------------------------------------------------
 # Create model and set specification
@@ -56,7 +57,6 @@ setup.setOptions(category       = 'plotting',
         exportFormats           = ['pdf'], 
         partitionPlot           = True,
         partitionPlot_plotHull  = True)
-setup.parametric = False
 
 # Give some user prompts
 setup.set_monte_carlo()
@@ -85,9 +85,10 @@ else:
 # Create actions and determine which ones are enabled
 ScAb.define_target_points()
 
+assert False
+
 # %%
 ScAb.define_actions()
-
 
 # %%
 #-----------------------------------------------------------------------------
