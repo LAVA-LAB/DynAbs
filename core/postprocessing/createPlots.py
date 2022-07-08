@@ -59,7 +59,7 @@ def draw_hull(points, color, linewidth=0.1):
         
         print('Line plotted')
 
-def partition_plot(i_show, i_hide, ScAb, cut_value, a=-1, stateLabels=False):
+def partition_plot(i_show, i_hide, ScAb, cut_value, act=None, stateLabels=False):
     '''
 
     Returns
@@ -154,20 +154,17 @@ def partition_plot(i_show, i_hide, ScAb, cut_value, a=-1, stateLabels=False):
                             verticalalignment='center', 
                             horizontalalignment='center' ) 
     
-    if a != -1:
+    if not act is None:
         
-        target = ScAb.actions['T']['center'][a]
-        enabled_in = ScAb.actions['enabled_inv'][a]
+        plt.scatter(act.center[is1], act.center[is2], c='red', s=20)
         
-        plt.scatter(target[is1], target[is2], c='red', s=20)
+        print(' - Print backward reachable set of action', act.idx)
+        draw_hull(act.backreach, color='red')
         
-        print(' - Print backward reachable set of action', a)
-        draw_hull(ScAb.actions['backreach'][a], color='red')
+        if hasattr(act, 'backreach_infl'):
+            draw_hull(act.backreach_infl, color='blue')
         
-        if 'backreach_inflated' in ScAb.actions:
-            draw_hull(ScAb.actions['backreach_inflated'][a], color='blue')
-        
-        for s in enabled_in:
+        for s in act.enabled_in:
             center = ScAb.partition['R']['center'][s]
             plt.scatter(center[is1], center[is2], c='blue', s=8)
         
@@ -988,7 +985,7 @@ def UAVplot3d_visvis_manual(setup, model, spec, partition, cut_value, traceLow,
     vv.screenshot(filename, sf=3, bg='w', ob=vv.gcf())
     app.Run()
     
-def reachabilityHeatMap(ScAb):
+def reachabilityHeatMap(ScAb, montecarlo = False, title = 'auto'):
     '''
     Create heat map for the reachability probability from any initial state.
 
@@ -1053,7 +1050,10 @@ def reachabilityHeatMap(ScAb):
         j = i % y_nr
         k = i // y_nr
         
-        cut_values[k,j] = ScAb.results['optimal_reward'][idx]
+        if montecarlo:
+            cut_values[k,j] = ScAb.mc['reachability'][idx] 
+        else:
+            cut_values[k,j] = ScAb.results['optimal_reward'][idx]
         cut_coords[k,j,:] = center
     
     cut_df = pd.DataFrame( cut_values, index=cut_coords[:,0,0], 
@@ -1067,7 +1067,10 @@ def reachabilityHeatMap(ScAb):
     
     ax.set_xlabel('Var 1', fontsize=15)
     ax.set_ylabel('Var 2', fontsize=15)
-    ax.set_title("N = "+str(ScAb.setup.scenarios['samples']),fontsize=20)
+    if title == 'auto':
+        ax.set_title("N = "+str(ScAb.setup.scenarios['samples']), fontsize=20)
+    else:
+        ax.set_title(str(title), fontsize=20)
     
     # Set tight layout
     fig.tight_layout()

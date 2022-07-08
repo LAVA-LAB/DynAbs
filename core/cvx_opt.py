@@ -8,59 +8,50 @@ Created on Thu Feb 10 19:29:47 2022
 import cvxpy as cp
 import numpy as np
 
-class abstraction_error(object):
+class Controller(object):
     
-    def __init__(self, model, spec, no_verts):
+    def __init__(self, model):
         
         self.A = model.A
+        self.B = model.B
+        self.Q = model.Q_flat
         
-        # Number of vertices in backward reachable set
-        v = 2 ** model.p
+        self.target = cp.Parameter(model.n)
+        self.x = cp.Parameter(model.n)
+        self.u = cp.Variable(model.p)
+        self.x_plus = cp.Variable(model.n)
         
-        self.vertex = cp.Parameter((no_verts, model.n))
-        self.G_curr = cp.Parameter((v, model.n))
+        self.error_neg = cp.Parameter(model.n)
+        self.error_pos = cp.Parameter(model.n)
         
-        self.x_plus = cp.Variable((no_verts, model.n))
-        self.alpha = cp.Variable((no_verts, v), nonneg=True)
+        self.constraints = [
+            self.x_plus == self.A @ self.x + self.B @ self.u + self.Q,
+            self.x_plus - self.target >= self.error_neg,
+            self.x_plus - self.target <= self.error_pos,
+            self.u <= model.uMax,
+            self.u >= model.uMin
+            ]
         
-        self.error = cp.Variable((no_verts, model.n))
-        
-        # Point x is a convex combination of the backward reachable set vertices,
-        # and is within the specified region
-        self.constraints = [sum(self.alpha[w]) == 1 for w in range(no_verts)] + \
-            [self.x_plus[w] == cp.sum([self.G_curr[i] * self.alpha[w][i] for i in range(v)]) for w in range(no_verts)] + \
-            [self.error[w] == self.A @ (self.vertex[w] - self.x_plus[w]) for w in range(no_verts)]
-        
-        if 'max_control_error' in spec.error:
-            self.constraints += \
-                [self.error[w] <= spec.error['max_control_error'][:,1] for w in range(no_verts)] + \
-                [self.error[w] >= spec.error['max_control_error'][:,0] for w in range(no_verts)]
-        
-        self.obj = cp.Minimize(cp.sum([
-                            cp.quad_form(self.error[w], np.eye(model.n))
-                            for w in range(no_verts)
-                            ]))
+        self.obj = cp.Minimize(
+            cp.quad_form(self.x_plus - self.target, np.eye(model.n))
+                            )
         
         self.prob = cp.Problem(self.obj, self.constraints)
         
-    def solve(self, vertices, G):
+    def solve(self, target, x, error):
         
-        self.G_curr.value = G
+        self.target.value = target
+        self.x.value = x
         
-        if len(vertices.shape) == 1:
-            self.vertex.value = np.array([vertices])
-        else:
-            self.vertex.value = vertices
+        self.error_neg.value = error[:,0]
+        self.error_pos.value = error[:,1]
         
         self.prob.solve(warm_start = True, solver='ECOS')
         
         if self.prob.status == 'infeasible':
-            return True, None, None
+            return False, None, None
         else: 
-            projection = self.x_plus.value - vertices
-            project_vec = np.array([row/row[0] for row in projection])
-            
-            return False, project_vec, self.x_plus.value
+            return True, self.x_plus.value, self.u.value
         
 class LP_vertices_contained(object):
     
@@ -75,7 +66,7 @@ class LP_vertices_contained(object):
         self.P_vertices = cp.Parameter((v, model.n))
         self.alpha      = cp.Variable((v, w), nonneg=True)
         
-        constraints = [cp.abs(cp.sum(self.alpha[i]) - 1) <= 1e-4 for i in range(v)] + \
+        constraints = [cp.abs(cp.sum(self.alpha[i]) - 1) <= 1e-3 for i in range(v)] + \
             [self.P_vertices[j] == cp.sum([self.alpha[j,i] * self.G_curr[i] 
                                        for i in range(w)]) for j in range(v)]
             

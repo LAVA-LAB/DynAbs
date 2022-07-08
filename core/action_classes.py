@@ -15,36 +15,66 @@ class action(object):
     Action object
     ''' 
     
-    def __init__(self, center, idx_tuple, backreachset=None):
+    def __init__(self, idx, model, center, idx_tuple, backreach_obj=None):
         
-        self.center         = center
-        self.tuple          = idx_tuple
-        self.backreachset  = backreachset
+        '''
+        Initialize action and compute the (inflated) backward reachable set 
+        
+        Parameters
+        ----------
+        model : Model object
+        '''
+        
+        self.idx                = idx
+        self.center             = center
+        self.tuple              = idx_tuple
+        self.backreach_obj      = backreach_obj
+        
+        self.error              = None
+        self.enabled_in         = set()
+          
+        shift = model.A_inv @ self.center
+        self.backreach = self.backreach_obj.verts + shift
+        
+        if not backreach_obj is None:
+            self.backreach_infl = self.backreach_obj.verts_infl + shift
         
 class backreachset(object):
     '''
     Backward reachable set
     '''
     
-    def __init__(self, name, max_control_error):
+    def __init__(self, name, max_control_error=None):
         
         self.name = name
         self.max_control_error = max_control_error
         
     def compute_default_set(self, model):
+        '''
+        Compute the default (inflated) backward reachable set for a target
+        point at the origin (zero).
         
-        G_zero = def_backward_reach(model)
-        alphas = np.eye(len(G_zero))
+        Parameters
+        ----------
+        model : Model object
+
+        '''
         
-        BRS_inflated = []
+        self.verts = def_backward_reach(model)
         
-        # Compute the control error
-        for err in itertools.product(*self.max_control_error):
-            for alpha in alphas:
-                prob,x,_ = find_backward_inflated(model.A, np.array(err), 
-                                                  alpha, G_zero)
-                
-                BRS_inflated += [x]
-        
-        self.vert = np.array(BRS_inflated)
+        if not self.max_control_error is None:
+            
+            alphas = np.eye(len(self.verts))
+            
+            BRS_inflated = []
+            
+            # Compute the control error
+            for err in itertools.product(*self.max_control_error):
+                for alpha in alphas:
+                    prob,x,_ = find_backward_inflated(model.A, np.array(err), 
+                                                      alpha, self.verts)
+                    
+                    BRS_inflated += [x]
+            
+            self.verts_infl = np.array(BRS_inflated)
     

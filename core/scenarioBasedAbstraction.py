@@ -27,14 +27,16 @@ import random                   # Import to use random variables
 import pandas as pd             # Import Pandas to store data in frames
 
 from .define_model import find_connected_components
-from .define_partition import definePartitions, defStateLabelSet
+from .define_partition import definePartitions, define_spec_region
 from .compute_probabilities import computeScenarioBounds_sparse, \
-    computeScenarioBounds_error, plot_transition
+    computeScenarioBounds_error, transition_plot
 from .commons import tic, ticDiff, tocDiff, table, printWarning
 from .compute_actions import enabledActions, enabledActionsImprecise, \
-    def_backreach, def_backreach_inflated
+    epistemic_error
 from .create_iMDP import mdp
 from .postprocessing.createPlots import partition_plot
+
+from .cvx_opt import LP_vertices_contained
 
 from .action_classes import action, backreachset
 
@@ -147,14 +149,14 @@ class Abstraction(object):
         self.partition['nr_regions'] = len(self.partition['R']['center'])
         
         # Determine goal regions
-        self.partition['goal'], self.partition['goal_slices'], self.partition['goal_idx'] = defStateLabelSet(
+        self.partition['goal'], self.partition['goal_slices'], self.partition['goal_idx'] = define_spec_region(
             allCenters = self.partition['R']['c_tuple'], 
             sets = self.spec.goal,
             partition = self.spec.partition,
             borderOutside = True)
         
         # Determine critical regions
-        self.partition['critical'], self.partition['critical_slices'], self.partition['critical_idx'] = defStateLabelSet(
+        self.partition['critical'], self.partition['critical_slices'], self.partition['critical_idx'] = define_spec_region(
             allCenters = self.partition['R']['c_tuple'], 
             sets = self.spec.critical,
             partition = self.spec.partition,
@@ -204,11 +206,12 @@ class Abstraction(object):
             # self.spec.targets['width'] = self.spec.partition['width']
             # self.spec.targets['origin'] = self.spec.partition['origin']
             
-            for center, (i, tup) in zip(self.partition['R']['center'],
+            for center, (tup,idx) in zip(self.partition['R']['center'],
                                         self.partition['R']['idx'].items()):
                 
-                self.actions['obj'][i] = action(center, tup, backreach_obj)
-                self.actions['tup2idx'][tup] = i
+                self.actions['obj'][idx] = action(idx, self.model, center, tup, 
+                                                  backreach_obj)
+                self.actions['tup2idx'][tup] = idx
             
         else:
             # self.spec.targets['number'] = np.array(self.spec.targets['number'])
@@ -223,12 +226,13 @@ class Abstraction(object):
             tuples = map(np.arange, np.zeros(self.model.n),
                          self.spec.targets['number'])
             
-            for i,(center,tup) in enumerate(zip(itertools.product(*ranges),
+            for idx,(center,tup) in enumerate(zip(itertools.product(*ranges),
                                                 itertools.product(*tuples))):
                 
-                self.actions['obj'][i] = action(np.array(center), tup, 
-                                                backreach_obj)
-                self.actions['tup2idx'][tup] = i
+                self.actions['obj'][idx] = action(idx, self.model, 
+                                                  np.array(center), tup, 
+                                                  backreach_obj)
+                self.actions['tup2idx'][tup] = idx
         
         nr_default_act = len(self.actions['obj'])
         
@@ -242,9 +246,7 @@ class Abstraction(object):
             
             for i,center in enumerate(self.spec.targets['extra']):    
                 
-                print(i,center)
-                
-                self.actions['obj'][nr_default_act+i] = action(center, -i, backreach_obj)
+                self.actions['obj'][nr_default_act+i] = action(i, self.model, center, -i, backreach_obj)
                 self.actions['extra_act'] += [self.actions['obj'][nr_default_act+i]]
         
         self.actions['nr_actions'] = len(self.actions['obj'])
@@ -263,12 +265,6 @@ class Abstraction(object):
         ### 1 ###
         # If underactuated...
         if self.flags['underactuated']:            
-            
-            print('\nComputing all backward reachable sets...')
-            
-            self.actions['backreach'], self.actions['backreach_inflated'] = \
-                def_backreach_inflated(self.model, self.actions['obj']['center'],
-                            self.actions['obj']['control_error'])
             
             print('\nComputing set of enabled actions...')
             
@@ -290,23 +286,85 @@ class Abstraction(object):
                     self.setup, self.flags, self.partition, self.actions, 
                     self.model, self.spec, dn, dp)
             
+            self.TEMP_dim_n = dim_n
+            self.TEMP_enabled = enabled
+            self.TEMP_enabled_inv = enabled_inv
+            self.TEMP_error = error
+            
             nr_act = self._composeEnabledActions(dim_n, enabled, 
-                                               enabled_inv, error)
+                                                 enabled_inv, error)
+        
+            # Add extra actions
+            BRS_0 = self.actions['backreach_obj']['default'].verts_infl
+            LP = LP_vertices_contained(self.model, BRS_0.shape, 
+                                       solver=self.setup.cvx['solver'])
+            
+            if self.flags['parametric']:
+                epist = epistemic_error(self.model)
+            else:
+                epist = None
+            
+            for act in self.actions['extra_act']:
+                    
+                # Set current backward reachable set as parameter
+                LP.set_backreach(act.backreach_infl)
+                
+                s_min_list = []
+                
+                # Try each potential predecessor state
+                for s_min in range(self.partition['nr_regions']):
+                    
+                    # Skip if this is a critical state
+                    if s_min in self.partition['critical']:
+                        continue
+                    
+                    unique_verts = np.unique(self.partition['allCorners'][s_min], axis=0)
+                    
+                    # If the problem is feasible, then action is enabled in this state
+                    if LP.solve(unique_verts):
+                        
+                        # Add state to the list of enabled states
+                        s_min_list += [s_min]
+                        
+                        # Enable the current action in the current state
+                        self.actions['enabled'][s_min].add(act.idx)
+                           
+                        act.enabled_in.add(s_min)
+                        
+                # Retrieve control error negative/positive
+                control_error = act.backreach_obj.max_control_error
+                        
+                # If a parametric model is used
+                if not epist is None and len(s_min_list) > 0:
+                    
+                    # Retrieve list of unique vertices of predecessor states
+                    s_vertices = self.partition['allCorners'][s_min_list]
+                    s_vertices_unique = np.unique(np.vstack(s_vertices), axis=0)
+                
+                    # Compute the epistemic error
+                    epist_error_neg, epist_error_pos = epist.compute(s_vertices_unique)
+                    
+                    # Store the control error for this action
+                    act.error = {'neg': control_error[:,0] + epist_error_neg,
+                                 'pos': control_error[:,1] + epist_error_pos}
+                    
+                else:
+                    
+                    # Store the control error for this action
+                    act.error = {'neg': control_error[:,0],
+                                 'pos': control_error[:,1]}        
         
         ### 2 ###
         else:
             
-            print('\nComputing all backward reachable sets...')
-            
-            self.actions['backreach'] = \
-                def_backreach(self.model, self.actions['obj']['center'])
-            
             print('\nComputing set of enabled actions...')
             
+            #TODO: Update structure of 'enabled_inv' here
             nr_act, self.actions['enabled'], self.actions['enabled_inv'], _ = \
                 enabledActions(self.setup, self.partition, self.actions, 
                                self.model)
-              
+            
+        ### PLOT ###
         if self.setup.plotting['partitionPlot']:
             
             if 'partition_plot_action' in self.model.setup:
@@ -315,9 +373,9 @@ class Abstraction(object):
                 a = np.round(self.actions['nr_actions'] / 2).astype(int)
                 
             a = self.actions['nr_actions']-1
-            partition_plot((0,1), (), self, cut_value=np.array([]), a=a )
-            for a in range(0,self.actions['nr_actions'],10):
-                partition_plot((0,1), (), self, cut_value=np.array([]), a=a )
+            partition_plot((0,1), (), self, cut_value=np.array([]), act=self.actions['obj'][a] )
+            for a in range(0,self.actions['nr_actions'],100):
+                partition_plot((0,1), (), self, cut_value=np.array([]), act=self.actions['obj'][a] )
                 
         print(nr_act,'actions enabled')
         if nr_act == 0:
@@ -334,16 +392,12 @@ class Abstraction(object):
         
         # Initialize variables
         self.actions['enabled'] = [set() for i in range(self.partition['nr_regions'])]
-        self.actions['enabled_inv'] = [set() for i in range(self.actions['nr_actions'])]
-        self.actions['control_error'] = {}
             
         ## Merge together successor states (per action)
         enabled_inv_keys = itertools.product(*[enabled_sub_inv[i].keys() 
                                                for i in range(len(dim_n))])
         enabled_inv_vals = itertools.product(*[enabled_sub_inv[i].values() 
-                                               for i in range(len(dim_n))])
-        control_error_vl = itertools.product(*[control_error_sub[i].values() 
-                                               for i in range(len(dim_n))])
+                                                for i in range(len(dim_n))])
         
         # Precompute matrix to put together control error
         mats = [None] * len(dim_n)
@@ -355,11 +409,14 @@ class Abstraction(object):
         nr_act = 0
         
         # Zipping over the product of the keys/values of the dictionaries
-        for keys, vals_enab, vals_error in \
-          zip(enabled_inv_keys, enabled_inv_vals, control_error_vl):
+        for keys, vals_enab in zip(enabled_inv_keys, enabled_inv_vals):
+        # for keys, vals_enab in zip(enabled_inv_keys, enabled_inv_vals):
+            
+            vals_error = [control_error_sub[i][key] for i,key in enumerate(keys)]
             
             # Add tuples to get the compositional state
-            act = self.actions['obj']['idx'][tuple(np.sum(keys, axis=0))]
+            act_idx = self.actions['tup2idx'][tuple(np.sum(keys, axis=0))]
+            act_obj = self.actions['obj'][act_idx]
             
             s_elems = list(itertools.product(*vals_enab))
             s_enabledin  = np.sum(s_elems, axis=1)
@@ -372,20 +429,22 @@ class Abstraction(object):
                 if state in self.partition['critical']:
                     continue
                 
-                self.actions['enabled_inv'][act].add( state )
-                self.actions['enabled'][state].add( act )
+                act_obj.enabled_in.add( state )
+                self.actions['enabled'][state].add( act_idx )
             
             # Check if action is enabled in any state
-            if len(self.actions['enabled_inv'][act]) > 0:
+            if len(act_obj.enabled_in) > 0:
                 nr_act += 1
             
             # Compute control error for this action
-            self.actions['control_error'][act] = {
+            act_obj.error = {
                 'pos': np.sum([mats[z] @ vals_error[z]['pos'] for z in 
                                range(len(dim_n))], axis=0),
                 'neg': np.sum([mats[z] @ vals_error[z]['neg'] for z in 
                                range(len(dim_n))], axis=0)
                 }
+            
+        return nr_act
         
         
         
@@ -555,7 +614,7 @@ class Abstraction(object):
         
         print('\nGenerate plots')
         
-        if self.partition['nr_regions'] <= 1000:
+        if self.partition['nr_regions'] <= 5000:
         
             from .postprocessing.createPlots import createProbabilityPlots
         
@@ -703,20 +762,19 @@ class scenarioBasedAbstraction(Abstraction):
                                   self.setup.scenarios['samples']))
 
         # For every action (i.e. target point)
-        for a in range(self.actions['nr_actions']):
+        for a_idx, act in self.actions['obj'].items():
             
             # Check if action a is available in any state at all
-            if len(self.actions['enabled_inv'][a]) > 0:
+            if len(act.enabled_in) > 0:
                     
-                prob[a] = dict()
-                mu = self.actions['obj']['center'][a]
+                prob[a_idx] = dict()
                 
                 if self.setup.scenarios['gaussian'] is True:
-                    samples = mu + samples_zero_mean[a]                                        
+                    samples = act.center + samples_zero_mean[a_idx]                                        
                 else:
                     # Determine non-Gaussian noise samples (relative from 
                     # target point)
-                    samples = mu + np.array(
+                    samples = act.center + np.array(
                         random.choices(self.model.noise['samples'], 
                         k=self.setup.scenarios['samples']) )
                     
@@ -732,36 +790,36 @@ class scenarioBasedAbstraction(Abstraction):
                                           self.spec.partition['width'])
                     
                     # Plot one transition plus samples
-                    a_plot = np.round(self.actions['nr_actions'] / 2 ).astype(int)
-                    a_plot = 76
-                    if a == a_plot:
-                        
-                        plot_transition(samples, self.actions['control_error'][a], 
-                            (0,1), (), self.setup, self.model, self.spec, self.partition,
-                            np.array([]), backreach=self.actions['backreach'][a],
-                            backreach_inflated=self.actions['backreach_inflated'][a])
+                    a_plot = [np.round(self.actions['nr_actions'] / 2 ).astype(int),
+                              self.actions['nr_actions']-1]
                     
-                    prob[a] = computeScenarioBounds_error(self.setup, 
-                          self.spec.partition, 
-                          self.partition, self.trans, samples, self.actions['control_error'][a], exclude, verbose=False)
+                    if a_idx in [390]: # a_plot:
+                        
+                        transition_plot(samples, act.error, 
+                            (0,1), (), self.setup, self.model, self.spec, self.partition,
+                            np.array([]), backreach=act.backreach,
+                            backreach_inflated=act.backreach_infl)
+                    
+                    prob[a_idx] = computeScenarioBounds_error(self.setup, 
+                          self.spec.partition, self.partition, self.trans, samples, act.error, exclude, verbose=False)
                     
                     # Print normal row in table
-                    if a % printEvery == 0:
-                        nr_transitions = len(prob[a]['successor_idxs'])
-                        tab.print_row([k, a, 
+                    if a_idx % printEvery == 0:
+                        nr_transitions = len(prob[a_idx]['successor_idxs'])
+                        tab.print_row([k, a_idx, 
                            'Probabilities computed (transitions: '+
                            str(nr_transitions)+')'])
                 
                 else:
                     
-                    prob[a] = computeScenarioBounds_sparse(self.setup, 
+                    prob[a_idx] = computeScenarioBounds_sparse(self.setup, 
                           self.spec.partition, 
                           self.partition, self.trans, samples)
                 
                     # Print normal row in table
-                    if a % printEvery == 0:
-                        nr_transitions = len(prob[a]['successor_idxs'])
-                        tab.print_row([k, a, 
+                    if a_idx % printEvery == 0:
+                        nr_transitions = len(prob[a_idx]['successor_idxs'])
+                        tab.print_row([k, a_idx, 
                            'Probabilities computed (transitions: '+
                            str(nr_transitions)+')'])
                 

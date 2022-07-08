@@ -184,10 +184,6 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     imax, iMax = computeRegionIdx(samples + error['pos'], partition_setup,
                                   borderOutside=[True]*len(samples))
     
-    if verbose:
-        print('error:', error)
-        print(imin, imax)
-    
     counts_absorb_low = 0
     counts_absorb_upp = 0
     
@@ -355,7 +351,7 @@ import matplotlib.pyplot as plt # Import Pyplot to generate plots
 import matplotlib.patches as patches
 from .commons import cm2inch
 
-def plot_transition(samples, error, i_show, i_hide, setup, model, spec, partition, 
+def transition_plot(samples, error, i_show, i_hide, setup, model, spec, partition, 
                     cut_value, backreach=False, backreach_inflated=False,
                     stateLabels=False):
     '''

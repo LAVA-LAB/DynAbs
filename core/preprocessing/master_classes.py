@@ -225,16 +225,22 @@ class settings(object):
         
         loadOptions(base_dir+'/options.txt', self)
 
-    def set_monte_carlo(self):
+    def set_monte_carlo(self, iterations=None):
         
-        # If TRUE monte carlo simulations are performed
-        self.montecarlo['enabled'], _ = user_choice( \
-                                        'Monte Carlo simulations', [True, False])
-        if self.montecarlo['enabled']:
-            self.montecarlo['iterations'], _ = user_choice( \
-                                        'Monte Carlo iterations', 'integer')
+        if iterations is None:
+        
+            # If TRUE monte carlo simulations are performed
+            self.montecarlo['enabled'], _ = user_choice( \
+                                            'Monte Carlo simulations', [True, False])
+            if self.montecarlo['enabled']:
+                self.montecarlo['iterations'], _ = user_choice( \
+                                            'Monte Carlo iterations', 'integer')
+            else:
+                self.montecarlo['iterations'] = 0
+                
         else:
-            self.montecarlo['iterations'] = 0
+            self.montecarlo['enabled']=True
+            self.montecarlo['iterations']=int(iterations)
             
     def set_new_abstraction(self):
         

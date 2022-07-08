@@ -202,73 +202,6 @@ def partial_model(flags, model, spec, dim_n, dim_p):
     return model, spec
 
 
-def def_backreach_inflated(model, targets, control_error_bounds):
-    '''
-    Compute the inflated backward reachable set for every target point
-
-    Parameters
-    ----------
-    model : Model object
-    targets : List of all target points
-    control_error_bound : Bound on control error (by which target is inflated)
-
-    Returns
-    -------
-    backreach : Backward reachable sets
-    backreach_inflated : Inflated backward reachable sets
-
-    '''
-    
-    G_zero = def_backward_reach(model)
-    alphas = np.eye(len(G_zero))
-
-    backreach = {}
-    backreach_inflated = {}
-
-    # For every action
-    for a in range(len(targets)):
-        
-        BRS_inflated = []
-        
-        # Compute the control error
-        for err in itertools.product(*control_error_bounds[a]):
-            for alpha in alphas:
-                prob,x,_ = find_backward_inflated(model.A, np.array(err), 
-                                                  alpha, G_zero)
-                
-                BRS_inflated += [x]
-        
-        shift = model.A_inv @ targets[a]
-        backreach[a] = G_zero + shift
-        
-        backreach_inflated[a] = np.array(BRS_inflated) + shift
-        
-    return backreach, backreach_inflated
-
-
-def def_backreach(model, targets, control_error_bound=False):
-    '''
-    Compute the (non-inflated) backward reachable set for every target point
-
-    Parameters
-    ----------
-    model : Model object
-    targets : List of all target points
-
-    Returns
-    -------
-    backreach : Backward reachable sets
-
-    '''
-    
-    G_zero = def_backward_reach(model)
-    
-    backreach = {a: G_zero + model.A_inv @ targets[a] for a in 
-                 range(len(targets))}
-        
-    return backreach
-
-
 def rotate_BRS(vector):
     '''
     Compute the rotation vector to rotate a vector back to x-axis aligned
@@ -298,6 +231,36 @@ def rotate_BRS(vector):
     prob.solve()
     
     matrix = ROT.value
+    
+    return matrix
+
+def rotate_2D_vector(vector):
+    '''
+    Compute the rotation matrix to rotate a vector back to x-axis aligned
+
+    Parameters
+    ----------
+    vector : np.array
+        Input vector.
+
+    Returns
+    -------
+    matrix : np.array
+        Rotation matrix.
+
+    '''
+    
+    unit_vector = vector / np.linalg.norm(vector)
+    
+    n = len(vector)
+    rotate_to = np.zeros(n)
+    rotate_to[0] = 1
+    
+    dot_product = np.dot(unit_vector, rotate_to)
+    angle = np.arccos(dot_product)
+    
+    matrix = np.array([[np.cos(angle), -np.sin(angle)],
+                       [np.sin(angle), np.cos(angle)]])
     
     return matrix
 
@@ -376,7 +339,7 @@ class epistemic_error(object):
                 self.mult[i] = A_vertex - model.A
                 self.plus[i,:] = (B_vertex - model.B) @ u
                 i+=1
-       
+                
         
     def compute(self, vertices):
         '''
@@ -414,6 +377,7 @@ def compute_epistemic_error(model, vertices):
         for u in itertools.product(*control_mat):
         
             e_error = ((A_vertex - model.A) @ vertices.T).T + (B_vertex - model.B) @ u
+            
             e_error_neg[i] = e_error.min(axis=0)
             e_error_pos[i] = e_error.max(axis=0)
             i += 1
@@ -424,27 +388,27 @@ def compute_epistemic_error(model, vertices):
 def enabledActionsImprecise(setup, flags, partition, actions, model, spec, 
                             dim_n=False, dim_p=False, verbose=False):
     
-    nrPerDim = [spec.targets['number'][i] if i in dim_n else 1 for i in range(model.n)]
-    action_range = list(itertools.product(*map(range, [0]*model.n, nrPerDim)))
-    
     # Compute the backward reachable set (not accounting for target point yet)    
-    if dim_n is False or dim_p is False:
+    if dim_n is False or dim_p is False or len(dim_n) == model.n:
         dim_n = np.arange(model.n)
         dim_p = np.arange(model.p)
         compositional = False
         
     else:
+        dim_excl = np.array([i for i in range(model.n) if i not in dim_n])
+        
         model, spec = partial_model(flags, deepcopy(model), deepcopy(spec), dim_n, dim_p)
         compositional = True
+        
     
     enabled = {}
     enabled_inv = {}   
     error = {}
     
     # Create LP object
-    BRS = actions['backreach_inflated']
+    BRS_0 = actions['backreach_obj']['default'].verts_infl
     LP = LP_vertices_contained(model, 
-                               np.unique(BRS[0][:, dim_n], axis=0).shape, 
+                               np.unique(BRS_0[:, dim_n], axis=0).shape, 
                                solver=setup.cvx['solver'])
     
     if flags['parametric']:
@@ -452,23 +416,47 @@ def enabledActionsImprecise(setup, flags, partition, actions, model, spec,
     else:
         epist = None
     
-    # For every action
-    for a_tup in progressbar(action_range, redirect_stdout=True):
+    # If the (noninflated) backward reachable set is a line, compute the rot.
+    # matrix. Used to make computation of enabled actions faster, by reducing
+    # the number of potentially active actions.
+    if len(actions['backreach_obj']['default'].verts) == 2 and len(dim_n) == 2:
+        verts = actions['backreach_obj']['default'].verts[:, dim_n]
+        brs_0_shift = verts - verts[0]
+        BRS_0_shift = BRS_0[:, dim_n] - verts[0]
         
+        ROT = rotate_2D_vector(brs_0_shift[1] - brs_0_shift[0])
+        distances = (ROT @ (BRS_0_shift[:, dim_n]).T).T
+        max_distance_to_brs = np.max(np.abs(distances[:, 1:]))
+        
+    else:
+        ROT = None
+    
+    # For every action
+    for i,a_tup in enumerate(actions['tup2idx']): #progressbar(enumerate(actions['tup2idx']), redirect_stdout=True):
+        
+        # If we are in compositional mode, only check this action if all 
+        # excluded dimensions are zero        
+        if compositional and any(np.array(a_tup)[dim_excl] != 0):
+            continue
+        
+        # Get reference to current action object
         a_idx = actions['tup2idx'][a_tup]
-        BRS_i = np.unique(BRS[a_idx][:, dim_n], axis=0)
-        target_center = actions['T']['center'][a_idx]
+        act   = actions['obj'][a_idx]
+        
+        # Get backward reachable set
+        BRS = np.unique(act.backreach_infl[:, dim_n], axis=0)
+        brs_basis = act.backreach[0, dim_n]
         
         # Set current backward reachable set as parameter
-        LP.set_backreach(BRS_i)
+        LP.set_backreach(BRS)
         
         # Overapproximate the backward reachable set
-        BRS_overapprox_box = overapprox_box(BRS_i)
+        BRS_overapprox_box = overapprox_box(BRS)
         
         if 'max_action_distance' in spec.error:
-            BRS_overapprox_box = np.maximum(np.minimum(BRS_overapprox_box - target_center[dim_n], 
+            BRS_overapprox_box = np.maximum(np.minimum(BRS_overapprox_box - act.center[dim_n], 
                                     spec.error['max_action_distance']), 
-                                   -spec.error['max_action_distance']) + target_center[dim_n]
+                                   -spec.error['max_action_distance']) + act.center[dim_n]
         
         # Determine set of regions that potentially intersect with G
         _, idx_edgeV = computeRegionIdx(BRS_overapprox_box, 
@@ -482,26 +470,34 @@ def enabledActionsImprecise(setup, flags, partition, actions, model, spec,
         
         idx_mat = [np.arange(low, high+1).astype(int) for low,high in idx_edge]
         
-        s_plus_list = []
+        s_min_list = []
         
-        # Try each potential successor state
+        # Try each potential predecessor state
         for si, s_tup in enumerate(itertools.product(*idx_mat)):
             tocDiff(False)
             
             # Retrieve current state index
-            s_plus = partition['R']['idx'][s_tup]
+            s_min = partition['R']['idx'][s_tup]
             
             # Skip if this is a critical state
-            if s_plus in partition['critical'] and not compositional:
+            if s_min in partition['critical'] and not compositional:
                 continue
             
-            unique_verts = np.unique(partition['allCorners'][s_plus][:, dim_n], axis=0)
+            unique_verts = np.unique(partition['allCorners'][s_min][:, dim_n], axis=0)
+            
+            # if not ROT is None:
+            if not ROT is None:
+                rotated_region = (ROT @ (unique_verts - brs_basis).T).T
+                
+                distance = max(np.abs(rotated_region[:,1:]))
+                if distance > max_distance_to_brs:
+                    continue
             
             # If the problem is feasible, then action is enabled in this state
             if LP.solve(unique_verts):
                 
                 # Add state to the list of enabled states
-                s_plus_list += [s_plus]
+                s_min_list += [s_min]
                 
                 # Enable the current action in the current state
                 if s_tup in enabled:
@@ -516,13 +512,13 @@ def enabledActionsImprecise(setup, flags, partition, actions, model, spec,
                 
         # Retrieve control error negative/positive
         control_error = np.zeros((model.n, 2))
-        control_error[dim_n] = actions['T']['control_error'][a_idx][dim_n, :]
-                
+        control_error[dim_n] = act.backreach_obj.max_control_error[dim_n, :]
+        
         # If a parametric model is used
-        if not epist is None and len(s_plus_list) > 0:
+        if not epist is None and len(s_min_list) > 0:
             
             # Retrieve list of unique vertices of predecessor states
-            s_vertices = partition['allCorners'][s_plus_list][:, :, dim_n]
+            s_vertices = partition['allCorners'][s_min_list][:, :, dim_n]
             s_vertices_unique = np.unique(np.vstack(s_vertices), axis=0)
         
             # Compute the epistemic error
@@ -532,11 +528,14 @@ def enabledActionsImprecise(setup, flags, partition, actions, model, spec,
             error[a_tup] = {'neg': control_error[:,0] + epist_error_neg,
                             'pos': control_error[:,1] + epist_error_pos}
             
-        else:
+        elif len(s_min_list) > 0:
             
             # Store the control error for this action
             error[a_tup] = {'neg': control_error[:,0],
                             'pos': control_error[:,1]}        
+            
+        if i % 1 == 0:
+            print('Action to',act.center,'enabled in ',len(s_min_list),'states')
             
     return enabled, enabled_inv, error
 

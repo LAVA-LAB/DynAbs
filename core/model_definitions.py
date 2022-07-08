@@ -48,41 +48,40 @@ class robot(master.LTI_master):
         self.lump = 1
         
         # Discretization step size
-        self.tau = 2
+        self.tau = 1
         
-        mass_min = 1
-        mass_max = 1
-        mass_nom = 1
+        mass_min = 0.90
+        mass_nom = 1.00
+        mass_max = 1.10
         
-        spring_min = 0.1
-        spring_max = 0.1
-        spring_nom = 0.1
+        spring_min = 0.05
+        spring_nom = 0.05
+        spring_max = 0.05
         
         # State transition matrix
-        self.A  = np.array([[1, self.tau],
-                            [-spring_nom/mass_nom, 1-0.1/mass_nom]])
-        
-        self.A_set = [
-                    np.array([[1, self.tau],
-                              [-spring_min/mass_min, 1-0.1/mass_min]]),
-                    np.array([[1, self.tau],
-                              [-spring_min/mass_max, 1-0.1/mass_max]]),
-                    np.array([[1, self.tau],
-                              [-spring_max/mass_min, 1-0.1/mass_min]]),
-                    np.array([[1, self.tau],
-                              [-spring_max/mass_max, 1-0.1/mass_max]]),
-                    ]
-        
-        self.B_set = [
-                    np.array([[self.tau**2/(2*mass_min)], [self.tau/mass_min]]),
-                    np.array([[self.tau**2/(2*mass_max)], [self.tau/mass_max]]),
-                    np.array([[self.tau**2/(2*mass_min)], [self.tau/mass_min]]),
-                    np.array([[self.tau**2/(2*mass_max)], [self.tau/mass_max]])
-                    ]
+        self.A     = self.set_A(mass_nom, spring_nom)
         
         # Input matrix
-        self.B  = np.array([[self.tau**2/(2*mass_nom)],
-                            [self.tau/mass_nom]])
+        self.B     = self.set_B(mass_nom)
+        
+        # self.set_true_model(mass=0.9, spring=0.15)
+        
+        _, parametric  = ui.user_choice('Enable robust approach against parameter uncertainty?',['No', 'Yes'])
+        
+        if parametric == 1:
+            self.A_set = [
+                        self.set_A(mass_min, spring_min),
+                        self.set_A(mass_min, spring_max),
+                        self.set_A(mass_max, spring_min),
+                        self.set_A(mass_max, spring_max)
+                        ]
+            
+            self.B_set = [
+                        self.set_B(mass_min),
+                        self.set_B(mass_min),
+                        self.set_B(mass_max),
+                        self.set_B(mass_max)
+                        ]
         
         # Disturbance matrix
         self.Q  = np.array([[0],[0]])
@@ -93,7 +92,7 @@ class robot(master.LTI_master):
         
         # Covariance of the process noise
         self.noise = dict()
-        self.noise['w_cov'] = np.diag([0.1, 0.01]) 
+        self.noise['w_cov'] = np.diag([0.01, 0.01])
         
     def set_spec(self):
         
@@ -102,6 +101,29 @@ class robot(master.LTI_master):
         spec = robot_spec()
         
         return spec
+    
+    def set_true_model(self, mass, spring):
+        
+        # State transition matrix
+        self.A_true     = self.set_A(mass, spring)
+        # Input matrix
+        self.B_true     = self.set_B(mass)
+        
+    def set_A(self, mass, spring):
+        
+        A = np.array([
+            [1, self.tau],
+            [-self.tau*spring/mass, 1-self.tau*0.1/mass]
+            ])
+        
+        return A
+    
+    def set_B(self, mass):
+        
+        B = np.array([[self.tau**2/(2*mass)],
+                      [self.tau/mass]])
+        
+        return B
         
 class UAV(master.LTI_master):
     
@@ -561,7 +583,7 @@ class anaesthesia_delivery(master.LTI_master):
                             [0.00001] ])
         
         # Disturbance matrix
-        self.Q  = np.array([[0], [0],[0]])
+        self.Q  = np.array([[0],[0],[0]])
         
         # Determine system dimensions
         self.n = np.size(self.A,1)

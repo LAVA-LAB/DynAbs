@@ -40,8 +40,10 @@ def define_model(setup, model_raw, spec):
     spec.partition['boundary'] = np.array(spec.partition['boundary']).astype(float)
     spec.partition['number'] = np.array(spec.partition['number']).astype(int)
     
-    spec.targets['boundary'] = np.array(spec.targets['boundary']).astype(float)
-    spec.targets['number'] = np.array(spec.targets['number']).astype(int)
+    if type(spec.targets['boundary']) != str:        
+        spec.targets['boundary'] = np.array(spec.targets['boundary']).astype(float)
+    if type(spec.targets['number']) != str:
+        spec.targets['number'] = np.array(spec.targets['number']).astype(int)
     
     # Control limitations
     model_raw.uMin   = np.array( spec.control['uMin'] ).astype(float)
@@ -162,7 +164,7 @@ def makeModelFullyActuated(model, manualDimension='auto', observer=False):
     model.noise['w_cov']  = w_sigma_hat
     
     # Redefine sampling time of model
-    model.tau             *= (dim+1)
+    model.tau             *= dim
     
     model.uMin = np.repeat(model.uMin, dim)
     model.uMax = np.repeat(model.uMax, dim)

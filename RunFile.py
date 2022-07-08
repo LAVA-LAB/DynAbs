@@ -84,10 +84,6 @@ else:
     
 # Create actions and determine which ones are enabled
 ScAb.define_target_points()
-
-assert False
-
-# %%
 ScAb.define_actions()
 
 # %%
@@ -178,3 +174,42 @@ if ScAb.setup.main['iterative'] and ScAb.setup.main['newRun']:
         
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
+
+# assert False
+# %%
+
+setup.set_monte_carlo(iterations=30)
+ScAb.model.set_true_model(mass=0.8, spring=0.05)
+ScAb.mc = monte_carlo(ScAb, writer=writer, random_initial_state=True)
+
+from core.postprocessing.createPlots import reachabilityHeatMap
+reachabilityHeatMap(ScAb, montecarlo = True, title='Monte Carlo, mass=1.20')
+
+assert False
+
+# %%
+
+setup.set_monte_carlo(iterations=100)
+
+import pandas as pd
+from core.postprocessing.plotTracesOscillator import oscillator_traces
+
+df = pd.DataFrame(columns=['guaranteed', 'simulated', 'ratio'], dtype=float)
+df.index.name = 'mass'
+
+eval_state = ScAb.partition['R']['c_tuple'][(3.5,-11.5)]
+
+
+for mass in np.arange(1.0, 1.33, 0.05):
+
+    ScAb.model.set_true_model(mass=mass, spring=0)
+    ScAb.mc = monte_carlo(ScAb, writer=writer, random_initial_state=True, init_states = [eval_state])
+    
+    df.loc[mass, 'guaranteed'] = np.round(ScAb.results['optimal_reward'][eval_state], 4)
+    df.loc[mass, 'simulated']  = np.round(ScAb.mc['reachability'][eval_state], 4)
+    df.loc[mass, 'ratio']  = np.round(ScAb.mc['reachability'][eval_state] / ScAb.results['optimal_reward'][eval_state], 4)
+    
+    oscillator_traces(ScAb, ScAb.mc['traces'][eval_state], ScAb.mc['action_traces'][eval_state], plot_trace_ids=[0])
+  
+csv_file = ScAb.setup.directories['outputF']+'gauranteed_vs_simulated.csv'
+df.to_csv(csv_file, sep=',')

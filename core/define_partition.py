@@ -178,7 +178,7 @@ def definePartitions(dim, nrPerDim, regionWidth, origin, onlyCenter=False):
     
     return partition
 
-def defStateLabelSet(allCenters, sets, partition, borderOutside=False):
+def define_spec_region(allCenters, sets, partition, borderOutside=False):
     '''
     Return the indices of regions associated with the unique centers.
 
@@ -198,6 +198,8 @@ def defStateLabelSet(allCenters, sets, partition, borderOutside=False):
 
     '''
     
+    delta = 1e-5
+    
     if sets is None:
         return [], [], set()
     
@@ -214,6 +216,10 @@ def defStateLabelSet(allCenters, sets, partition, borderOutside=False):
                             S if type(S) != str else partition['boundary'][j] 
                             for j,S in enumerate(set_boundary) ])
             
+            # Increase by small margin to avoid issues on region boundaries
+            set_boundary = np.hstack((set_boundary[:,[0]] + delta, 
+                                      set_boundary[:,[1]] - delta))
+            
             vertices = np.array(list(itertools.product(*set_boundary)))
             
             _, indices_nonneg = computeRegionIdx(vertices, partition, borderOutside)
@@ -221,11 +227,12 @@ def defStateLabelSet(allCenters, sets, partition, borderOutside=False):
             slices['min'][i] = indices_nonneg.min(axis=0)
             slices['max'][i] = indices_nonneg.max(axis=0)
             
-            index_tuples = set(itertools.product(*map(range, slices['min'][i], slices['max'][i])))
+            # Create slices
+            index_tuples.update(set(itertools.product(*map(range, slices['min'][i], slices['max'][i]+1))))
             
             # Define iterator
             if borderOutside:
-                M = map(np.arange, set_boundary[:,0]+1e-5, set_boundary[:,1]-1e-5, partition['width']/2)
+                M = map(np.arange, set_boundary[:,0]+delta, set_boundary[:,1]-delta, partition['width']/2)
             else:
                 M = map(np.arange, set_boundary[:,0], set_boundary[:,1], partition['width']/2)
             
@@ -240,7 +247,13 @@ def defStateLabelSet(allCenters, sets, partition, borderOutside=False):
         # Filter to only keep unique centers
         centers_unique = np.unique(centers, axis=0)
         
+        states = [allCenters[tuple(c)] for c in centers_unique 
+                           if tuple(c) in allCenters]
+        
+        if len(states) != len(index_tuples):
+            print('ERROR: lengths of goal and goal_idx lists are not the same.')
+            assert False
+        
         # Return the ID's of regions associated with the unique centers            
-        return [allCenters[tuple(c)] for c in centers_unique 
-                           if tuple(c) in allCenters], slices, index_tuples
+        return states, slices, index_tuples
         

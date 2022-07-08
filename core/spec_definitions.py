@@ -16,31 +16,35 @@ class robot_spec(master.spec_master):
         master.spec_master.__init__(self)        
         
         # Step-bound on spec
-        self.end_time = 16 
+        self.end_time = 6
 
         # Authority limit for the control u, both positive and negative
-        self.control['uMin'] = [-5]
-        self.control['uMax'] = [5]
+        self.control['uMin'] = [-6]
+        self.control['uMax'] = [6]
         
-        self.partition['boundary']  = np.array([[-11, 11], 
-                                                [-11, 11]])
-        self.partition['number']    = [22, 22]
+        self.partition['boundary']  = np.array([[-13, 16], 
+                                                [-13, 13]])
+        self.partition['number']    = [29, 26]
         
-        self.targets['boundary']    = np.array([[-9, 9], 
-                                                [-9, 9]])
-        self.targets['number']      = [9, 9]
+        self.targets['boundary']    = np.array([[-10.5, 12.5], 
+                                                [-10.5, 10.5]])
+        self.targets['number']      = [24, 22]
         
-        self.targets['extra']       = np.array([[8, 0]])
+        self.targets['extra']       = np.array([[9.5, 0]])
         
         self.goal = [
-            np.array([[5, 11], [-5, 5]])
+            np.array([[10, 16], [-13, 13]])
             ]
         
-        self.critical = None
+        self.critical = [
+            # np.array([[-2, 2], [-2, 2]]),
+            # np.array([[-13, 13], [9,13]]),
+            np.array([[-13,-5], [-13,13]])
+            ]
         
         self.error['max_control_error'] = {
-            'default': np.array([[-1.5, 1.5], [-2, 2]]),
-            'extra': np.array([[-2, 2], [-4, 4]])
+            'default': np.array([[-1.5, 1.5], [-1.5, 1.5]]),
+            'extra': np.array([[-1.6, 1.6], [-5.5, 5.5]])
             }
         self.error['max_action_distance'] = np.array([80,80])
         
@@ -266,17 +270,19 @@ class anaesthesia_delivery_spec(master.spec_master):
         self.control['uMax'] = [40]
         
         # Partition size
-        self.partition['boundary']  = np.array([[1, 6], [0, 10], [-0.5, 10.5]])
-        self.partition['number']  = [20, 40, 11]
+        self.partition['boundary']  = np.array([[1, 6], [0, 10], [0, 10]])
+        self.partition['number']  = [10, 20, 20]
         
         # Actions per dimension (if 'auto', equal to nr of regions)
-        self.targets['boundary']    = self.partition['boundary']
-        self.targets['number']      = self.partition['number']
+        self.targets['boundary']    = 'auto' #self.partition['boundary']
+        self.targets['number']      = 'auto' #self.partition['number']
         
         self.goal = [
-            np.array([[4.25, 5.75], [8.5, 9.5], [8.5, 9.5]])
+            np.array([[4, 6], [8, 10], [8, 10]])
             ]
         
         self.critical = None
         
-        self.error['max_control_error'] = np.array([[-.25, .25], [-.25, .25], [-1, 1]]) 
+        self.error['max_control_error'] = {
+            'default': np.array([[-1, 1], [-0.5, 0.5], [-0.5, 0.5]]) 
+            }
