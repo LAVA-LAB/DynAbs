@@ -55,7 +55,7 @@ def define_model(setup, model_raw, spec):
     if model_raw.name in ['UAV'] and model_raw.modelDim == 3:
         setup.setOptions(category='scenarios', gaussian=False)
         model_raw.setTurbulenceNoise(setup.directories['base'],
-                                 setup.scenarios['samples_max'])
+                                 setup.scenarios['samples'])
     
     if lump == 0:
         model = makeModelFullyActuated(model_raw, 

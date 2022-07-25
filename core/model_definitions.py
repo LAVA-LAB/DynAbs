@@ -54,9 +54,9 @@ class robot(master.LTI_master):
         self.mass_nom = 1.00
         self.mass_max = 1.10
         
-        self.spring_min = 0.40
+        self.spring_min = 0.50
         self.spring_nom = 0.50
-        self.spring_max = 0.60
+        self.spring_max = 0.50
         
         # State transition matrix
         self.A     = self.set_A(self.mass_nom, self.spring_nom)

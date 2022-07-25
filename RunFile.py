@@ -28,6 +28,9 @@ from core.preprocessing.set_model_class import set_model_class
 from core.commons import createDirectory
 from core.preprocessing.master_classes import settings, result_exporter
 
+from core.postprocessing.createPlots import reachabilityHeatMap
+from core.postprocessing.plotTracesOscillator import oscillator_heatmap
+
 np.random.seed(1)
 mpl.rcParams['figure.dpi'] = 300
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -91,16 +94,20 @@ ScAb.define_actions()
 # Code below is repeated every iteration of the iterative scheme
 #-----------------------------------------------------------------------------
 
+# Shortcut to the number of samples
+N = ScAb.setup.scenarios['samples']     
+
 # Initialize case ID at zero
 case_id = 0
 
 # Create empty DataFrames to store iterative results
 exporter = result_exporter()
+fraction_safe = []
+
+ScAb.setup.main['iterations'] = 10
 
 # For every iteration... (or once, if iterations are disabled)
-while case_id < ScAb.setup.scenarios['maxIters']:
-    # Shortcut to the number of samples
-    N = ScAb.setup.scenarios['samples']        
+while case_id < ScAb.setup.main['iterations']:   
         
     # Only perform code below is a new run is chosen
     if ScAb.setup.main['newRun'] is True:
@@ -151,59 +158,47 @@ while case_id < ScAb.setup.scenarios['maxIters']:
     writer.save()
     plt.close('all')
     
-    # If iterative approach is enabled...
-    if ScAb.setup.main['iterative'] is True:
-        exporter.add_to_df(pd.DataFrame(data=N, index=[case_id], columns=['N']), 'general')
-        exporter.add_to_df(time_df, 'run_times')
-        exporter.add_to_df(pd.DataFrame(data=model_size, index=[case_id]), 'model_size')
-        case_id += 1
-        ScAb.setup.scenarios['samples'] = \
-            int(ScAb.setup.scenarios['samples']*ScAb.setup.scenarios['gamma'])
-        
-        if ScAb.setup.scenarios['samples'] > ScAb.setup.scenarios['samples_max']:
-            break
-        
-    else:
-        print('\nITERATIVE SCHEME DISABLED, SO TERMINATE LOOP')
-        break
+    exporter.add_to_df(pd.DataFrame(data=N, index=[case_id], columns=['N']), 'general')
+    exporter.add_to_df(time_df, 'run_times')
+    exporter.add_to_df(pd.DataFrame(data=model_size, index=[case_id]), 'model_size')
+    case_id += 1
+    
+    ###########################
+    setup.set_monte_carlo(iterations=100)
 
-# Save overall data in Excel (for all iterations combined)
-if ScAb.setup.main['iterative'] and ScAb.setup.main['newRun']:    
-    exporter.save_to_excel(ScAb.setup.directories['outputF'] + \
-        ScAb.setup.time['datetime'] + '_iterative_results.xlsx')
+    f_list = np.arange(0,2.01,0.2)
+    frac_sr = pd.Series(index=f_list, dtype=float, name=case_id)
+
+    for f in f_list:
+        f = np.round(f, 3)
+        spring = np.round(ScAb.model.spring_nom * (1-f) + ScAb.model.spring_max * f, 3)
+        mass   = np.round(ScAb.model.mass_nom * (1-f) + ScAb.model.mass_min * f, 3)
+
+        ScAb.model.set_true_model(mass=mass, spring=spring)
+        ScAb.mc = monte_carlo(ScAb, writer=writer, random_initial_state=True)
         
+        reachabilityHeatMap(ScAb, montecarlo = True, title='Monte Carlo, mass='+str(mass)+'; spring='+str(spring))
+        
+        frac_sr[f] = oscillator_heatmap(ScAb, title='Monte Carlo, mass='+str(mass)+'; spring='+str(spring))
+
+    fraction_safe += [frac_sr]
+
+    ###########################
+
+# Save overall data in Excel (for all iterations combined)   
+exporter.save_to_excel(ScAb.setup.directories['outputF'] + \
+    ScAb.setup.time['datetime'] + '_iterative_results.xlsx')
+    
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
-assert False
+fraction_safe_df = pd.concat(fraction_safe, axis=1)
 
-# %%
-
-from core.postprocessing.createPlots import reachabilityHeatMap
-from core.postprocessing.plotTracesOscillator import oscillator_heatmap
-import pandas as pd
-
-setup.set_monte_carlo(iterations=25)
-
-f_list = np.arange(0,2.01,0.2)
-fraction_safe = pd.Series(index=f_list, dtype=float, 
-                            name='Fraction of states with unsafe guarantees')
-
-for f in f_list:
-    spring = np.round(ScAb.model.spring_nom * (1-f) + ScAb.model.spring_max * f, 3)
-    mass   = np.round(ScAb.model.mass_nom * (1-f) + ScAb.model.mass_min * f, 3)
-
-    ScAb.model.set_true_model(mass=mass, spring=spring)
-    ScAb.mc = monte_carlo(ScAb, writer=writer, random_initial_state=True)
-    
-    reachabilityHeatMap(ScAb, montecarlo = True, title='Monte Carlo, mass='+str(mass)+'; spring='+str(spring))
-    
-    fraction_safe[f] = oscillator_heatmap(ScAb, title='Monte Carlo, mass='+str(mass)+'; spring='+str(spring))
+fraction_safe_df.to_csv(ScAb.setup.directories['outputF']+
+                        'fraction_safe_parametric='+
+                        str(ScAb.flags['parametric'])+'.csv', sep=';')
 
 assert False
-
-fraction_safe.to_csv('fraction_safe_parametric='+
-                     str(ScAb.flags['parametric'])+'.csv', sep=';')
 
 # %%
 

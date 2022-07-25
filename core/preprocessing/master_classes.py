@@ -168,9 +168,6 @@ class settings(object):
         gaussian = dict()
         
         sa['samples'] = 25 # Sample complexity used in scenario approach
-        sa['gamma'] = 2 # Factor by which N is multiplied in every iteration
-        sa['maxIters'] = 10 # Maximum number of iterations performed, before quitting
-        sa['samples_max'] = 6400 # Maximum number of samples in iterative scheme
         sa['confidence']   = 1e-1 # Confidence level (beta)
         sa['gaussian'] = True # Use Gaussian noise if true
         
@@ -210,7 +207,7 @@ class settings(object):
         # Main settings
         main = dict()
         main['verbose']             = True
-        main['iterative']           = True
+        main['iterations']          = 1
         
         self.mdp = mdp
         self.plotting = plot

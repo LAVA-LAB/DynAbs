@@ -480,7 +480,7 @@ def UAVplots(ScAb, case_id, writer=None, itersToSim=10000, itersToPlot=1):
                        ScAb.partition, traces, cut_value )
     
     elif ScAb.model.modelDim == 3:
-        if ScAb.setup.main['iterative'] is False or \
+        if ScAb.setup.main['iterations'] == 1 or \
           ScAb.setup.plotting['3D_UAV']:
         
             # Only plot trajectory plot in non-iterative mode (because it 
