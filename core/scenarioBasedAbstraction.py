@@ -793,12 +793,15 @@ class scenarioBasedAbstraction(Abstraction):
                     a_plot = [np.round(self.actions['nr_actions'] / 2 ).astype(int),
                               self.actions['nr_actions']-1]
                     
-                    if a_idx in [390]: # a_plot:
+                    '''
+                    st = self.partition['R']['c_tuple'][2.5, -7.5]
+                    if a_idx in self.actions['enabled'][st]: #[390]: # a_plot:
                         
                         transition_plot(samples, act.error, 
                             (0,1), (), self.setup, self.model, self.spec, self.partition,
                             np.array([]), backreach=act.backreach,
                             backreach_inflated=act.backreach_infl)
+                    '''
                     
                     prob[a_idx] = computeScenarioBounds_error(self.setup, 
                           self.spec.partition, self.partition, self.trans, samples, act.error, exclude, verbose=False)

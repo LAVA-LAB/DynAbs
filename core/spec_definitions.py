@@ -16,35 +16,35 @@ class robot_spec(master.spec_master):
         master.spec_master.__init__(self)        
         
         # Step-bound on spec
-        self.end_time = 6
+        self.end_time = 12
 
         # Authority limit for the control u, both positive and negative
-        self.control['uMin'] = [-6]
-        self.control['uMax'] = [6]
+        self.control['uMin'] = [-5]
+        self.control['uMax'] = [5]
         
-        self.partition['boundary']  = np.array([[-13, 16], 
-                                                [-13, 13]])
-        self.partition['number']    = [29, 26]
+        self.partition['boundary']  = np.array([[-10, 14], 
+                                                [-10, 10]])
+        self.partition['number']    = [24, 20]
         
-        self.targets['boundary']    = np.array([[-10.5, 12.5], 
-                                                [-10.5, 10.5]])
-        self.targets['number']      = [24, 22]
+        self.targets['boundary']    = np.array([[-9.5, 13.5], 
+                                                [-9.5, 9.5]])
+        self.targets['number']      = [24, 20]
         
-        self.targets['extra']       = np.array([[9.5, 0]])
+        self.targets['extra']       = np.array([[10.5, 0]])
         
         self.goal = [
-            np.array([[10, 16], [-13, 13]])
+            np.array([[7, 14], [-14, 14]])
             ]
         
-        self.critical = [
+        self.critical = None #[
             # np.array([[-2, 2], [-2, 2]]),
             # np.array([[-13, 13], [9,13]]),
-            np.array([[-13,-5], [-13,13]])
-            ]
+            #np.array([[-13,-5], [-13,13]])
+            # ]
         
         self.error['max_control_error'] = {
-            'default': np.array([[-1.5, 1.5], [-1.5, 1.5]]),
-            'extra': np.array([[-1.6, 1.6], [-5.5, 5.5]])
+            'default': np.array([[-1.2, 1.2], [-1.2, 1.2]]),
+            'extra': np.array([[-1.5, 1.5], [-6, 6]])
             }
         self.error['max_action_distance'] = np.array([80,80])
         

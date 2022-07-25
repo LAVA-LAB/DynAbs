@@ -31,8 +31,88 @@ import matplotlib.patches as patches
 from ..commons import printWarning, mat_to_vec, cm2inch
 from core.monte_carlo import monte_carlo
 
+def oscillator_heatmap(ScAb, title = 'auto'):
+    '''
+    Create heat map for the reachability probability from any initial state.
+
+    Parameters
+    ----------
+    ScAb : abstraction instance
+        Full object of the abstraction being plotted for
+
+    Returns
+    -------
+    None.
+
+    '''
+    
+    import seaborn as sns
+    from ..define_partition import definePartitions
+
+    x_nr = ScAb.spec.partition['number'][0]
+    y_nr = ScAb.spec.partition['number'][1]
+        
+    cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr], 
+           ScAb.spec.partition['width'], 
+           ScAb.spec.partition['origin'], onlyCenter=True)['center']
+                          
+    cut_values = np.zeros((x_nr, y_nr))
+    cut_coords = np.zeros((x_nr, y_nr, ScAb.model.n))
+    
+    cut_idxs = [ScAb.partition['R']['c_tuple'][tuple(c)] for c in cut_centers 
+                                   if tuple(c) in ScAb.partition['R']['c_tuple']]              
+    
+    for i,(idx,center) in enumerate(zip(cut_idxs, cut_centers)):
+        
+        j = i % y_nr
+        k = i // y_nr
+        
+        difference = ScAb.mc['reachability'][idx] - ScAb.results['optimal_reward'][idx]
+        
+        if difference >= 0:
+            # Guarantees safe (model checking >= empirical)
+            cut_values[k,j] = 1
+        else:
+            # Guarantees unsafe (model checking < empirical)
+            cut_values[k,j] = 0
+        cut_coords[k,j,:] = center
+    
+    plot_dataframe = pd.DataFrame( cut_values, index=cut_coords[:,0,0], 
+                           columns=cut_coords[0,:,1] )
+    
+    # Compute the fraction of states for which the empirical reachability
+    # guarantees (i.e. simulated performance) are lower than the guarantees
+    # obtained from the iMDP model checking
+    average_value = plot_dataframe.mean().mean()
+    
+    fig = plt.figure(figsize=cm2inch(9, 8))
+    ax = sns.heatmap(plot_dataframe.T, cmap="jet", #YlGnBu
+             vmin=0, vmax=1)
+    ax.figure.axes[-1].yaxis.label.set_size(20)
+    ax.invert_yaxis()
+    
+    ax.set_xlabel('Var 1', fontsize=15)
+    ax.set_ylabel('Var 2', fontsize=15)
+    if title == 'auto':
+        ax.set_title("N = "+str(ScAb.setup.scenarios['samples']), fontsize=20)
+    else:
+        ax.set_title(str(title), fontsize=20)
+    
+    # Set tight layout
+    fig.tight_layout()
+
+    # Save figure
+    filename = ScAb.setup.directories['outputFcase']+'safeset_N=' + \
+                str(ScAb.setup.scenarios['samples'])
+    for form in ScAb.setup.plotting['exportFormats']:
+        plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
+        
+    plt.show()
+    
+    return average_value
+
 def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
-              line=False, stateLabels=False):
+              line=False, stateLabels=False, title = 'auto'):
     '''
     Create 2D trajectory plots for the harmonic oscillator benchmark
 
@@ -90,10 +170,15 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
     plt.grid(which='minor', color='#CCCCCC', linewidth=0.3)
     
     # Goal x-y limits
-    ax.set_xlim(min_xy[0], max_xy[0])
-    ax.set_ylim(min_xy[1], max_xy[1])
+    ax.set_xlim(min_xy[0] - 2, max_xy[0] + 2)
+    ax.set_ylim(min_xy[1] - 2, max_xy[1] + 2)
     
-    ax.set_title("N = "+str(ScAb.setup.scenarios['samples']),fontsize=10)
+    
+    
+    if title == 'auto':
+        ax.set_title("N = "+str(ScAb.setup.scenarios['samples']),fontsize=10)
+    else:
+        ax.set_title(str(title),fontsize=10)
     
     # Draw goal states
     for goal in ScAb.partition['goal']:

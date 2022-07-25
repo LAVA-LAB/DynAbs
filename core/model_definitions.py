@@ -50,19 +50,19 @@ class robot(master.LTI_master):
         # Discretization step size
         self.tau = 1
         
-        mass_min = 0.90
-        mass_nom = 1.00
-        mass_max = 1.10
+        self.mass_min = 0.90
+        self.mass_nom = 1.00
+        self.mass_max = 1.10
         
-        spring_min = 0.05
-        spring_nom = 0.05
-        spring_max = 0.05
+        self.spring_min = 0.40
+        self.spring_nom = 0.50
+        self.spring_max = 0.60
         
         # State transition matrix
-        self.A     = self.set_A(mass_nom, spring_nom)
+        self.A     = self.set_A(self.mass_nom, self.spring_nom)
         
         # Input matrix
-        self.B     = self.set_B(mass_nom)
+        self.B     = self.set_B(self.mass_nom)
         
         # self.set_true_model(mass=0.9, spring=0.15)
         
@@ -70,17 +70,17 @@ class robot(master.LTI_master):
         
         if parametric == 1:
             self.A_set = [
-                        self.set_A(mass_min, spring_min),
-                        self.set_A(mass_min, spring_max),
-                        self.set_A(mass_max, spring_min),
-                        self.set_A(mass_max, spring_max)
+                        self.set_A(self.mass_min, self.spring_min),
+                        self.set_A(self.mass_min, self.spring_max),
+                        self.set_A(self.mass_max, self.spring_min),
+                        self.set_A(self.mass_max, self.spring_max)
                         ]
             
             self.B_set = [
-                        self.set_B(mass_min),
-                        self.set_B(mass_min),
-                        self.set_B(mass_max),
-                        self.set_B(mass_max)
+                        self.set_B(self.mass_min),
+                        self.set_B(self.mass_min),
+                        self.set_B(self.mass_max),
+                        self.set_B(self.mass_max)
                         ]
         
         # Disturbance matrix
@@ -92,7 +92,7 @@ class robot(master.LTI_master):
         
         # Covariance of the process noise
         self.noise = dict()
-        self.noise['w_cov'] = np.diag([0.01, 0.01])
+        self.noise['w_cov'] = np.diag([0.0000001, 0.0000001]) #np.diag([0.01, 0.01])
         
     def set_spec(self):
         

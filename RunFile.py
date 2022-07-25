@@ -175,41 +175,63 @@ if ScAb.setup.main['iterative'] and ScAb.setup.main['newRun']:
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
-# assert False
+assert False
+
 # %%
 
-setup.set_monte_carlo(iterations=30)
-ScAb.model.set_true_model(mass=0.8, spring=0.05)
-ScAb.mc = monte_carlo(ScAb, writer=writer, random_initial_state=True)
-
 from core.postprocessing.createPlots import reachabilityHeatMap
-reachabilityHeatMap(ScAb, montecarlo = True, title='Monte Carlo, mass=1.20')
+from core.postprocessing.plotTracesOscillator import oscillator_heatmap
+import pandas as pd
+
+setup.set_monte_carlo(iterations=25)
+
+f_list = np.arange(0,2.01,0.2)
+fraction_safe = pd.Series(index=f_list, dtype=float, 
+                            name='Fraction of states with unsafe guarantees')
+
+for f in f_list:
+    spring = np.round(ScAb.model.spring_nom * (1-f) + ScAb.model.spring_max * f, 3)
+    mass   = np.round(ScAb.model.mass_nom * (1-f) + ScAb.model.mass_min * f, 3)
+
+    ScAb.model.set_true_model(mass=mass, spring=spring)
+    ScAb.mc = monte_carlo(ScAb, writer=writer, random_initial_state=True)
+    
+    reachabilityHeatMap(ScAb, montecarlo = True, title='Monte Carlo, mass='+str(mass)+'; spring='+str(spring))
+    
+    fraction_safe[f] = oscillator_heatmap(ScAb, title='Monte Carlo, mass='+str(mass)+'; spring='+str(spring))
 
 assert False
+
+fraction_safe.to_csv('fraction_safe_parametric='+
+                     str(ScAb.flags['parametric'])+'.csv', sep=';')
 
 # %%
 
 setup.set_monte_carlo(iterations=100)
 
-import pandas as pd
 from core.postprocessing.plotTracesOscillator import oscillator_traces
+import pandas as pd
 
 df = pd.DataFrame(columns=['guaranteed', 'simulated', 'ratio'], dtype=float)
 df.index.name = 'mass'
 
-eval_state = ScAb.partition['R']['c_tuple'][(3.5,-11.5)]
+# eval_state = ScAb.partition['R']['c_tuple'][(-9.5,0.5)]
+eval_state = ScAb.partition['R']['c_tuple'][(-5.5,-4.5)]
 
 
-for mass in np.arange(1.0, 1.33, 0.05):
+for mass in np.arange(0.9, 1.01, 0.01):
 
-    ScAb.model.set_true_model(mass=mass, spring=0)
+    mass = np.round(mass, 3)
+    spring = np.round(spring, 3)
+
+    ScAb.model.set_true_model(mass=mass, spring=spring)
     ScAb.mc = monte_carlo(ScAb, writer=writer, random_initial_state=True, init_states = [eval_state])
     
     df.loc[mass, 'guaranteed'] = np.round(ScAb.results['optimal_reward'][eval_state], 4)
     df.loc[mass, 'simulated']  = np.round(ScAb.mc['reachability'][eval_state], 4)
     df.loc[mass, 'ratio']  = np.round(ScAb.mc['reachability'][eval_state] / ScAb.results['optimal_reward'][eval_state], 4)
     
-    oscillator_traces(ScAb, ScAb.mc['traces'][eval_state], ScAb.mc['action_traces'][eval_state], plot_trace_ids=[0])
+    oscillator_traces(ScAb, ScAb.mc['traces'][eval_state], ScAb.mc['action_traces'][eval_state], plot_trace_ids=[0,1,2,3,4,5,6,7,8,9], title='Traces for mass='+str(mass)+'; spring='+str(spring))
   
 csv_file = ScAb.setup.directories['outputF']+'gauranteed_vs_simulated.csv'
 df.to_csv(csv_file, sep=',')
