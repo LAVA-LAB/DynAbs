@@ -8,7 +8,7 @@ Created on Mon Apr  4 07:29:04 2022
 import numpy as np
 import core.preprocessing.master_classes as master
 
-class robot_spec(master.spec_master):
+class oscillator_spec(master.spec_master):
     
     def __init__(self):
 
@@ -271,18 +271,18 @@ class anaesthesia_delivery_spec(master.spec_master):
         
         # Partition size
         self.partition['boundary']  = np.array([[1, 6], [0, 10], [0, 10]])
-        self.partition['number']  = [10, 20, 20]
+        self.partition['number']  = [10, 30, 30]
         
         # Actions per dimension (if 'auto', equal to nr of regions)
         self.targets['boundary']    = 'auto' #self.partition['boundary']
         self.targets['number']      = 'auto' #self.partition['number']
         
         self.goal = [
-            np.array([[4, 6], [8, 10], [8, 10]])
+            np.array([[4, 6], [0, 10], [0, 10]])
             ]
         
         self.critical = None
         
         self.error['max_control_error'] = {
-            'default': np.array([[-1, 1], [-0.5, 0.5], [-0.5, 0.5]]) 
+            'default': np.array([[-0.5, 0.5], [-0.5, 0.5], [-0.5, 0.5]]) 
             }

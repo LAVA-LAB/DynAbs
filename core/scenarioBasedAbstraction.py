@@ -372,9 +372,10 @@ class Abstraction(object):
             else:
                 a = np.round(self.actions['nr_actions'] / 2).astype(int)
                 
-            a = self.actions['nr_actions']-1
             partition_plot((0,1), (), self, cut_value=np.array([]), act=self.actions['obj'][a] )
             for a in range(0,self.actions['nr_actions'],100):
+                print('Create plot of partition with backward reachable set...')
+                
                 partition_plot((0,1), (), self, cut_value=np.array([]), act=self.actions['obj'][a] )
                 
         print(nr_act,'actions enabled')
@@ -754,12 +755,12 @@ class scenarioBasedAbstraction(Abstraction):
         prob = dict()
         printEvery = min(100, max(1, int(self.actions['nr_actions']/10)))
 
-        if self.setup.scenarios['gaussian'] is True:
+        if self.setup.sampling['gaussian'] is True:
             # Compute Gaussian noise samples
             samples_zero_mean = np.random.multivariate_normal(
                             np.zeros(self.model.n), self.model.noise['w_cov'], 
                             size=(self.actions['nr_actions'],
-                                  self.setup.scenarios['samples']))
+                                  self.setup.sampling['samples']))
 
         # For every action (i.e. target point)
         for a_idx, act in self.actions['obj'].items():
@@ -769,21 +770,21 @@ class scenarioBasedAbstraction(Abstraction):
                     
                 prob[a_idx] = dict()
                 
-                if self.setup.scenarios['gaussian'] is True:
+                if self.setup.sampling['gaussian'] is True:
                     samples = act.center + samples_zero_mean[a_idx]                                        
                 else:
                     # Determine non-Gaussian noise samples (relative from 
                     # target point)
                     samples = act.center + np.array(
                         random.choices(self.model.noise['samples'], 
-                        k=self.setup.scenarios['samples']) )
+                        k=self.setup.sampling['samples']) )
                     
                 if self.flags['underactuated']:
                     
                     # Checking which samples cannot be contained in a region
                     # at the same time is of quadratic complexity in the number
                     # of samples. Thus, we discable this above a certain limit.
-                    if self.setup.scenarios['samples'] > 400:
+                    if self.setup.sampling['samples'] > 400:
                         exclude = []
                     else:
                         exclude = exclude_samples(samples, 
@@ -850,12 +851,12 @@ class scenarioBasedAbstraction(Abstraction):
         print(' -- Loading scenario approach table...')
         
         tableFile = self.setup.directories['base'] + '/input/SaD_probabilityTable_N='+ \
-                        str(self.setup.scenarios['samples'])+'_beta='+ \
-                        str(self.setup.scenarios['confidence'])+'.csv'
+                        str(self.setup.sampling['samples'])+'_beta='+ \
+                        str(self.setup.sampling['confidence'])+'.csv'
         
         # Load scenario approach table
         self.trans['memory'] = self._loadScenarioTable(tableFile = tableFile,
-                                       k = self.setup.scenarios['samples'])
+                                       k = self.setup.sampling['samples'])
         
         # Retreive type of horizon
         k_range = [0]
@@ -896,9 +897,9 @@ def exclude_samples(samples, width):
     
     return exclude
     
-    # exclude = [None for n in range(self.setup.scenarios['samples'])]
+    # exclude = [None for n in range(self.setup.sampling['samples'])]
     
-    # for n in range(self.setup.scenarios['samples']):
+    # for n in range(self.setup.sampling['samples']):
     #     nonzero = np.nonzero(
     #                 np.any(samples - samples[n] >  width, axis=1) ^
     #                 np.any(samples - samples[n] < -width, axis=1)

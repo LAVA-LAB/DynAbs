@@ -564,7 +564,7 @@ def UAVplot2D(i_show, i_hide, setup, model, spec, partition, traces, cut_value,
     ax.set_xlim(min_xy[is1], max_xy[is1])
     ax.set_ylim(min_xy[is2], max_xy[is2])
     
-    ax.set_title("N = "+str(setup.scenarios['samples']),fontsize=10)
+    ax.set_title("N = "+str(setup.sampling['samples']),fontsize=10)
     
     # Draw goal states
     for goal in partition['goal']:
@@ -1026,9 +1026,14 @@ def reachabilityHeatMap(ScAb, montecarlo = False, title = 'auto'):
         x_nr = ScAb.spec.partition['number'][0]
         y_nr = ScAb.spec.partition['number'][1]
         
+        orig = np.concatenate((ScAb.spec.partition['origin'][0:2],
+                              [9.25]))
+        
         cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr, 1], 
                ScAb.spec.partition['width'], 
-               ScAb.spec.partition['origin'], onlyCenter=True)['center']
+               orig, onlyCenter=True)['center']
+        
+        print(cut_centers)
         
     elif ScAb.model.n == 4:
         
@@ -1068,7 +1073,7 @@ def reachabilityHeatMap(ScAb, montecarlo = False, title = 'auto'):
     ax.set_xlabel('Var 1', fontsize=15)
     ax.set_ylabel('Var 2', fontsize=15)
     if title == 'auto':
-        ax.set_title("N = "+str(ScAb.setup.scenarios['samples']), fontsize=20)
+        ax.set_title("N = "+str(ScAb.setup.sampling['samples']), fontsize=20)
     else:
         ax.set_title(str(title), fontsize=20)
     
@@ -1077,7 +1082,7 @@ def reachabilityHeatMap(ScAb, montecarlo = False, title = 'auto'):
 
     # Save figure
     filename = ScAb.setup.directories['outputFcase']+'safeset_N=' + \
-                str(ScAb.setup.scenarios['samples'])
+                str(ScAb.setup.sampling['samples'])
     for form in ScAb.setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         

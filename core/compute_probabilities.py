@@ -50,8 +50,8 @@ def computeScenarioBounds_sparse(setup, partition_setup, partition, trans, sampl
     
     # Number of decision variables always equal to one
     d = 1
-    Nsamples = setup.scenarios['samples']
-    beta = setup.scenarios['confidence']
+    Nsamples = setup.sampling['samples']
+    beta = setup.sampling['confidence']
     
     # Initialize counts array
     counts = dict()
@@ -140,7 +140,8 @@ def computeScenarioBounds_sparse(setup, partition_setup, partition, trans, sampl
     
     return returnDict
 
-def computeScenarioBounds_error(setup, partition_setup, partition, trans, samples, error, exclude, verbose=False):
+def computeScenarioBounds_error(setup, partition_setup, partition, trans, samples, error, exclude, verbose=False,
+                                hoeffding_upper = True):
     '''
     Compute the transition probability intervals
 
@@ -171,7 +172,7 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
         check_exclude = False
     
     # Number of decision variables always equal to one
-    Nsamples = setup.scenarios['samples']
+    Nsamples = setup.sampling['samples']
     Nrange   = np.arange(Nsamples)
     
     # Initialize counts array
@@ -180,9 +181,23 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     
     i_excl = {}
 
-    imin, iMin = computeRegionIdx(samples + error['neg'], partition_setup)
-    imax, iMax = computeRegionIdx(samples + error['pos'], partition_setup,
-                                  borderOutside=[True]*len(samples))
+    if hoeffding_upper:
+        # If hoeffding inequality is used to obtain upper bound probabilities,
+        # then we don't modify the uncertainty boxes
+        imin, iMin = computeRegionIdx(samples + error['neg'], partition_setup)
+        imax, iMax = computeRegionIdx(samples + error['pos'], partition_setup,
+                                      borderOutside=[True]*len(samples))
+        
+        epsilon = np.sqrt( 1/(2*Nsamples) * np.log(
+                    2/setup.sampling['confidence']) )
+    
+    else:
+        # If we do not use hoeffding inequality to obtain upper bound probs.
+        # then we make the uncertainty boxes square
+        width = np.maximum(-np.min(error['neg']), np.max(error['pos']))    
+        imin, iMin = computeRegionIdx(samples - width, partition_setup)
+        imax, iMax = computeRegionIdx(samples + width, partition_setup,
+                                      borderOutside=[True]*len(samples))
     
     counts_absorb_low = 0
     counts_absorb_upp = 0
@@ -296,8 +311,16 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
         k_upp = np.minimum(Nsamples - counts[:, 1], Nsamples)
         k_low = Nsamples - counts[:, 2]
         
+        # Compute lower bound probability
         probability_low     = trans['memory'][k_upp, 0]
-        probability_upp     = trans['memory'][k_low, 1]
+        
+        # Compute upper bound probability either with scenario optimization or
+        # using hoeffding's bound
+        if hoeffding_upper:
+            probability_upp     = np.minimum(1, counts[:, 2] / Nsamples + epsilon)
+        else:
+            probability_upp     = trans['memory'][k_low, 1]
+        
         probability_approx  = counts[:, 1:3].mean(axis=1) / Nsamples
         successor_idxs = counts[:,0]
         
@@ -397,7 +420,7 @@ def transition_plot(samples, error, i_show, i_hide, setup, model, spec, partitio
     ax.set_xlim(min_xy[is1], max_xy[is1])
     ax.set_ylim(min_xy[is2], max_xy[is2])
     
-    ax.set_title("N = "+str(setup.scenarios['samples']),fontsize=10)
+    ax.set_title("N = "+str(setup.sampling['samples']),fontsize=10)
     
     # Draw goal states
     for goal in partition['goal']:

@@ -28,14 +28,12 @@ from core.preprocessing.set_model_class import set_model_class
 from core.commons import createDirectory
 from core.preprocessing.master_classes import settings, result_exporter
 
-from core.postprocessing.createPlots import reachabilityHeatMap
-from core.postprocessing.plotTracesOscillator import oscillator_heatmap
+from core.postprocessing.harmonic_oscillator import oscillator_experiment
 
 np.random.seed(1)
 mpl.rcParams['figure.dpi'] = 300
 base_dir = os.path.dirname(os.path.abspath(__file__))
-
-print('Base_dir:', base_dir)
+print('Base directory:', base_dir)
 
 #-----------------------------------------------------------------------------
 # Create model and set specification
@@ -68,6 +66,8 @@ setup.set_new_abstraction()
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n' +
       'PROGRAM STARTED AT \n'+setup.time['datetime'] +
       '\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
+
+setup.main['iterations'] = 1
     
 # Create the main object for the current instance
 ScAb = scenarioBasedAbstraction(setup, define_model(setup, model, spec))
@@ -95,19 +95,21 @@ ScAb.define_actions()
 #-----------------------------------------------------------------------------
 
 # Shortcut to the number of samples
-N = ScAb.setup.scenarios['samples']     
+N = ScAb.setup.sampling['samples']     
 
 # Initialize case ID at zero
 case_id = 0
 
 # Create empty DataFrames to store iterative results
 exporter = result_exporter()
-fraction_safe = []
 
-ScAb.setup.main['iterations'] = 10
+if ScAb.model.name == 'oscillator':
+    harm_osc = oscillator_experiment(f_max=3, f_step=0.2, monte_carlo_iterations=100)
+else:
+    harm_osc = False
 
 # For every iteration... (or once, if iterations are disabled)
-while case_id < ScAb.setup.main['iterations']:   
+for case_id in range(0, ScAb.setup.main['iterations']):   
         
     # Only perform code below is a new run is chosen
     if ScAb.setup.main['newRun'] is True:
@@ -161,30 +163,10 @@ while case_id < ScAb.setup.main['iterations']:
     exporter.add_to_df(pd.DataFrame(data=N, index=[case_id], columns=['N']), 'general')
     exporter.add_to_df(time_df, 'run_times')
     exporter.add_to_df(pd.DataFrame(data=model_size, index=[case_id]), 'model_size')
-    case_id += 1
     
-    ###########################
-    setup.set_monte_carlo(iterations=100)
-
-    f_list = np.arange(0,2.01,0.2)
-    frac_sr = pd.Series(index=f_list, dtype=float, name=case_id)
-
-    for f in f_list:
-        f = np.round(f, 3)
-        spring = np.round(ScAb.model.spring_nom * (1-f) + ScAb.model.spring_max * f, 3)
-        mass   = np.round(ScAb.model.mass_nom * (1-f) + ScAb.model.mass_min * f, 3)
-
-        ScAb.model.set_true_model(mass=mass, spring=spring)
-        ScAb.mc = monte_carlo(ScAb, writer=writer, random_initial_state=True)
+    # if harm_osc:
+    #     harm_osc.add_iteration(ScAb, case_id)
         
-        reachabilityHeatMap(ScAb, montecarlo = True, title='Monte Carlo, mass='+str(mass)+'; spring='+str(spring))
-        
-        frac_sr[f] = oscillator_heatmap(ScAb, title='Monte Carlo, mass='+str(mass)+'; spring='+str(spring))
-
-    fraction_safe += [frac_sr]
-
-    ###########################
-
 # Save overall data in Excel (for all iterations combined)   
 exporter.save_to_excel(ScAb.setup.directories['outputF'] + \
     ScAb.setup.time['datetime'] + '_iterative_results.xlsx')
@@ -192,41 +174,9 @@ exporter.save_to_excel(ScAb.setup.directories['outputF'] + \
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
-fraction_safe_df = pd.concat(fraction_safe, axis=1)
+# TODO: reimplement monte carlo number of iterations
+if harm_osc:
+    harm_osc.export(ScAb)
 
-fraction_safe_df.to_csv(ScAb.setup.directories['outputF']+
-                        'fraction_safe_parametric='+
-                        str(ScAb.flags['parametric'])+'.csv', sep=';')
-
-assert False
-
-# %%
-
-setup.set_monte_carlo(iterations=100)
-
-from core.postprocessing.plotTracesOscillator import oscillator_traces
-import pandas as pd
-
-df = pd.DataFrame(columns=['guaranteed', 'simulated', 'ratio'], dtype=float)
-df.index.name = 'mass'
-
-# eval_state = ScAb.partition['R']['c_tuple'][(-9.5,0.5)]
-eval_state = ScAb.partition['R']['c_tuple'][(-5.5,-4.5)]
-
-
-for mass in np.arange(0.9, 1.01, 0.01):
-
-    mass = np.round(mass, 3)
-    spring = np.round(spring, 3)
-
-    ScAb.model.set_true_model(mass=mass, spring=spring)
-    ScAb.mc = monte_carlo(ScAb, writer=writer, random_initial_state=True, init_states = [eval_state])
-    
-    df.loc[mass, 'guaranteed'] = np.round(ScAb.results['optimal_reward'][eval_state], 4)
-    df.loc[mass, 'simulated']  = np.round(ScAb.mc['reachability'][eval_state], 4)
-    df.loc[mass, 'ratio']  = np.round(ScAb.mc['reachability'][eval_state] / ScAb.results['optimal_reward'][eval_state], 4)
-    
-    oscillator_traces(ScAb, ScAb.mc['traces'][eval_state], ScAb.mc['action_traces'][eval_state], plot_trace_ids=[0,1,2,3,4,5,6,7,8,9], title='Traces for mass='+str(mass)+'; spring='+str(spring))
-  
-csv_file = ScAb.setup.directories['outputF']+'gauranteed_vs_simulated.csv'
-df.to_csv(csv_file, sep=',')
+    harm_osc.plot_trace(ScAb, spring=ScAb.model.spring_nom, 
+                        state_center=(-5.5,-4.5))

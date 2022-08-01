@@ -386,7 +386,8 @@ def compute_epistemic_error(model, vertices):
 
 
 def enabledActionsImprecise(setup, flags, partition, actions, model, spec, 
-                            dim_n=False, dim_p=False, verbose=False):
+                            dim_n=False, dim_p=False, verbose=False,
+                            print_every=100):
     
     # Compute the backward reachable set (not accounting for target point yet)    
     if dim_n is False or dim_p is False or len(dim_n) == model.n:
@@ -534,8 +535,8 @@ def enabledActionsImprecise(setup, flags, partition, actions, model, spec,
             error[a_tup] = {'neg': control_error[:,0],
                             'pos': control_error[:,1]}        
             
-        if i % 1 == 0:
-            print('Action to',act.center,'enabled in ',len(s_min_list),'states')
+        if i % print_every == 0:
+            print('Action to',act.center,'enabled in',len(s_min_list),'states:',[partition['R']['center'][s_min_list]])
             
     return enabled, enabled_inv, error
 

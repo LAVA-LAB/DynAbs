@@ -94,7 +94,7 @@ def oscillator_heatmap(ScAb, title = 'auto'):
     ax.set_xlabel('Var 1', fontsize=15)
     ax.set_ylabel('Var 2', fontsize=15)
     if title == 'auto':
-        ax.set_title("N = "+str(ScAb.setup.scenarios['samples']), fontsize=20)
+        ax.set_title("N = "+str(ScAb.setup.sampling['samples']), fontsize=20)
     else:
         ax.set_title(str(title), fontsize=20)
     
@@ -103,7 +103,7 @@ def oscillator_heatmap(ScAb, title = 'auto'):
 
     # Save figure
     filename = ScAb.setup.directories['outputFcase']+'safeset_N=' + \
-                str(ScAb.setup.scenarios['samples'])
+                str(ScAb.setup.sampling['samples'])
     for form in ScAb.setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
@@ -176,7 +176,7 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
     
     
     if title == 'auto':
-        ax.set_title("N = "+str(ScAb.setup.scenarios['samples']),fontsize=10)
+        ax.set_title("N = "+str(ScAb.setup.sampling['samples']),fontsize=10)
     else:
         ax.set_title(str(title),fontsize=10)
     
@@ -275,3 +275,115 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
     plt.show()
+    
+class oscillator_experiment(object):
+    
+    def __init__(self, f_max, f_step, monte_carlo_iterations):
+        '''
+        Initialize object for collecting and exporting the fraction of safe
+        controllers (as reported in the paper)
+
+        Returns
+        -------
+        None.
+
+        '''
+
+        self.fraction_safe = []        
+
+        self.f_max = f_max
+        self.f_step = f_step
+        
+        self.monte_carlo_iterations = monte_carlo_iterations
+        
+    def add_iteration(self, ScAb, case_id):
+        '''
+        Perform Monte Carlo simulations and add the resulting fraction of
+        states for which the resulting controller is safe to the list        
+
+        Parameters
+        ----------
+        ScAb : Abstraction object
+        case_id : Index (int) of the case being run
+
+        Returns
+        -------
+        None.
+
+        '''
+        
+        ScAb.setup.set_monte_carlo(iterations=self.monte_carlo_iterations)
+
+        f_list = np.arange(0, self.f_max+0.01, self.f_step)
+        frac_sr = pd.Series(index=np.round(f_list, 3), dtype=float, name=case_id)
+
+        for f in f_list:
+            f = np.round(f, 3)
+            spring = np.round(ScAb.model.spring_nom * (1-f) + ScAb.model.spring_max * f, 3)
+            mass   = np.round(ScAb.model.mass_nom * (1-f) + ScAb.model.mass_min * f, 3)
+
+            ScAb.model.set_true_model(mass=mass, spring=spring)
+            ScAb.mc = monte_carlo(ScAb, random_initial_state=True)
+            
+            # reachabilityHeatMap(ScAb, montecarlo = True, title='Monte Carlo, mass='+str(mass)+'; spring='+str(spring))
+            frac_sr[f] = oscillator_heatmap(ScAb, title='Monte Carlo, mass='+str(mass)+'; spring='+str(spring))
+
+        self.fraction_safe += [frac_sr]
+        
+    def export(self, ScAb):
+        
+        fraction_safe_df = pd.concat(self.fraction_safe, axis=1)
+        fraction_safe_df.index.name = 'x'
+        df = fraction_safe_df.T.describe().T
+
+        fraction_safe_df.to_csv(ScAb.setup.directories['outputF']+
+                                'fraction_safe_parametric='+
+                                str(ScAb.flags['parametric'])+'.csv', sep=';',
+                                encoding='utf-8-sig')
+
+        df.to_csv(ScAb.setup.directories['outputF']+
+                                'fraction_safe_parametric='+
+                                str(ScAb.flags['parametric'])+'_stats.csv', sep=';',
+                                encoding='utf-8-sig')
+        
+    def plot_trace(self, ScAb, spring, state_center, number_to_plot=1):
+        '''
+        Plot a simulated trace
+
+        Parameters
+        ----------
+        ScAb : Abstraction object
+        spring : Actual/true spring coefficient
+        state_center : Tuple of center of the state to plot
+        number_to_plot : Number of traces to plot
+
+        Returns
+        -------
+        None.
+
+        '''
+        
+        ScAb.setup.set_monte_carlo(iterations=self.monte_carlo_iterations)
+
+        df = pd.DataFrame(columns=['guaranteed', 'simulated', 'ratio'], dtype=float)
+        df.index.name = 'mass'
+
+        # eval_state = ScAb.partition['R']['c_tuple'][(-9.5,0.5)]
+        eval_state = ScAb.partition['R']['c_tuple'][(-5.5,-4.5)]
+
+        for mass in np.arange(0.9, 1.01, 0.01):
+
+            mass = np.round(mass, 3)
+            spring = np.round(spring, 3)
+
+            ScAb.model.set_true_model(mass=mass, spring=spring)
+            ScAb.mc = monte_carlo(ScAb, random_initial_state=True, init_states = [eval_state])
+            
+            df.loc[mass, 'guaranteed'] = np.round(ScAb.results['optimal_reward'][eval_state], 4)
+            df.loc[mass, 'simulated']  = np.round(ScAb.mc['reachability'][eval_state], 4)
+            df.loc[mass, 'ratio']  = np.round(ScAb.mc['reachability'][eval_state] / ScAb.results['optimal_reward'][eval_state], 4)
+            
+            oscillator_traces(ScAb, ScAb.mc['traces'][eval_state], ScAb.mc['action_traces'][eval_state], plot_trace_ids=[0,1,2,3,4,5,6,7,8,9], title='Traces for mass='+str(mass)+'; spring='+str(spring))
+          
+        csv_file = ScAb.setup.directories['outputF']+'gauranteed_vs_simulated.csv'
+        df.to_csv(csv_file, sep=',')

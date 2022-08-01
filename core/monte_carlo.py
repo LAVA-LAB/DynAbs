@@ -82,7 +82,7 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
         init_state_idxs = ScAb.setup.montecarlo['init_states']
     
     # The gaussian random variables are precomputed to speed up the code
-    if ScAb.setup.scenarios['gaussian'] is True:
+    if ScAb.setup.sampling['gaussian'] is True:
         w_array = np.random.multivariate_normal(
             np.zeros(ScAb.model.n), 
             ScAb.model.noise['w_cov'],
@@ -248,7 +248,7 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
                         # Implement the control into the physical (unobservable) system
                         x_plus = ScAb.model.A @ x[k] + ScAb.model.B @ u[k] + ScAb.model.Q_flat
                     
-                    if ScAb.setup.scenarios['gaussian'] is True:
+                    if ScAb.setup.sampling['gaussian'] is True:
                         # Use Gaussian process noise
                         x[k+1] = x_plus + w_array[i_abs, m, k]
                     else:

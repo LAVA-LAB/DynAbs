@@ -27,11 +27,11 @@ import core.preprocessing.user_interface as ui
 import core.preprocessing.master_classes as master
 from .commons import setStateBlock
 
-class robot(master.LTI_master):
+class oscillator(master.LTI_master):
     
     def __init__(self):
         '''
-        Initialize robot model class, which is a 1-dimensional dummy problem,
+        Initialize oscillator model class, which is a 1-dimensional dummy problem,
         modelled as a double integrator.
 
         Returns
@@ -96,9 +96,9 @@ class robot(master.LTI_master):
         
     def set_spec(self):
         
-        from core.spec_definitions import robot_spec
+        from core.spec_definitions import oscillator_spec
         
-        spec = robot_spec()
+        spec = oscillator_spec()
         
         return spec
     
@@ -228,8 +228,8 @@ class UAV(master.LTI_master):
     
         if self.modelDim == 1:
             
-            from core.spec_definitions import robot_spec
-            spec = robot_spec()
+            from core.spec_definitions import oscillator_spec
+            spec = oscillator_spec()
     
         elif self.modelDim == 2:
             

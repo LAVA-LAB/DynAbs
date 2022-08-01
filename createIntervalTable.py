@@ -135,6 +135,19 @@ def tabulate(N, eps_low, eps_upp, kstep, krange):
                 id_out = id_in - 1
                 P_upp[k] = 1 - eps_low[id_out]
                 
+        # Sanity check to see if the upper bound is actually decreasing with
+        # the number of discarded constraints
+        if k > 0:
+            if P_upp[k] > P_upp[k-1]:
+                print('-- Fix issue in P_upp['+str(k)+']')
+                P_upp[k] = P_upp[k-1]
+                
+    # Due to numerical issues, P_low for N_out=0 can be incorrect. Check if 
+    # this is the case, and change accordingly.
+    if P_low[0] < P_low[1]:
+        print('-- Fix numerical error in P_low[0]')
+        P_low[0] = 1 - P_upp[N]
+                
     return P_low, P_upp
 
 #####
@@ -150,7 +163,7 @@ trials = 0
 kstep_list_all = np.array([1])
 
 # List of number of samples
-N_list = np.array([3200])
+N_list = np.array([20000])
 
 P_low = {}
 P_upp = {}

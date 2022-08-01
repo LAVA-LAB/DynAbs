@@ -53,9 +53,9 @@ def define_model(setup, model_raw, spec):
     
     # Create noise samples (for 3D UAV benchmark)
     if model_raw.name in ['UAV'] and model_raw.modelDim == 3:
-        setup.setOptions(category='scenarios', gaussian=False)
+        setup.setOptions(category='sampling', gaussian=False)
         model_raw.setTurbulenceNoise(setup.directories['base'],
-                                 setup.scenarios['samples'])
+                                 setup.sampling['samples'])
     
     if lump == 0:
         model = makeModelFullyActuated(model_raw, 
@@ -74,7 +74,7 @@ def define_model(setup, model_raw, spec):
     model.p      = np.size(model.B,1)   # Nr of inputs
     
     # If noise samples are used, recompute them
-    if setup.scenarios['gaussian'] is False:
+    if setup.sampling['gaussian'] is False:
         
         f = model_raw.setup['noiseMultiplier']
         

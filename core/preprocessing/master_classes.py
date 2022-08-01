@@ -164,12 +164,12 @@ class settings(object):
         plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
         
         # Default scenario approach settings
-        sa = dict()
+        sampling = dict()
         gaussian = dict()
         
-        sa['samples'] = 25 # Sample complexity used in scenario approach
-        sa['confidence']   = 1e-1 # Confidence level (beta)
-        sa['gaussian'] = True # Use Gaussian noise if true
+        # sampling['samples']    = 25 # Sample complexity used in scenario approach
+        # sampling['confidence'] = 1e-1 # Confidence level (beta)
+        sampling['gaussian']   = True # Use Gaussian noise if true
         
         # Default MDP and prism settings
         mdp = dict()
@@ -213,7 +213,7 @@ class settings(object):
         self.plotting = plot
         self.montecarlo = mc
         self.gaussian = gaussian
-        self.scenarios = sa
+        self.sampling = sampling
         self.time = timing
         self.directories = directories
         self.main = main
@@ -258,7 +258,7 @@ class settings(object):
     def prepare_iteration(self, N, case_id):
         
         self.set_output_directories(N, case_id)
-        self.scenarios['log_factorial_N'] = math.log(math.factorial(N))
+        self.sampling['log_factorial_N'] = math.log(math.factorial(N))
 
 class LTI_master(object):
     
