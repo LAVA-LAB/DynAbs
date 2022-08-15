@@ -246,7 +246,7 @@ class Abstraction(object):
             
             for i,center in enumerate(self.spec.targets['extra']):    
                 
-                self.actions['obj'][nr_default_act+i] = action(i, self.model, center, -i, backreach_obj)
+                self.actions['obj'][nr_default_act+i] = action(nr_default_act+i, self.model, center, -i, backreach_obj)
                 self.actions['extra_act'] += [self.actions['obj'][nr_default_act+i]]
         
         self.actions['nr_actions'] = len(self.actions['obj'])
@@ -757,34 +757,91 @@ class scenarioBasedAbstraction(Abstraction):
 
         if self.setup.sampling['gaussian'] is True:
             # Compute Gaussian noise samples
-            samples_zero_mean = np.random.multivariate_normal(
+            samples = np.random.multivariate_normal(
                             np.zeros(self.model.n), self.model.noise['w_cov'], 
-                            size=(self.actions['nr_actions'],
-                                  self.setup.sampling['samples']))
-
+                            size=self.setup.sampling['samples'])
+                           
+        else:
+            # Determine non-Gaussian noise samples (relative from 
+            # target point)
+            samples = np.array(
+                random.choices(self.model.noise['samples'], 
+                k=self.setup.sampling['samples']) )
+            
+        
+        
+        # Cluster samples
+        if self.setup.sampling['clustering'] > 0:
+            
+            max_radius = float(self.setup.sampling['clustering'])
+            
+            remaining_samples       = samples
+            remaining_samples_i     = np.arange(len(samples))
+            
+            clusters0 = {
+                'value': [],
+                'lb': [],
+                'ub': []
+                }
+            
+            while len(remaining_samples) > 0:
+                
+                # Compute distance between first samples and all others
+                distances = np.linalg.norm( remaining_samples[0] - 
+                                            remaining_samples, 
+                                            axis=1 )
+                
+                # Add the samples closer than `max_radius` to the first
+                # sample to a new cluster
+                distances_below = distances < max_radius
+                
+                cluster_samples = remaining_samples[ distances_below ]
+                
+                clusters0['value'] += [int(len(remaining_samples_i[ distances_below ]))]
+                clusters0['lb'] += [np.min(cluster_samples, axis=0)]
+                clusters0['ub'] += [np.max(cluster_samples, axis=0)]
+                
+                remaining_samples = remaining_samples[ ~distances_below ]
+                remaining_samples_i = remaining_samples_i[ ~distances_below ]
+                
+            clusters0['value']       = np.array(clusters0['value'])
+            clusters0['lb']          = np.array(clusters0['lb'])
+            clusters0['ub']          = np.array(clusters0['ub'])
+            
+            print('--',len(samples),'samples clustered into',
+                  len(clusters0['value']),'clusters')
+            
+            assert sum(clusters0['value']) == self.setup.sampling['samples']
+            
+        else:
+            
+            clusters0 = {
+                'value': np.ones(len(samples)),
+                'lb': samples,
+                'ub': samples
+                }
+        
         # For every action (i.e. target point)
         for a_idx, act in self.actions['obj'].items():
+            
+            # Shift samples by the center of the target set of this action
+            clusters = {
+                'value': clusters0['value'],
+                'lb':    clusters0['lb'] + act.center,
+                'ub':    clusters0['ub'] + act.center
+                }
             
             # Check if action a is available in any state at all
             if len(act.enabled_in) > 0:
                     
                 prob[a_idx] = dict()
-                
-                if self.setup.sampling['gaussian'] is True:
-                    samples = act.center + samples_zero_mean[a_idx]                                        
-                else:
-                    # Determine non-Gaussian noise samples (relative from 
-                    # target point)
-                    samples = act.center + np.array(
-                        random.choices(self.model.noise['samples'], 
-                        k=self.setup.sampling['samples']) )
                     
                 if self.flags['underactuated']:
                     
                     # Checking which samples cannot be contained in a region
                     # at the same time is of quadratic complexity in the number
-                    # of samples. Thus, we discable this above a certain limit.
-                    if self.setup.sampling['samples'] > 400:
+                    # of samples. Thus, we disable this above a certain limit.
+                    if True:
                         exclude = []
                     else:
                         exclude = exclude_samples(samples, 
@@ -805,7 +862,7 @@ class scenarioBasedAbstraction(Abstraction):
                     '''
                     
                     prob[a_idx] = computeScenarioBounds_error(self.setup, 
-                          self.spec.partition, self.partition, self.trans, samples, act.error, exclude, verbose=False)
+                          self.spec.partition, self.partition, self.trans, clusters, act.error, exclude, verbose=False)
                     
                     # Print normal row in table
                     if a_idx % printEvery == 0:
@@ -826,6 +883,7 @@ class scenarioBasedAbstraction(Abstraction):
                         tab.print_row([k, a_idx, 
                            'Probabilities computed (transitions: '+
                            str(nr_transitions)+')'])
+               
                 
         return prob
     

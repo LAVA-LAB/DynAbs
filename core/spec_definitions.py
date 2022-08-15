@@ -30,10 +30,10 @@ class oscillator_spec(master.spec_master):
                                                 [-9.5, 9.5]])
         self.targets['number']      = [24, 20]
         
-        self.targets['extra']       = np.array([[10.5, 0]])
+        self.targets['extra']       = np.array([[11, 0]])
         
         self.goal = [
-            np.array([[7, 14], [-14, 14]])
+            np.array([[8, 14], [-14, 14]])
             ]
         
         self.critical = None #[
@@ -182,7 +182,7 @@ class building_1room_spec(master.spec_master):
         master.spec_master.__init__(self)        
         
         # Step-bound on spec
-        self.end_time = 64
+        self.end_time = 16
 
         # Authority limit for the control u, both positive and negative
         self.control['uMin'] = [15]
@@ -190,12 +190,12 @@ class building_1room_spec(master.spec_master):
         
         # Partition size
         if scenario == 0:
-            self.partition['boundary']  = np.array([[19.1, 22.9], [36, 40]])
-            self.partition['number']  = [19, 20]
+            self.partition['boundary']  = np.array([[18.5, 23.5], [39, 46]])
+            self.partition['number']  = [25, 35]
             
             # Actions per dimension (if 'auto', equal to nr of regions)
-            self.targets['boundary']    = np.array([[19.1, 22.9], [36, 40]])
-            self.targets['number']      = [19, 40]
+            self.targets['boundary']    = np.array([[18.5+.1, 23.5+.1], [39-.1, 46-.1]])
+            self.targets['number']      = [25, 35]
             
         elif scenario == 1:
             self.partition['boundary']  = np.array([[19.1, 22.9], [36, 40]])
@@ -204,13 +204,19 @@ class building_1room_spec(master.spec_master):
             self.targets['boundary']    = np.array([[19.1, 22.9], [36, 40]])
             self.targets['number']      = [76, 200]
         
-        self.goal = [
-            np.array([[20.8, 21.2], 'all'])
-            ]
+        self.goal = None
+        # [
+        #     np.array([[20.8, 21.2], 'all'])
+        #     ]
+        
+        self.targets['extra']       = np.array([[21.0, 39.5]])
         
         self.critical = None
         
-        self.error['max_control_error'] = np.array([[-.1, .1], [-.3, .3]])     
+        self.error['max_control_error'] = {
+            'default': np.array([[-.1, .1], [-.3, .3]]),
+            'extra': np.array([[-.2, .2], [-2, 2]])
+            }
         
 class shuttle_spec(master.spec_master):
     

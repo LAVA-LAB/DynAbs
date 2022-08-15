@@ -174,7 +174,6 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
     ax.set_ylim(min_xy[1] - 2, max_xy[1] + 2)
     
     
-    
     if title == 'auto':
         ax.set_title("N = "+str(ScAb.setup.sampling['samples']),fontsize=10)
     else:
@@ -278,7 +277,7 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
     
 class oscillator_experiment(object):
     
-    def __init__(self, f_max, f_step, monte_carlo_iterations):
+    def __init__(self, f_min, f_max, f_step, monte_carlo_iterations):
         '''
         Initialize object for collecting and exporting the fraction of safe
         controllers (as reported in the paper)
@@ -291,6 +290,7 @@ class oscillator_experiment(object):
 
         self.fraction_safe = []        
 
+        self.f_min = f_min
         self.f_max = f_max
         self.f_step = f_step
         
@@ -314,7 +314,7 @@ class oscillator_experiment(object):
         
         ScAb.setup.set_monte_carlo(iterations=self.monte_carlo_iterations)
 
-        f_list = np.arange(0, self.f_max+0.01, self.f_step)
+        f_list = np.arange(self.f_min, self.f_max+0.01, self.f_step)
         frac_sr = pd.Series(index=np.round(f_list, 3), dtype=float, name=case_id)
 
         for f in f_list:
@@ -369,9 +369,14 @@ class oscillator_experiment(object):
         df.index.name = 'mass'
 
         # eval_state = ScAb.partition['R']['c_tuple'][(-9.5,0.5)]
-        eval_state = ScAb.partition['R']['c_tuple'][(-5.5,-4.5)]
+        eval_state = ScAb.partition['R']['c_tuple'][state_center]
 
-        for mass in np.arange(0.9, 1.01, 0.01):
+        f_list = np.arange(self.f_min, self.f_max+0.01, self.f_step)
+
+        for f in f_list:
+            f = np.round(f, 3)
+            spring = np.round(ScAb.model.spring_nom * (1-f) + ScAb.model.spring_max * f, 3)
+            mass   = np.round(ScAb.model.mass_nom * (1-f) + ScAb.model.mass_min * f, 3)
 
             mass = np.round(mass, 3)
             spring = np.round(spring, 3)

@@ -50,21 +50,12 @@ class oscillator(master.LTI_master):
         # Discretization step size
         self.tau = 1
         
-        self.mass_min = 0.90
-        self.mass_nom = 1.00
-        self.mass_max = 1.10
+        _, spring  = ui.user_choice('Enable spring coefficient in model?',['No', 'Yes'])
         
-        self.spring_min = 0.50
-        self.spring_nom = 0.50
-        self.spring_max = 0.50
-        
-        # State transition matrix
-        self.A     = self.set_A(self.mass_nom, self.spring_nom)
-        
-        # Input matrix
-        self.B     = self.set_B(self.mass_nom)
-        
-        # self.set_true_model(mass=0.9, spring=0.15)
+        if spring == 1:
+            self.spring_nom = 0.50
+        else:
+            self.spring_nom = 0.00    
         
         _, parametric  = ui.user_choice('Enable robust approach against parameter uncertainty?',['No', 'Yes'])
         
@@ -82,6 +73,28 @@ class oscillator(master.LTI_master):
                         self.set_B(self.mass_max),
                         self.set_B(self.mass_max)
                         ]
+            
+            if spring == 1:
+                self.spring_min = 0.40
+                self.spring_max = 0.60
+                
+                self.mass_min = 0.80
+                self.mass_nom = 1.00
+                self.mass_max = 1.20
+                
+            else:
+                self.spring_min = 0.00
+                self.spring_max = 0.00
+                
+                self.mass_min = 0.75
+                self.mass_nom = 1.00
+                self.mass_max = 1.25
+                
+        # State transition matrix
+        self.A     = self.set_A(self.mass_nom, self.spring_nom)
+        
+        # Input matrix
+        self.B     = self.set_B(self.mass_nom)
         
         # Disturbance matrix
         self.Q  = np.array([[0],[0]])
@@ -99,6 +112,7 @@ class oscillator(master.LTI_master):
         from core.spec_definitions import oscillator_spec
         
         spec = oscillator_spec()
+        spec.problem_type = 'reachavoid'
         
         return spec
     
@@ -113,7 +127,7 @@ class oscillator(master.LTI_master):
         
         A = np.array([
             [1, self.tau],
-            [-self.tau*spring/mass, 1-self.tau*0.1/mass]
+            [-self.tau*spring/mass, 1-self.tau*0.05/mass]
             ])
         
         return A
@@ -244,6 +258,8 @@ class UAV(master.LTI_master):
             from core.spec_definitions import UAV_3D_spec
             spec = UAV_3D_spec(self.setup['noiseMultiplier'])   
             
+        spec.problem_type = 'reachavoid'
+            
         return spec
         
     def setTurbulenceNoise(self, folder, N):
@@ -291,7 +307,7 @@ class building_2room(master.LTI_master):
         self.lump = 1
         
         # Discretization step size
-        self.tau = 15 # NOTE: in minutes for BAS!
+        self.tau = 20 # NOTE: in minutes for BAS!
 
         BAS = self.BAS
         
@@ -383,6 +399,8 @@ class building_2room(master.LTI_master):
         from core.spec_definitions import building_2room_spec
         spec = building_2room_spec(T_boiler)        
             
+        spec.problem_type = 'reachavoid'
+        
         return spec
         
 class building_1room(master.LTI_master):
@@ -457,6 +475,9 @@ class building_1room(master.LTI_master):
         self.B = B_cont*self.tau
         self.Q = W_cont*self.tau
         
+        self.Q_disturbance = {'min': np.array([-0.05374102 * 5, 0]),
+                              'max': np.array([0.05374102 * 5,  0])}                      
+        
         if self.lump == 1:
           # Let the user make a choice for the model dimension
           _, uncertainty  = ui.user_choice('Do you want to enable uncertainty about the radiator power output?',['No', 'Yes'])
@@ -492,13 +513,15 @@ class building_1room(master.LTI_master):
         self.p = np.size(self.B,1)
 
         self.noise = dict()
-        self.noise['w_cov'] = np.diag([ BAS.Zone1['Tz']['sigma'], BAS.Radiator['rw']['sigma'] ])
+        self.noise['w_cov'] = np.diag([ BAS.Zone1['Tz']['sigma'], BAS.Radiator['rw']['sigma'] ]) * 0.1 #* 0.5
 
     def set_spec(self):
         
         from core.spec_definitions import building_1room_spec
         spec = building_1room_spec(self.scenario)        
             
+        spec.problem_type = 'avoid'
+        
         return spec
 
 class shuttle(master.LTI_master):
@@ -554,6 +577,8 @@ class shuttle(master.LTI_master):
         from core.spec_definitions import shuttle_spec
         spec = shuttle_spec()        
             
+        spec.problem_type = 'reachavoid'
+        
         return spec
         
 class anaesthesia_delivery(master.LTI_master):
@@ -596,6 +621,8 @@ class anaesthesia_delivery(master.LTI_master):
     def set_spec(self):
         
         from core.spec_definitions import anaesthesia_delivery_spec
-        spec = anaesthesia_delivery_spec()        
+        spec = anaesthesia_delivery_spec()     
+        
+        spec.problem_type = 'reachavoid'
             
         return spec

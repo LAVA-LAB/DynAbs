@@ -44,7 +44,6 @@ model = set_model_class()
 
 # Define specification
 spec = model.set_spec()
-spec.problem_type = 'reachavoid'
 
 #-----------------------------------------------------------------------------
 # Load default settings and overwrite by options provided by the user
@@ -104,7 +103,7 @@ case_id = 0
 exporter = result_exporter()
 
 if ScAb.model.name == 'oscillator':
-    harm_osc = oscillator_experiment(f_max=3, f_step=0.2, monte_carlo_iterations=100)
+    harm_osc = oscillator_experiment(f_min=0, f_max=2, f_step=0.2, monte_carlo_iterations=100)
 else:
     harm_osc = False
 
@@ -164,8 +163,8 @@ for case_id in range(0, ScAb.setup.main['iterations']):
     exporter.add_to_df(time_df, 'run_times')
     exporter.add_to_df(pd.DataFrame(data=model_size, index=[case_id]), 'model_size')
     
-    # if harm_osc:
-    #     harm_osc.add_iteration(ScAb, case_id)
+    if harm_osc:
+        harm_osc.add_iteration(ScAb, case_id)
         
 # Save overall data in Excel (for all iterations combined)   
 exporter.save_to_excel(ScAb.setup.directories['outputF'] + \
@@ -179,4 +178,4 @@ if harm_osc:
     harm_osc.export(ScAb)
 
     harm_osc.plot_trace(ScAb, spring=ScAb.model.spring_nom, 
-                        state_center=(-5.5,-4.5))
+                        state_center=(-5.5,-2.5))

@@ -140,8 +140,7 @@ def computeScenarioBounds_sparse(setup, partition_setup, partition, trans, sampl
     
     return returnDict
 
-def computeScenarioBounds_error(setup, partition_setup, partition, trans, samples, error, exclude, verbose=False,
-                                hoeffding_upper = True):
+def computeScenarioBounds_error(setup, partition_setup, partition, trans, clusters, error, exclude=False, verbose=False):
     '''
     Compute the transition probability intervals
 
@@ -171,9 +170,7 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     else:
         check_exclude = False
     
-    # Number of decision variables always equal to one
     Nsamples = setup.sampling['samples']
-    Nrange   = np.arange(Nsamples)
     
     # Initialize counts array
     counts_low = np.zeros(partition_setup['number'])
@@ -181,23 +178,14 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     
     i_excl = {}
 
-    if hoeffding_upper:
-        # If hoeffding inequality is used to obtain upper bound probabilities,
-        # then we don't modify the uncertainty boxes
-        imin, iMin = computeRegionIdx(samples + error['neg'], partition_setup)
-        imax, iMax = computeRegionIdx(samples + error['pos'], partition_setup,
-                                      borderOutside=[True]*len(samples))
-        
-        epsilon = np.sqrt( 1/(2*Nsamples) * np.log(
-                    2/setup.sampling['confidence']) )
+    # If hoeffding inequality is used to obtain upper bound probabilities,
+    # then we don't modify the uncertainty boxes
+    imin, iMin = computeRegionIdx(clusters['lb'] + error['neg'], partition_setup)
+    imax, iMax = computeRegionIdx(clusters['ub'] + error['pos'], partition_setup,
+                                  borderOutside=[True]*len(clusters['value']))
     
-    else:
-        # If we do not use hoeffding inequality to obtain upper bound probs.
-        # then we make the uncertainty boxes square
-        width = np.maximum(-np.min(error['neg']), np.max(error['pos']))    
-        imin, iMin = computeRegionIdx(samples - width, partition_setup)
-        imax, iMax = computeRegionIdx(samples + width, partition_setup,
-                                      borderOutside=[True]*len(samples))
+    epsilon = np.sqrt( 1/(2*Nsamples) * np.log(
+                2/setup.sampling['confidence']) )
     
     counts_absorb_low = 0
     counts_absorb_upp = 0
@@ -210,11 +198,15 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     
     nrPerDim = np.array(partition_setup['number'])
     
+    
+    ###
+    
+    
     # Compute number of samples fully outside of partition.
     # If all indices are outside the partition, then it is certain that 
     # this sample is outside the partition
     fully_out = (imax < 0).any(axis=1) + (imin > nrPerDim - 1).any(axis=1)
-    counts_absorb_low = fully_out.sum()
+    counts_absorb_low = clusters['value'][fully_out].sum()
     
     # Determine samples that are partially outside
     partially_out = (imin < 0).any(axis=1) + (imax > nrPerDim - 1).any(axis=1)
@@ -222,37 +214,40 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     if verbose:
         print('Partially out sum:', partially_out.sum())
     
-    counts_absorb_upp = partially_out.sum()
+    counts_absorb_upp = clusters['value'][partially_out].sum().astype(int)
     
     # If we precisely know where the sample is, and it is not outside the
     # partition, then add one to both lower and upper bound count
     in_single_region = (imin == imax).all(axis=1) * np.bitwise_not(fully_out)
     
-    for key in imin[in_single_region]:
+    for key,val in zip (imin[in_single_region], 
+                        clusters['value'][in_single_region]):
         key = tuple(key)
         if key in partition['goal_idx']:
-            counts_goal_low += 1
-            counts_goal_upp += 1
+            counts_goal_low += val
+            counts_goal_upp += val
         
         elif key in partition['critical_idx']:
-            counts_critical_low += 1
-            counts_critical_upp += 1
+            counts_critical_low += val
+            counts_critical_upp += val
         
         else:
-            counts_low[key] += 1
-            counts_upp[key] += 1
+            counts_low[key] += val
+            counts_upp[key] += val
             
     keep = ~in_single_region & ~fully_out
     iMin_rem = iMin[keep]
     iMax_rem = iMax[keep]
-    c_rem    = Nrange[keep]
+    c_rem    = np.arange( len(clusters['value']) )[keep]
             
+    ###
+    
+    
     # For the remaining samples, only increment the upper bound count
-    # for c,(i,j) in enumerate(zip(iMin, iMax)):
     for x,c in enumerate(c_rem):        
-    # for c,i,j in zip(c_rem, iMin_rem, iMax_rem):
-        counts_upp[ tuple(map(slice, iMin_rem[x], iMax_rem[x]+1)) ] += 1
+        counts_upp[ tuple(map(slice, iMin_rem[x], iMax_rem[x]+1)) ] += clusters['value'][c]
         
+        '''
         if check_exclude:
           for key in itertools.product(*map(np.arange, iMin_rem[x], iMax_rem[x]+1)):
             
@@ -272,54 +267,57 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
                     else:
                         counts_upp[key] -= 1
                         i_excl[key].pop()
+        '''
                 
         index_tuples = set(itertools.product(*map(range, iMin_rem[x], iMax_rem[x]+1)))
         
         # Check if all are goal states
         if index_tuples.issubset( partition['goal_idx'] ) and not partially_out[x]:
-            counts_goal_low += 1
-            counts_goal_upp += 1
+            counts_goal_low += clusters['value'][c]
+            counts_goal_upp += clusters['value'][c]
             
         # Check if all are critical states
         elif index_tuples.issubset( partition['critical_idx'] ) and not partially_out[x]:
-            counts_critical_low += 1
-            counts_critical_upp += 1
+            counts_critical_low += clusters['value'][c]
+            counts_critical_upp += clusters['value'][c]
             
         # Otherwise, check if part of them are goal/critical states
         else:
             if not index_tuples.isdisjoint( partition['goal_idx'] ):
-                counts_goal_upp += 1
+                counts_goal_upp += clusters['value'][c]
                 
             if not index_tuples.isdisjoint( partition['critical_idx'] ):
-                counts_critical_upp += 1
+                counts_critical_upp += clusters['value'][c]
+    
+    
+    ###
+    
     
     counts_nonzero = [[partition['R']['idx'][idx], counts_low[idx], cu] 
                         for idx, cu in np.ndenumerate(counts_upp) if cu > 0 
                         and idx not in partition['goal_idx'] 
                         and idx not in partition['critical_idx']]
     
-    counts_header = [[-2, counts_critical_low, counts_critical_upp],
-                     [-1, counts_goal_low, counts_goal_upp]]
+    counts_header = []
+    if len(partition['critical_idx']) > 0:
+        counts_header += [[-2, counts_critical_low, counts_critical_upp]]
+    if len(partition['goal_idx']) > 0:
+        counts_header += [[-1, counts_goal_low, counts_goal_upp]]
     
     counts = np.array(counts_header + counts_nonzero, dtype = int)
     
     # Number of samples not in any region (i.e. in absorbing state)
-    deadlock_low = 1 - trans['memory'][counts_absorb_low][1]
+    deadlock_low = np.maximum(0, counts_absorb_low / Nsamples - epsilon)    
     deadlock_upp = 1 - trans['memory'][counts_absorb_upp][0]
 
     if len(counts) > 0:
-        k_upp = np.minimum(Nsamples - counts[:, 1], Nsamples)
-        k_low = Nsamples - counts[:, 2]
+        discard_upp = np.minimum(Nsamples - counts[:, 1], Nsamples)
         
         # Compute lower bound probability
-        probability_low     = trans['memory'][k_upp, 0]
+        probability_low     = trans['memory'][discard_upp, 0]
         
-        # Compute upper bound probability either with scenario optimization or
-        # using hoeffding's bound
-        if hoeffding_upper:
-            probability_upp     = np.minimum(1, counts[:, 2] / Nsamples + epsilon)
-        else:
-            probability_upp     = trans['memory'][k_low, 1]
+        # Compute upper bound probability either with hoeffding's bound
+        probability_upp     = np.minimum(1, counts[:, 2] / Nsamples + epsilon)
         
         probability_approx  = counts[:, 1:3].mean(axis=1) / Nsamples
         successor_idxs = counts[:,0]
@@ -332,6 +330,7 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, sample
     
     nr_decimals = 5
     Pmin = 1e-4
+    
     
     #### PROBABILITY INTERVALS
     probs_lb = np.maximum(Pmin, floor_decimal(probability_low, nr_decimals))

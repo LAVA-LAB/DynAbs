@@ -86,6 +86,7 @@ class mdp(object):
         elif mode == 'interval':
             # If mode is interval, set lower bound of max. prob. as spec.
             if problem_type == 'avoid':
+                #specification = 'Pminmax=? [ F<='+str(self.N)+' "failed" ]'
                 specification = 'Pminmax=? [ F<='+str(self.N)+' "failed" ]'
             else:
                 specification = 'Pmaxmin=? [ F<='+str(self.N)+' "reached" ]'            

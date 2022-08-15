@@ -77,6 +77,7 @@ def partition_plot(i_show, i_hide, ScAb, cut_value, act=None, stateLabels=False)
 
     width = ScAb.spec.partition['width']
     number = ScAb.spec.partition['number']
+    origin = ScAb.spec.partition['origin']
     
     min_xy = ScAb.spec.partition['boundary'][:,0]
     max_xy = ScAb.spec.partition['boundary'][:,1]
@@ -111,11 +112,11 @@ def partition_plot(i_show, i_hide, ScAb, cut_value, act=None, stateLabels=False)
     plt.grid(which='major', color='#CCCCCC', linewidth=0.3)
     
     # Goal x-y limits
-    ax.set_xlim(1.5*min_xy[is1], 1.5*max_xy[is1])
-    ax.set_ylim(1.5*min_xy[is2], 1.5*max_xy[is2])
+    min_xy_scaled = 1.5 * (min_xy - origin) + origin
+    max_xy_scaled = 1.5 * (max_xy - origin) + origin
     
-    # ax.set_xlim(19.1, 22.5)
-    # ax.set_ylim(37.48, 37.54)
+    ax.set_xlim(min_xy_scaled[is1], max_xy_scaled[is1])
+    ax.set_ylim(min_xy_scaled[is2], max_xy_scaled[is2])
     
     ax.set_title("Partition plot", fontsize=10)
     
@@ -167,8 +168,6 @@ def partition_plot(i_show, i_hide, ScAb, cut_value, act=None, stateLabels=False)
         for s in act.enabled_in:
             center = ScAb.partition['R']['center'][s]
             plt.scatter(center[is1], center[is2], c='blue', s=8)
-        
-        # for s in actions['enabled_inv'],
     
     # Set tight layout
     fig.tight_layout()
