@@ -101,7 +101,7 @@ case_id = 0
 exporter = result_exporter()
 
 if ScAb.model.name == 'oscillator':
-    harm_osc = oscillator_experiment(f_min=1, f_max=1.01, f_step=0.2, monte_carlo_iterations=10)
+    harm_osc = oscillator_experiment(f_min=0, f_max=2.01, f_step=0.2, monte_carlo_iterations=100)
 else:
     harm_osc = False
 

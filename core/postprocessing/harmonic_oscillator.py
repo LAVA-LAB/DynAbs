@@ -151,8 +151,8 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
     min_xy = ScAb.spec.partition['origin'] - domainMax
     max_xy = ScAb.spec.partition['origin'] + domainMax
     
-    major_ticks_x = np.arange(min_xy[0]+1, max_xy[0]+1, 4*width[0])
-    major_ticks_y = np.arange(min_xy[1]+1, max_xy[1]+1, 4*width[1])
+    major_ticks_x = np.arange(min_xy[0]+1, max_xy[0]+1, 5*width[0])
+    major_ticks_y = np.arange(min_xy[1]+1, max_xy[1]+1, 5*width[1])
     
     minor_ticks_x = np.arange(min_xy[0], max_xy[0]+1, width[0])
     minor_ticks_y = np.arange(min_xy[1], max_xy[1]+1, width[1])
@@ -197,16 +197,12 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
                                   alpha=0.3, linewidth=None)
         ax.add_patch(criticalState)
 
-    with plt.rc_context({"font.size": 5}):        
-        # Draw every X-th label
-        if stateLabels:
-            skip = 1
-            for i in range(0, ScAb.partition['nr_regions'], skip):
-                                        
-                ax.text(ScAb.partition['R']['center'][i,0], 
-                        ScAb.partition['R']['center'][i,1], i, \
-                        verticalalignment='center', 
-                        horizontalalignment='center' ) 
+    # Show boundary of the partition
+    rect = patches.Rectangle(min_xy, max_xy[0] - min_xy[0], max_xy[1] - min_xy[1], 
+                             linewidth=1.5, edgecolor='gray', facecolor='none')
+    
+    # Add the patch to the Axes
+    ax.add_patch(rect)
         
     # Add traces
     for i,trace in traces.items():
@@ -241,16 +237,16 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
             interpolated_points = interpolator(alpha)
             
             # Plot trace
-            plt.plot(*interpolated_points.T, '-', color="blue", linewidth=0.5, alpha=0.5);
+            plt.plot(*interpolated_points.T, '-', color="blue", linewidth=1.0, alpha=0.5);
         
         # Plot precise points
-        plt.plot(*points.T, 'o', markersize=1, color="black");
+        plt.plot(*points.T, 'o', markersize=2, color="black");
         
         action_centers = np.array([ScAb.actions['obj'][a].center 
                                    for a in action_traces[i][:len(trace)-1]] )
         action_errors  = np.array([ScAb.actions['obj'][a].error 
                                    for a in action_traces[i][:len(trace)-1]] )           
-        plt.plot(*action_centers.T, 'o', markersize=1, color="red");
+        plt.plot(*action_centers.T, 'o', markersize=2, color="red");
         
         for center, error in zip(action_centers, action_errors):
             
@@ -258,18 +254,17 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
             diff = error['pos'] - error['neg']
             
             rect = patches.Rectangle(low, diff[0], diff[1], 
-                                     linewidth=0.5, edgecolor='red', 
+                                     linewidth=1.0, edgecolor='red', 
                                      linestyle='dashed', facecolor='none')
             
             # Add the patch to the Axes
             ax.add_patch(rect)
     
-    # Show boundary of the partition
-    rect = patches.Rectangle(min_xy, max_xy[0] - min_xy[0], max_xy[1] - min_xy[1], 
-                             linewidth=1.0, edgecolor='gray', facecolor='none')
-    
-    # Add the patch to the Axes
-    ax.add_patch(rect)
+    # Set font sizes
+    plt.rc('axes', titlesize=18)    # fontsize of the axes title
+    plt.rc('axes', labelsize=18)    # fontsize of the x and y 
+    plt.rc('xtick', labelsize=12)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=12)    # fontsize of the tick labels
     
     # Set tight layout
     fig.tight_layout()
@@ -318,7 +313,7 @@ class oscillator_experiment(object):
 
         '''
         
-        ScAb.setup.set_monte_carlo(iterations=self.monte_carlo_iterations)
+        ScAb.setup.montecarlo['iterations'] = self.monte_carlo_iterations
 
         f_list = np.arange(self.f_min, self.f_max+0.01, self.f_step)
         frac_sr = pd.Series(index=np.round(f_list, 3), dtype=float, name=case_id)
@@ -369,7 +364,7 @@ class oscillator_experiment(object):
 
         '''
         
-        ScAb.setup.set_monte_carlo(iterations=self.monte_carlo_iterations)
+        ScAb.setup.montecarlo['iterations'] = self.monte_carlo_iterations
 
         df = pd.DataFrame(columns=['guaranteed', 'simulated', 'ratio'], dtype=float)
         df.index.name = 'mass'
@@ -396,7 +391,7 @@ class oscillator_experiment(object):
             
             oscillator_traces(ScAb, ScAb.mc['traces'][eval_state],
                               ScAb.mc['action_traces'][eval_state], 
-                              plot_trace_ids=[0,1,2,3,4,5,6,7,8,9], 
+                              plot_trace_ids=[0], 
                               title='Traces for mass='+str(mass)+'; spring='+str(spring),
                               case=f)
           
