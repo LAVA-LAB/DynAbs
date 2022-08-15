@@ -60,20 +60,6 @@ class oscillator(master.LTI_master):
         _, parametric  = ui.user_choice('Enable robust approach against parameter uncertainty?',['No', 'Yes'])
         
         if parametric == 1:
-            self.A_set = [
-                        self.set_A(self.mass_min, self.spring_min),
-                        self.set_A(self.mass_min, self.spring_max),
-                        self.set_A(self.mass_max, self.spring_min),
-                        self.set_A(self.mass_max, self.spring_max)
-                        ]
-            
-            self.B_set = [
-                        self.set_B(self.mass_min),
-                        self.set_B(self.mass_min),
-                        self.set_B(self.mass_max),
-                        self.set_B(self.mass_max)
-                        ]
-            
             if spring == 1:
                 self.spring_min = 0.40
                 self.spring_max = 0.60
@@ -89,6 +75,20 @@ class oscillator(master.LTI_master):
                 self.mass_min = 0.75
                 self.mass_nom = 1.00
                 self.mass_max = 1.25
+            
+            self.A_set = [
+                        self.set_A(self.mass_min, self.spring_min),
+                        self.set_A(self.mass_min, self.spring_max),
+                        self.set_A(self.mass_max, self.spring_min),
+                        self.set_A(self.mass_max, self.spring_max)
+                        ]
+            
+            self.B_set = [
+                        self.set_B(self.mass_min),
+                        self.set_B(self.mass_min),
+                        self.set_B(self.mass_max),
+                        self.set_B(self.mass_max)
+                        ]
                 
         # State transition matrix
         self.A     = self.set_A(self.mass_nom, self.spring_nom)
