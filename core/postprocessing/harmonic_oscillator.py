@@ -112,7 +112,7 @@ def oscillator_heatmap(ScAb, title = 'auto'):
     return average_value
 
 def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
-              line=False, stateLabels=False, title = 'auto'):
+              line=True, stateLabels=False, title = 'auto', case=0):
     '''
     Create 2D trajectory plots for the harmonic oscillator benchmark
 
@@ -168,11 +168,11 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
             tic.tick2line.set_visible(False)
     
     plt.grid(which='minor', color='#CCCCCC', linewidth=0.3)
+    plt.grid(which='major', color='#CCCCCC', linewidth=0.3)
     
     # Goal x-y limits
-    ax.set_xlim(min_xy[0] - 2, max_xy[0] + 2)
-    ax.set_ylim(min_xy[1] - 2, max_xy[1] + 2)
-    
+    ax.set_xlim(min_xy[0] - width[0], max_xy[0] + width[0])
+    ax.set_ylim(min_xy[1] - width[1], max_xy[1] + width[1])
     
     if title == 'auto':
         ax.set_title("N = "+str(ScAb.setup.sampling['samples']),fontsize=10)
@@ -227,6 +227,22 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
         y = trace_array[:, 1]
         points = np.array([x,y]).T
         
+        if line:
+            # Linear length along the line:
+            distance = np.cumsum( np.sqrt(np.sum( np.diff(points, axis=0)**2, 
+                                                  axis=1 )) )
+            distance = np.insert(distance, 0, 0)/distance[-1]
+            
+            # Interpolation for different methods:
+            alpha = np.linspace(0, 1, 75)
+            
+            interpolator =  interp1d(distance, points, kind='quadratic', 
+                                     axis=0)
+            interpolated_points = interpolator(alpha)
+            
+            # Plot trace
+            plt.plot(*interpolated_points.T, '-', color="blue", linewidth=0.5, alpha=0.5);
+        
         # Plot precise points
         plt.plot(*points.T, 'o', markersize=1, color="black");
         
@@ -247,29 +263,19 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
             
             # Add the patch to the Axes
             ax.add_patch(rect)
-        
-        if line:
-        
-            # Linear length along the line:
-            distance = np.cumsum( np.sqrt(np.sum( np.diff(points, axis=0)**2, 
-                                                  axis=1 )) )
-            distance = np.insert(distance, 0, 0)/distance[-1]
-            
-            # Interpolation for different methods:
-            alpha = np.linspace(0, 1, 75)
-            
-            interpolator =  interp1d(distance, points, kind='quadratic', 
-                                     axis=0)
-            interpolated_points = interpolator(alpha)
-            
-            # Plot trace
-            plt.plot(*interpolated_points.T, '-', color="blue", linewidth=1);
+    
+    # Show boundary of the partition
+    rect = patches.Rectangle(min_xy, max_xy[0] - min_xy[0], max_xy[1] - min_xy[1], 
+                             linewidth=1.0, edgecolor='gray', facecolor='none')
+    
+    # Add the patch to the Axes
+    ax.add_patch(rect)
     
     # Set tight layout
     fig.tight_layout()
     
     # Save figure
-    filename = ScAb.setup.directories['outputFcase']+'drone_trajectory'
+    filename = ScAb.setup.directories['outputFcase']+'drone_trajectory'+str(case)
     for form in ScAb.setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
@@ -388,7 +394,11 @@ class oscillator_experiment(object):
             df.loc[mass, 'simulated']  = np.round(ScAb.mc['reachability'][eval_state], 4)
             df.loc[mass, 'ratio']  = np.round(ScAb.mc['reachability'][eval_state] / ScAb.results['optimal_reward'][eval_state], 4)
             
-            oscillator_traces(ScAb, ScAb.mc['traces'][eval_state], ScAb.mc['action_traces'][eval_state], plot_trace_ids=[0,1,2,3,4,5,6,7,8,9], title='Traces for mass='+str(mass)+'; spring='+str(spring))
+            oscillator_traces(ScAb, ScAb.mc['traces'][eval_state],
+                              ScAb.mc['action_traces'][eval_state], 
+                              plot_trace_ids=[0,1,2,3,4,5,6,7,8,9], 
+                              title='Traces for mass='+str(mass)+'; spring='+str(spring),
+                              case=f)
           
         csv_file = ScAb.setup.directories['outputF']+'gauranteed_vs_simulated.csv'
         df.to_csv(csv_file, sep=',')

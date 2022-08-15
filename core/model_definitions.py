@@ -53,28 +53,26 @@ class oscillator(master.LTI_master):
         _, spring  = ui.user_choice('Enable spring coefficient in model?',['No', 'Yes'])
         
         if spring == 1:
+            self.spring_min = 0.40
             self.spring_nom = 0.50
+            self.spring_max = 0.60
+            
+            self.mass_min = 0.80
+            self.mass_nom = 1.00
+            self.mass_max = 1.20
+            
         else:
-            self.spring_nom = 0.00    
-        
+            self.spring_min = 0.00
+            self.spring_nom = 0.00
+            self.spring_max = 0.00
+            
+            self.mass_min = 0.75
+            self.mass_nom = 1.00
+            self.mass_max = 1.25
+
         _, parametric  = ui.user_choice('Enable robust approach against parameter uncertainty?',['No', 'Yes'])
-        
+
         if parametric == 1:
-            if spring == 1:
-                self.spring_min = 0.40
-                self.spring_max = 0.60
-                
-                self.mass_min = 0.80
-                self.mass_nom = 1.00
-                self.mass_max = 1.20
-                
-            else:
-                self.spring_min = 0.00
-                self.spring_max = 0.00
-                
-                self.mass_min = 0.75
-                self.mass_nom = 1.00
-                self.mass_max = 1.25
             
             self.A_set = [
                         self.set_A(self.mass_min, self.spring_min),

@@ -55,7 +55,7 @@ setup = settings(application=model.name, base_dir = base_dir)
 # Manual changes in general settings
 setup.setOptions(category       = 'plotting', 
         exportFormats           = ['pdf'], 
-        partitionPlot           = True,
+        partitionPlot           = False,
         partitionPlot_plotHull  = True)
 
 # Give some user prompts
@@ -66,8 +66,6 @@ print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\
       'PROGRAM STARTED AT \n'+setup.time['datetime'] +
       '\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 
-setup.main['iterations'] = 1
-    
 # Create the main object for the current instance
 ScAb = scenarioBasedAbstraction(setup, define_model(setup, model, spec))
 ScAb.define_states()
@@ -103,7 +101,7 @@ case_id = 0
 exporter = result_exporter()
 
 if ScAb.model.name == 'oscillator':
-    harm_osc = oscillator_experiment(f_min=0, f_max=2, f_step=0.2, monte_carlo_iterations=100)
+    harm_osc = oscillator_experiment(f_min=1, f_max=1.01, f_step=0.2, monte_carlo_iterations=10)
 else:
     harm_osc = False
 
@@ -178,4 +176,4 @@ if harm_osc:
     harm_osc.export(ScAb)
 
     harm_osc.plot_trace(ScAb, spring=ScAb.model.spring_nom, 
-                        state_center=(-5.5,-2.5))
+                        state_center=(-6.5,-2.5))
