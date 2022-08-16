@@ -407,7 +407,7 @@ class building_1room(master.LTI_master):
         master.LTI_master.__init__(self)
         
         # Let the user make a choice for the model dimension
-        _, self.scenario  = ui.user_choice('Select the model size to run',['Small','Medium','Large','Very large'])
+        _, self.scenario  = ui.user_choice('Select the model size to run',['15x25','25x35','35x45','50x70','100x140'])
         
         # Number of time steps to lump together (can be used to make the model
         # fully actuated)

@@ -161,6 +161,13 @@ class building_1room_spec(master.spec_master):
                 'default': np.array([[-.05, .05], [-.15, .15]]),
                 }
             
+        elif scenario == 3:
+            self.partition['number']  = [100, 140]
+            
+            self.error['max_control_error'] = {
+                'default': np.array([[-.03, .03], [-.1, .1]]),
+                }
+            
         width = (self.partition['boundary'][:,1] - self.partition['boundary'][:,0]) / self.partition['number']
         
         # Actions per dimension (if 'auto', equal to nr of regions)
