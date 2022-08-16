@@ -161,7 +161,7 @@ class building_1room_spec(master.spec_master):
                 'default': np.array([[-.05, .05], [-.15, .15]]),
                 }
             
-        elif scenario == 3:
+        elif scenario == 4:
             self.partition['number']  = [100, 140]
             
             self.error['max_control_error'] = {
