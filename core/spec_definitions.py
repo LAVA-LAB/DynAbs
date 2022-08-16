@@ -36,11 +36,7 @@ class oscillator_spec(master.spec_master):
             np.array([[8, 14], [-14, 14]])
             ]
         
-        self.critical = None #[
-            # np.array([[-2, 2], [-2, 2]]),
-            # np.array([[-13, 13], [9,13]]),
-            #np.array([[-13,-5], [-13,13]])
-            # ]
+        self.critical = None
         
         self.error['max_control_error'] = {
             'default': np.array([[-1.2, 1.2], [-1.2, 1.2]]),

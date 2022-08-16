@@ -459,14 +459,14 @@ class building_1room(master.LTI_master):
       
         if uncertainty == 1:
           
-          f1 = 0.9
+          f1 = 0.8
           A0_cont      = np.zeros((2,2));
           A0_cont[0,0] = -(1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']))-((f1*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])) - ((m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz']))
           A0_cont[0,1] = (f1*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])
           A0_cont[1,0] = (k1_a)
           A0_cont[1,1] = -(k0_a*w) - k1_a
           
-          f2 = 1.1
+          f2 = 1.2
           A1_cont      = np.zeros((2,2));
           A1_cont[0,0] = -(1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']))-((f2*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])) - ((m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz']))
           A1_cont[0,1] = (f2*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])
