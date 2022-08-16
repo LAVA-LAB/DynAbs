@@ -438,12 +438,23 @@ class Abstraction(object):
                 nr_act += 1
             
             # Compute control error for this action
-            act_obj.error = {
-                'pos': np.sum([mats[z] @ vals_error[z]['pos'] for z in 
-                               range(len(dim_n))], axis=0),
-                'neg': np.sum([mats[z] @ vals_error[z]['neg'] for z in 
-                               range(len(dim_n))], axis=0)
-                }
+            if hasattr(self.model, 'Q_uncertain'):
+                # Also account for the uncertain disturbances
+                act_obj.error = {
+                    'pos': np.sum([mats[z] @ vals_error[z]['pos'] for z in 
+                                   range(len(dim_n))], axis=0) + self.model.Q_uncertain['max'],
+                    'neg': np.sum([mats[z] @ vals_error[z]['neg'] for z in 
+                                   range(len(dim_n))], axis=0) + self.model.Q_uncertain['min']
+                    }
+            
+            else:
+                # No uncertain disturbance to account for
+                act_obj.error = {
+                    'pos': np.sum([mats[z] @ vals_error[z]['pos'] for z in 
+                                   range(len(dim_n))], axis=0),
+                    'neg': np.sum([mats[z] @ vals_error[z]['neg'] for z in 
+                                   range(len(dim_n))], axis=0)
+                    }
             
         return nr_act
         
@@ -592,6 +603,10 @@ class Abstraction(object):
         
         rewards_k0 = pd.read_csv(vector_file, header=None).iloc[3:].to_numpy()
         self.results['optimal_reward'] = rewards_k0.flatten()
+        
+        # Convert avoid probability to the safety probability
+        if self.spec.problem_type:
+            self.results['optimal_reward'] = 1 - self.results['optimal_reward']
         
         for i,row in enumerate(policy_all):    
             for j,value in enumerate(row):

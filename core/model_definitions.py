@@ -158,7 +158,7 @@ class UAV(master.LTI_master):
         self.lump = 1
         
         # Let the user make a choice for the model dimension
-        self.modelDim, _  = ui.user_choice('model dimension',[1,2,3])
+        self.modelDim, _  = ui.user_choice('model dimension',[1,2])
         
         # Discretization step size
         self.tau = 2.0
@@ -189,18 +189,7 @@ class UAV(master.LTI_master):
                               [self.tau/mass_max]]),
                     ]
         
-        if self.modelDim==3:
-            self.A  = scipy.linalg.block_diag(Ablock, Ablock, Ablock)
-            self.B  = scipy.linalg.block_diag(Bblock, Bblock, Bblock)
-            
-            # Disturbance matrix
-            self.Q  = np.array([[0],[0],[0],[0],[0],[0]])
-            
-            # Covariance of the process noise
-            self.noise = dict()
-            self.noise['w_cov'] = np.diag([0.1, 0.01] * 3)
-                
-        elif self.modelDim==2:
+        if self.modelDim==2:
             self.A  = scipy.linalg.block_diag(Ablock, Ablock)
             self.B  = scipy.linalg.block_diag(Bblock, Bblock)
             
@@ -418,19 +407,11 @@ class building_1room(master.LTI_master):
         master.LTI_master.__init__(self)
         
         # Let the user make a choice for the model dimension
-        _, self.scenario  = ui.user_choice('Select the scenario to run',['Underactuated (original)','Fully actuated (modified)'])
-           
-        if self.scenario == 0:
-            # Number of time steps to lump together (can be used to make the model
-            # fully actuated)
-            self.lump = 1
-            
-        else:
-            # Number of time steps to lump together (can be used to make the model
-            # fully actuated)
-            self.lump = 2
-            
-            self.setup['partition_plot_action'] = 7700
+        _, self.scenario  = ui.user_choice('Select the model size to run',['Small','Medium','Large','Very large'])
+        
+        # Number of time steps to lump together (can be used to make the model
+        # fully actuated)
+        self.lump = 1
         
         # Discretization step size
         self.tau = 20 # NOTE: in minutes for BAS!
@@ -473,45 +454,47 @@ class building_1room(master.LTI_master):
         self.B = B_cont*self.tau
         self.Q = W_cont*self.tau
         
-        self.Q_disturbance = {'min': np.array([-0.05374102 * 5, 0]),
-                              'max': np.array([0.05374102 * 5,  0])}                      
-        
-        if self.lump == 1:
-          # Let the user make a choice for the model dimension
-          _, uncertainty  = ui.user_choice('Do you want to enable uncertainty about the radiator power output?',['No', 'Yes'])
-        
-          if uncertainty == 1:
-            
-            f1 = 0.75
-            A0_cont      = np.zeros((2,2));
-            A0_cont[0,0] = -(1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']))-((f1*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])) - ((m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz']))
-            A0_cont[0,1] = (f1*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])
-            A0_cont[1,0] = (k1_a)
-            A0_cont[1,1] = -(k0_a*w) - k1_a
-            
-            f2 = 1.25
-            A1_cont      = np.zeros((2,2));
-            A1_cont[0,0] = -(1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']))-((f2*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])) - ((m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz']))
-            A1_cont[0,1] = (f2*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])
-            A1_cont[1,0] = (k1_a)
-            A1_cont[1,1] = -(k0_a*w) - k1_a
-            
-            self.A_set = [
-                np.eye(2) + self.tau*A0_cont,
-                np.eye(2) + self.tau*A1_cont
-                        ]
-            
-            self.B_set = [
-                self.B,
-                self.B
-                ]
+        # Let the user make a choice for the model dimension
+        _, uncertainty  = ui.user_choice('Do you want to enable uncertainty about the radiator power output?',['No', 'Yes'])
+      
+        if uncertainty == 1:
+          
+          f1 = 0.9
+          A0_cont      = np.zeros((2,2));
+          A0_cont[0,0] = -(1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']))-((f1*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])) - ((m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz']))
+          A0_cont[0,1] = (f1*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])
+          A0_cont[1,0] = (k1_a)
+          A0_cont[1,1] = -(k0_a*w) - k1_a
+          
+          f2 = 1.1
+          A1_cont      = np.zeros((2,2));
+          A1_cont[0,0] = -(1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']))-((f2*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])) - ((m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz']))
+          A1_cont[0,1] = (f2*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])
+          A1_cont[1,0] = (k1_a)
+          A1_cont[1,1] = -(k0_a*w) - k1_a
+          
+          self.A_set = [
+              np.eye(2) + self.tau*A0_cont,
+              np.eye(2) + self.tau*A1_cont
+                      ]
+          
+          self.B_set = [
+              self.B,
+              self.B
+              ]
+          
+          infl = (1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']*4)) * self.tau
+          max_temp_diff = 5 
+          
+          self.Q_uncertain = {'min': np.array([-infl * max_temp_diff, 0]),
+                              'max': np.array([infl * max_temp_diff,  0])} 
             
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)
 
         self.noise = dict()
-        self.noise['w_cov'] = np.diag([ BAS.Zone1['Tz']['sigma'], BAS.Radiator['rw']['sigma'] ]) * 0.1 #* 0.5
+        self.noise['w_cov'] = np.diag([ BAS.Zone1['Tz']['sigma'], BAS.Radiator['rw']['sigma'] ]) * 0.1
 
     def set_spec(self):
         

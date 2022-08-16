@@ -91,60 +91,6 @@ class UAV_2D_spec(master.spec_master):
                                                 [-1.5, 1.5]])
         self.error['max_action_distance'] = np.array([6,8,6,8])
         
-class UAV_3D_spec(master.spec_master):
-    
-    def __init__(self):
-        
-        # Initialize superclass
-        master.spec_master.__init__(self)   
-        
-        self.end_time = 32
-        
-        # Authority limit for the control u, both positive and negative
-        self.control['uMin'] = [-4, -4, -4]
-        self.control['uMax'] = [4, 4, 4]        
-
-        # Partition size
-        self.partition['boundary']  = np.array([[-15, 15], 
-                                                [-4.5, 4.5], 
-                                                [-9, 9], 
-                                                [-4.5, 4.5],
-                                                [-7, 7],
-                                                [-3, 3]])
-        self.partition['number']  = [15, 3, 9, 3, 7, 3]
-        
-        self.targets['boundary']    = self.partition['boundary']
-        self.targets['number']      = self.partition['number']
-        
-        # Specification information
-        self.goal = [
-            np.array([[12, 14], 'all', [2, 4], 'all', [-6, -4], 'all'])
-            ]
-        self.critical = [
-            # Hole 1
-            np.array([[-10, 6], 'all', [0, 8], 'all', [-6, 2], 'all']),
-            np.array([[-10, 6], 'all', [6, 8], 'all', [2, 4], 'all']),
-            np.array([[-10, 6], 'all', [4, 4.2], 'all', [-6, -5.8], 'all']),
-            # Hole 2
-            np.array([[0, 2], 'all', [2, 8], 'all', [-6, 4], 'all']),
-            np.array([[0, 2], 'all', [2, 8], 'all', [0, 2], 'all']),
-            # Tower
-            np.array([[0, 2], 'all', [-2, 0], 'all', [-6, 6], 'all']),
-            # Wall between routes
-            np.array([[4, 8], 'all', [-2, 0], 'all', [-6, -2], 'all']),
-            # Long route obstacles
-            np.array([[-10, 8], 'all', [-4, 2], 'all', [-6, 0], 'all']),
-            np.array([[0, 2], 'all', [-8, -4], 'all', [-6, -5.8], 'all']),
-            # Overhanging
-            np.array([[0, 2], 'all', [-8, -4], 'all', [4, 6], 'all']),
-            # Small last obstacle
-            np.array([[12, 14], 'all', [-8, -6], 'all', [-6, -5.8], 'all']),
-            # Obstacle next go goal
-            np.array([[10, 14], 'all', [6, 8], 'all', [-6, 0], 'all']),
-            ]
-        
-        self.x0 = [ np.array([[-10, -2], 'all', [-2, 2], 'all']) ]
-        
 class building_2room_spec(master.spec_master):
     
     def __init__(self, T_boiler):
@@ -182,41 +128,55 @@ class building_1room_spec(master.spec_master):
         master.spec_master.__init__(self)        
         
         # Step-bound on spec
-        self.end_time = 16
+        self.end_time = 15
 
         # Authority limit for the control u, both positive and negative
         self.control['uMin'] = [15]
         self.control['uMax'] = [30]
         
+        self.partition['boundary']  = np.array([[18.5, 23.5], [39, 46]])
+        
         # Partition size
         if scenario == 0:
-            self.partition['boundary']  = np.array([[18.5, 23.5], [39, 46]])
-            self.partition['number']  = [25, 35]
+            self.partition['number']  = [15, 25]
             
-            # Actions per dimension (if 'auto', equal to nr of regions)
-            self.targets['boundary']    = np.array([[18.5+.1, 23.5+.1], [39-.1, 46-.1]])
-            self.targets['number']      = [25, 35]
+            self.error['max_control_error'] = {
+                'default': np.array([[-.2, .2], [-.5, .5]]),
+                }
             
         elif scenario == 1:
-            self.partition['boundary']  = np.array([[19.1, 22.9], [36, 40]])
-            self.partition['number']    = [190, 600]
+            self.partition['number']  = [25, 35]
             
-            self.targets['boundary']    = np.array([[19.1, 22.9], [36, 40]])
-            self.targets['number']      = [76, 200]
+            self.error['max_control_error'] = {
+                'default': np.array([[-.1, .1], [-.3, .3]]),
+                }
+           
+        elif scenario == 2:
+            self.partition['number']  = [35, 45]
+            
+            self.error['max_control_error'] = {
+                'default': np.array([[-.1, .1], [-.3, .3]]),
+                }
+            
+        elif scenario == 3:
+            self.partition['number']  = [50, 70]
+            
+            self.error['max_control_error'] = {
+                'default': np.array([[-.05, .05], [-.15, .15]]),
+                }
+            
+        width = (self.partition['boundary'][:,1] - self.partition['boundary'][:,0]) / self.partition['number']
+        
+        # Actions per dimension (if 'auto', equal to nr of regions)
+        self.targets['boundary']    = np.array([[18.5+width[0]*0.5, 23.5-width[0]*0.5], 
+                                                [39+width[1]*0.5, 46-width[1]*0.5]])
+        self.targets['number']      = self.partition['number']
+        
         
         self.goal = None
-        # [
-        #     np.array([[20.8, 21.2], 'all'])
-        #     ]
-        
-        self.targets['extra']       = np.array([[21.0, 39.5]])
-        
         self.critical = None
         
-        self.error['max_control_error'] = {
-            'default': np.array([[-.1, .1], [-.3, .3]]),
-            'extra': np.array([[-.2, .2], [-2, 2]])
-            }
+        
         
 class shuttle_spec(master.spec_master):
     
