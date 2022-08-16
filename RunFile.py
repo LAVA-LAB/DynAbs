@@ -26,7 +26,9 @@ from core.monte_carlo import monte_carlo
 from core.preprocessing.user_interface import load_PRISM_result_file
 from core.preprocessing.set_model_class import set_model_class
 from core.commons import createDirectory
+
 from core.preprocessing.master_classes import settings, result_exporter
+from core.preprocessing.argument_parser import parse_arguments
 
 from core.postprocessing.harmonic_oscillator import oscillator_experiment
 
@@ -36,11 +38,20 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 print('Base directory:', base_dir)
 
 #-----------------------------------------------------------------------------
+# Parse arguments
+#-----------------------------------------------------------------------------
+
+args = parse_arguments()
+args.prism_folder = "~/Documents/prism-imc/prism/"
+
+#-----------------------------------------------------------------------------
 # Create model and set specification
 #-----------------------------------------------------------------------------
 
 # Define model
-model = set_model_class()
+print('Run `'+args.model+'` model...')
+method = set_model_class(args.model)
+model  = method(args)
 
 # Define specification
 spec = model.set_spec()
@@ -52,36 +63,21 @@ spec = model.set_spec()
 # Create settings object
 setup = settings(application=model.name, base_dir = base_dir)
 
-# Manual changes in general settings
-setup.setOptions(category       = 'plotting', 
-        exportFormats           = ['pdf'], 
-        partitionPlot           = False,
-        partitionPlot_plotHull  = True)
-
-# Give some user prompts
-setup.set_monte_carlo()
-setup.set_new_abstraction()
-
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n' +
       'PROGRAM STARTED AT \n'+setup.time['datetime'] +
       '\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 
 # Create the main object for the current instance
-ScAb = scenarioBasedAbstraction(setup, define_model(setup, model, spec))
+ScAb = scenarioBasedAbstraction(args, setup, define_model(setup, model, spec))
 ScAb.define_states()
 
-# %%
 #-----------------------------------------------------------------------------
 # Define actions (only required once outside iterative scheme)
 #-----------------------------------------------------------------------------
 
-if ScAb.setup.main['newRun'] is True:        
-    # Create directories
-    createDirectory(ScAb.setup.directories['outputF']) 
-    
-else:
-    setup.plotting['partitionPlot'] = False
-    
+# Create directories
+createDirectory(ScAb.setup.directories['outputF']) 
+        
 # Create actions and determine which ones are enabled
 ScAb.define_target_points()
 ScAb.define_actions()
@@ -92,7 +88,7 @@ ScAb.define_actions()
 #-----------------------------------------------------------------------------
 
 # Shortcut to the number of samples
-N = ScAb.setup.sampling['samples']     
+N = args.noise_samples
 
 # Initialize case ID at zero
 case_id = 0
@@ -106,49 +102,29 @@ else:
     harm_osc = False
 
 # For every iteration... (or once, if iterations are disabled)
-for case_id in range(0, ScAb.setup.main['iterations']):   
+for case_id in range(0, ScAb.args.iterations):   
         
-    # Only perform code below is a new run is chosen
-    if ScAb.setup.main['newRun'] is True:
-        print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
-        print('START ITERATION WITH NUMBER OF SAMPLES N = '+str(N))
+    print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
+    print('START ITERATION ID:', case_id)
+
+    # Set directories for this iteration
+    ScAb.setup.prepare_iteration(N, case_id)
+
+    # Calculate transition probabilities
+    ScAb.define_probabilities()
     
-        # Set directories for this iteration
-        ScAb.setup.prepare_iteration(N, case_id)
+    # Build and solve interval MDP
+    model_size = ScAb.build_iMDP()
+    ScAb.solve_iMDP()
     
-        # Calculate transition probabilities
-        ScAb.define_probabilities()
-        
-        # Build and solve interval MDP
-        model_size = ScAb.build_iMDP()
-        ScAb.solve_iMDP()
-        
-        # Export the results of the current iteration
-        writer = exporter.create_writer(ScAb, model_size, case_id, N)
-        
-    # If no new run was chosen, load the results from existing data files
-    else:
-        # Load results from existing PRISM results files
-        ScAb.setup.directories['outputFcase'], policy_file, vector_file = \
-            load_PRISM_result_file(ScAb.setup.directories['output'], 
-                                   ScAb.model.name, N)
+    # Export the results of the current iteration
+    writer = exporter.create_writer(ScAb, model_size, case_id, N)
     
-        # Save case-specific data in Excel
-        output_file = ScAb.setup.directories['outputFcase'] + \
-            ScAb.setup.time['datetime'] + '_N='+str(N)+'_data_export.xlsx'
-        
-        # Create a Pandas Excel writer using XlsxWriter as the engine
-        writer = pd.ExcelWriter(output_file, engine='xlsxwriter')
-    
-        # Load results
-        ScAb.loadPRISMresults(policy_file, vector_file)
-    
-    if ScAb.setup.montecarlo['enabled']:
+    if ScAb.args.monte_carlo_iter > 0:
         ScAb.mc = monte_carlo(ScAb, writer=writer)
     
     # Plot results
     ScAb.generate_probability_plots()
-    ScAb.generate_UAV_plots(case_id, writer, exporter)
     ScAb.generate_heatmap()
     
     # Store run times of current iterations        
@@ -171,7 +147,6 @@ exporter.save_to_excel(ScAb.setup.directories['outputF'] + \
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
-# TODO: reimplement monte carlo number of iterations
 if harm_osc:
     harm_osc.export(ScAb)
 

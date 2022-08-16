@@ -25,14 +25,13 @@ import sys                      # Allows to terminate the code at some point
 import os                       # Import OS to allow creationg of folders
 import random                   # Import to use random variables
 import pandas as pd             # Import Pandas to store data in frames
+import subprocess
 
 from .define_model import find_connected_components
 from .define_partition import definePartitions, define_spec_region
-from .compute_probabilities import computeScenarioBounds_sparse, \
-    computeScenarioBounds_error, transition_plot
+from .compute_probabilities import computeScenarioBounds_error
 from .commons import tic, ticDiff, tocDiff, table, printWarning
-from .compute_actions import enabledActions, enabledActionsImprecise, \
-    epistemic_error
+from .compute_actions import enabledActionsImprecise, epistemic_error
 from .create_iMDP import mdp
 from .postprocessing.createPlots import partition_plot
 
@@ -261,111 +260,97 @@ class Abstraction(object):
         -------
         None.
         '''
+            
+        print('\nComputing set of enabled actions...')
         
-        ### 1 ###
-        # If underactuated...
-        if self.flags['underactuated']:            
-            
-            print('\nComputing set of enabled actions...')
-            
-            # Find the connected components of the system
-            dim_n, dim_p = find_connected_components(self.model.A, self.model.B,
-                                                     self.model.n, self.model.p)
-            
-            print(' -- Number of actions (target points):', self.actions['nr_actions'])
+        # Find the connected components of the system
+        dim_n, dim_p = find_connected_components(self.model.A, self.model.B,
+                                                 self.model.n, self.model.p)
+        
+        print(' -- Number of actions (target points):', self.actions['nr_actions'])
 
-            enabled = [None for i in range(len(dim_n))]
-            enabled_inv = [None for i in range(len(dim_n))]
-            error = [None for i in range(len(dim_n))]
+        enabled = [None for i in range(len(dim_n))]
+        enabled_inv = [None for i in range(len(dim_n))]
+        error = [None for i in range(len(dim_n))]
 
-            for i,(dn,dp) in enumerate(zip(dim_n, dim_p)):
-            
-                print(' --- In dimensions of state', dn,'and control', dp)    
-            
-                enabled[i], enabled_inv[i], error[i] = enabledActionsImprecise(
-                    self.setup, self.flags, self.partition, self.actions, 
-                    self.model, self.spec, dn, dp)
-            
-            self.TEMP_dim_n = dim_n
-            self.TEMP_enabled = enabled
-            self.TEMP_enabled_inv = enabled_inv
-            self.TEMP_error = error
-            
-            nr_act = self._composeEnabledActions(dim_n, enabled, 
-                                                 enabled_inv, error)
+        for i,(dn,dp) in enumerate(zip(dim_n, dim_p)):
         
-            # Add extra actions
-            BRS_0 = self.actions['backreach_obj']['default'].verts_infl
-            LP = LP_vertices_contained(self.model, BRS_0.shape, 
-                                       solver=self.setup.cvx['solver'])
-            
-            if self.flags['parametric']:
-                epist = epistemic_error(self.model)
-            else:
-                epist = None
-            
-            for act in self.actions['extra_act']:
-                    
-                # Set current backward reachable set as parameter
-                LP.set_backreach(act.backreach_infl)
-                
-                s_min_list = []
-                
-                # Try each potential predecessor state
-                for s_min in range(self.partition['nr_regions']):
-                    
-                    # Skip if this is a critical state
-                    if s_min in self.partition['critical']:
-                        continue
-                    
-                    unique_verts = np.unique(self.partition['allCorners'][s_min], axis=0)
-                    
-                    # If the problem is feasible, then action is enabled in this state
-                    if LP.solve(unique_verts):
-                        
-                        # Add state to the list of enabled states
-                        s_min_list += [s_min]
-                        
-                        # Enable the current action in the current state
-                        self.actions['enabled'][s_min].add(act.idx)
-                           
-                        act.enabled_in.add(s_min)
-                        
-                # Retrieve control error negative/positive
-                control_error = act.backreach_obj.max_control_error
-                        
-                # If a parametric model is used
-                if not epist is None and len(s_min_list) > 0:
-                    
-                    # Retrieve list of unique vertices of predecessor states
-                    s_vertices = self.partition['allCorners'][s_min_list]
-                    s_vertices_unique = np.unique(np.vstack(s_vertices), axis=0)
-                
-                    # Compute the epistemic error
-                    epist_error_neg, epist_error_pos = epist.compute(s_vertices_unique)
-                    
-                    # Store the control error for this action
-                    act.error = {'neg': control_error[:,0] + epist_error_neg,
-                                 'pos': control_error[:,1] + epist_error_pos}
-                    
-                else:
-                    
-                    # Store the control error for this action
-                    act.error = {'neg': control_error[:,0],
-                                 'pos': control_error[:,1]}        
+            print(' --- In dimensions of state', dn,'and control', dp)    
         
-        ### 2 ###
+            enabled[i], enabled_inv[i], error[i] = enabledActionsImprecise(
+                self.setup, self.flags, self.partition, self.actions, 
+                self.model, self.spec, dn, dp)
+        
+        self.TEMP_dim_n = dim_n
+        self.TEMP_enabled = enabled
+        self.TEMP_enabled_inv = enabled_inv
+        self.TEMP_error = error
+        
+        nr_act = self._composeEnabledActions(dim_n, enabled, 
+                                             enabled_inv, error)
+    
+        # Add extra actions
+        BRS_0 = self.actions['backreach_obj']['default'].verts_infl
+        LP = LP_vertices_contained(self.model, BRS_0.shape, 
+                                   solver=self.setup.cvx['solver'])
+        
+        if self.flags['parametric']:
+            epist = epistemic_error(self.model)
         else:
+            epist = None
+        
+        for act in self.actions['extra_act']:
+                
+            # Set current backward reachable set as parameter
+            LP.set_backreach(act.backreach_infl)
             
-            print('\nComputing set of enabled actions...')
+            s_min_list = []
             
-            #TODO: Update structure of 'enabled_inv' here
-            nr_act, self.actions['enabled'], self.actions['enabled_inv'], _ = \
-                enabledActions(self.setup, self.partition, self.actions, 
-                               self.model)
+            # Try each potential predecessor state
+            for s_min in range(self.partition['nr_regions']):
+                
+                # Skip if this is a critical state
+                if s_min in self.partition['critical']:
+                    continue
+                
+                unique_verts = np.unique(self.partition['allCorners'][s_min], axis=0)
+                
+                # If the problem is feasible, then action is enabled in this state
+                if LP.solve(unique_verts):
+                    
+                    # Add state to the list of enabled states
+                    s_min_list += [s_min]
+                    
+                    # Enable the current action in the current state
+                    self.actions['enabled'][s_min].add(act.idx)
+                       
+                    act.enabled_in.add(s_min)
+                    
+            # Retrieve control error negative/positive
+            control_error = act.backreach_obj.max_control_error
+                    
+            # If a parametric model is used
+            if not epist is None and len(s_min_list) > 0:
+                
+                # Retrieve list of unique vertices of predecessor states
+                s_vertices = self.partition['allCorners'][s_min_list]
+                s_vertices_unique = np.unique(np.vstack(s_vertices), axis=0)
+            
+                # Compute the epistemic error
+                epist_error_neg, epist_error_pos = epist.compute(s_vertices_unique)
+                
+                # Store the control error for this action
+                act.error = {'neg': control_error[:,0] + epist_error_neg,
+                             'pos': control_error[:,1] + epist_error_pos}
+                
+            else:
+                
+                # Store the control error for this action
+                act.error = {'neg': control_error[:,0],
+                             'pos': control_error[:,1]}
             
         ### PLOT ###
-        if self.setup.plotting['partitionPlot']:
+        if self.args.partition_plot:
             
             if 'partition_plot_action' in self.model.setup:
                 a = self.model.setup['partition_plot_action']
@@ -481,7 +466,7 @@ class Abstraction(object):
         model_size, self.mdp.prism_file, self.mdp.spec_file, \
         self.mdp.specification = \
             self.mdp.writePRISM_explicit(self.actions, self.partition, self.trans, problem_type, 
-                                         self.setup.mdp['mode'])   
+                                         self.args.mdp_mode)   
 
         self.time['4_MDPcreated'] = tocDiff(False)
         print('MDP created - time:',self.time['4_MDPcreated'])
@@ -499,32 +484,6 @@ class Abstraction(object):
         None.
 
         '''
-            
-        # Solve the MDP in PRISM (which is called via the terminal)
-        policy_file, vector_file = self._solveMDPviaPRISM()
-        
-        # Load PRISM results back into Python
-        self.loadPRISMresults(policy_file, vector_file)
-            
-        self.time['5_MDPsolved'] = tocDiff(False)
-        print('MDP solved in',self.time['5_MDPsolved'])
-        
-        
-        
-    def _solveMDPviaPRISM(self):
-        '''
-        Call PRISM to solve (i)MDP while executing the Python codes.
-
-        Returns
-        -------
-        policy_file : str
-            Name of the file in which the optimal policy is stored.
-        vector_file : str
-            Name of the file in which the optimal rewards are stored.
-
-        '''
-        
-        import subprocess
 
         prism_folder = self.setup.mdp['prism_folder'] 
         
@@ -533,8 +492,7 @@ class Abstraction(object):
         print('Starting PRISM...')
         
         spec = self.mdp.specification
-        mode = self.setup.mdp['mode']
-        java_memory = self.setup.mdp['prism_java_memory']
+        mode = self.args.mdp_mode
         
         print(' -- Running PRISM with specification for mode',
               mode.upper()+'...')
@@ -546,32 +504,24 @@ class Abstraction(object):
         options = ' -ex -exportadv "'+policy_file+'"'+ \
                   ' -exportvector "'+vector_file+'"'
     
-        # Switch between PRISM command for explicit model vs. default model
-        if self.setup.mdp['prism_model_writer'] == 'explicit':
+        print(' --- Execute PRISM command for EXPLICIT model description')        
+
+        model_file      = '"'+self.mdp.prism_file+'"'             
     
-            print(' --- Execute PRISM command for EXPLICIT model description')        
-    
-            model_file      = '"'+self.mdp.prism_file+'"'             
-        
-            # Explicit model
-            command = prism_folder+"bin/prism -javamaxmem "+ \
-                str(java_memory)+"g -importmodel "+model_file+" -pf '"+ \
-                spec+"' "+options
-        else:
-            
-            print(' --- Execute PRISM command for DEFAULT model description')
-            
-            model_file      = '"'+self.mdp.prism_file+'"'
-            
-            # Default model
-            command = prism_folder+"bin/prism -javamaxmem "+ \
-                str(java_memory)+"g "+model_file+" -pf '"+spec+"' "+options    
+        # Explicit model
+        command = prism_folder+"bin/prism -javamaxmem "+ \
+            str(self.args.prism_java_memory)+"g -importmodel "+model_file+" -pf '"+ \
+            spec+"' "+options
         
         subprocess.Popen(command, shell=True).wait()    
         
-        return policy_file, vector_file
+        # Load PRISM results back into Python
+        self.loadPRISMresults(policy_file, vector_file)
+            
+        self.time['5_MDPsolved'] = tocDiff(False)
+        print('MDP solved in',self.time['5_MDPsolved'])
         
-    
+        
     
     def loadPRISMresults(self, policy_file, vector_file):
         '''
@@ -637,29 +587,11 @@ class Abstraction(object):
             if not hasattr(self, 'mc'):
                 self.mc = None    
         
-            if self.setup.plotting['probabilityPlots']:
-                createProbabilityPlots(self.setup, self.N, self.model, self.spec,
-                                       self.results, self.partition, self.mc)
-                    
+            createProbabilityPlots(self.setup, self.N, self.model, self.spec,
+                                   self.results, self.partition, self.mc)
+                
         else:
             printWarning("Omit probability plots (nr. of regions too large)")
-        
-        
-        
-    def generate_UAV_plots(self, case_id, writer, exporter, itersToSim = 1000):
-        
-        # The code below plots the trajectories for the UAV benchmark
-        if self.model.name in ['UAV', 'shuttle']:
-            
-            if self.model.name == 'UAV' and self.model.modelDim == 1:
-                return
-            
-            from core.postprocessing.createPlots import UAVplots
-        
-            # Create trajectory plot
-            performance_df = UAVplots(self, case_id, writer, itersToSim)
-                
-            exporter.add_to_df(performance_df, 'performance')
             
             
             
@@ -677,7 +609,7 @@ class Abstraction(object):
 
 
 class scenarioBasedAbstraction(Abstraction):
-    def __init__(self, setup, model_spec):
+    def __init__(self, args, setup, model_spec):
         '''
         Initialize scenario-based abstraction (ScAb) object
 
@@ -696,6 +628,7 @@ class scenarioBasedAbstraction(Abstraction):
         
         # Copy setup to internal variable
         self.setup = setup
+        self.args  = args
         self.model = model_spec['model']
         self.spec  = model_spec['spec']
         
@@ -770,25 +703,15 @@ class scenarioBasedAbstraction(Abstraction):
         prob = dict()
         printEvery = min(100, max(1, int(self.actions['nr_actions']/10)))
 
-        if self.setup.sampling['gaussian'] is True:
-            # Compute Gaussian noise samples
-            samples = np.random.multivariate_normal(
-                            np.zeros(self.model.n), self.model.noise['w_cov'], 
-                            size=self.setup.sampling['samples'])
-                           
-        else:
-            # Determine non-Gaussian noise samples (relative from 
-            # target point)
-            samples = np.array(
-                random.choices(self.model.noise['samples'], 
-                k=self.setup.sampling['samples']) )
-            
-        
+        # Compute Gaussian noise samples
+        samples = np.random.multivariate_normal(
+                        np.zeros(self.model.n), self.model.noise['w_cov'], 
+                        size=self.args.noise_samples)
         
         # Cluster samples
-        if self.setup.sampling['clustering'] > 0:
+        if self.args.sample_clustering > 0:
             
-            max_radius = float(self.setup.sampling['clustering'])
+            max_radius = float(self.args.sample_clustering)
             
             remaining_samples       = samples
             remaining_samples_i     = np.arange(len(samples))
@@ -826,7 +749,7 @@ class scenarioBasedAbstraction(Abstraction):
             print('--',len(samples),'samples clustered into',
                   len(clusters0['value']),'clusters')
             
-            assert sum(clusters0['value']) == self.setup.sampling['samples']
+            assert sum(clusters0['value']) == self.args.noise_samples
             
         else:
             
@@ -851,54 +774,40 @@ class scenarioBasedAbstraction(Abstraction):
                     
                 prob[a_idx] = dict()
                     
-                if self.flags['underactuated']:
-                    
-                    # Checking which samples cannot be contained in a region
-                    # at the same time is of quadratic complexity in the number
-                    # of samples. Thus, we disable this above a certain limit.
-                    if True:
-                        exclude = []
-                    else:
-                        exclude = exclude_samples(samples, 
-                                          self.spec.partition['width'])
-                    
-                    # Plot one transition plus samples
-                    a_plot = [np.round(self.actions['nr_actions'] / 2 ).astype(int),
-                              self.actions['nr_actions']-1]
-                    
-                    '''
-                    st = self.partition['R']['c_tuple'][2.5, -7.5]
-                    if a_idx in self.actions['enabled'][st]: #[390]: # a_plot:
-                        
-                        transition_plot(samples, act.error, 
-                            (0,1), (), self.setup, self.model, self.spec, self.partition,
-                            np.array([]), backreach=act.backreach,
-                            backreach_inflated=act.backreach_infl)
-                    '''
-                    
-                    prob[a_idx] = computeScenarioBounds_error(self.setup, 
-                          self.spec.partition, self.partition, self.trans, clusters, act.error, exclude, verbose=False)
-                    
-                    # Print normal row in table
-                    if a_idx % printEvery == 0:
-                        nr_transitions = len(prob[a_idx]['successor_idxs'])
-                        tab.print_row([k, a_idx, 
-                           'Probabilities computed (transitions: '+
-                           str(nr_transitions)+')'])
-                
+                # Checking which samples cannot be contained in a region
+                # at the same time is of quadratic complexity in the number
+                # of samples. Thus, we disable this above a certain limit.
+                if True:
+                    exclude = []
                 else:
-                    
-                    prob[a_idx] = computeScenarioBounds_sparse(self.setup, 
-                          self.spec.partition, 
-                          self.partition, self.trans, samples)
+                    exclude = exclude_samples(samples, 
+                                      self.spec.partition['width'])
                 
-                    # Print normal row in table
-                    if a_idx % printEvery == 0:
-                        nr_transitions = len(prob[a_idx]['successor_idxs'])
-                        tab.print_row([k, a_idx, 
-                           'Probabilities computed (transitions: '+
-                           str(nr_transitions)+')'])
-               
+                '''
+                # Plot one transition plus samples
+                a_plot = [np.round(self.actions['nr_actions'] / 2 ).astype(int),
+                          self.actions['nr_actions']-1]
+                
+                st = self.partition['R']['c_tuple'][2.5, -7.5]
+                if a_idx in self.actions['enabled'][st]: #[390]: # a_plot:
+                    
+                    transition_plot(samples, act.error, 
+                        (0,1), (), self.args, self.setup, self.model, 
+                        self.spec, self.partition,
+                        np.array([]), backreach=act.backreach,
+                        backreach_inflated=act.backreach_infl)
+                '''
+                
+                prob[a_idx] = computeScenarioBounds_error(self.args, 
+                      self.spec.partition, self.partition, self.trans, 
+                      clusters, act.error, exclude, verbose=False)
+                
+                # Print normal row in table
+                if a_idx % printEvery == 0:
+                    nr_transitions = len(prob[a_idx]['successor_idxs'])
+                    tab.print_row([k, a_idx, 
+                       'Probabilities computed (transitions: '+
+                       str(nr_transitions)+')'])
                 
         return prob
     
@@ -924,12 +833,12 @@ class scenarioBasedAbstraction(Abstraction):
         print(' -- Loading scenario approach table...')
         
         tableFile = self.setup.directories['base'] + '/input/SaD_probabilityTable_N='+ \
-                        str(self.setup.sampling['samples'])+'_beta='+ \
-                        str(self.setup.sampling['confidence'])+'.csv'
+                        str(self.args.noise_samples)+'_beta='+ \
+                        str(self.args.confidence)+'.csv'
         
         # Load scenario approach table
         self.trans['memory'] = self._loadScenarioTable(tableFile = tableFile,
-                                       k = self.setup.sampling['samples'])
+                                       k = self.args.noise_samples)
         
         # Retreive type of horizon
         k_range = [0]
@@ -969,16 +878,3 @@ def exclude_samples(samples, width):
     exclude = [set(m[0]) for m in mp]
     
     return exclude
-    
-    # exclude = [None for n in range(self.setup.sampling['samples'])]
-    
-    # for n in range(self.setup.sampling['samples']):
-    #     nonzero = np.nonzero(
-    #                 np.any(samples - samples[n] >  width, axis=1) ^
-    #                 np.any(samples - samples[n] < -width, axis=1)
-    #             )[0]
-        
-    #     distance = np.linalg.norm(samples[nonzero] - samples[n], axis=1)
-    #     sort = np.argsort(distance)
-        
-    #     exclude[n] = set(nonzero[sort])

@@ -29,7 +29,7 @@ from .commons import setStateBlock
 
 class oscillator(master.LTI_master):
     
-    def __init__(self):
+    def __init__(self, args):
         '''
         Initialize oscillator model class, which is a 1-dimensional dummy problem,
         modelled as a double integrator.
@@ -50,9 +50,9 @@ class oscillator(master.LTI_master):
         # Discretization step size
         self.tau = 1
         
-        _, spring  = ui.user_choice('Enable spring coefficient in model?',['No', 'Yes'])
-        
-        if spring == 1:
+        if args.osc_spring:
+            print('-- Enable spring coefficient')
+            
             self.spring_min = 0.40
             self.spring_nom = 0.50
             self.spring_max = 0.60
@@ -62,6 +62,8 @@ class oscillator(master.LTI_master):
             self.mass_max = 1.20
             
         else:
+            print('-- Do not enable spring coefficient')
+            
             self.spring_min = 0.00
             self.spring_nom = 0.00
             self.spring_max = 0.00
@@ -70,9 +72,8 @@ class oscillator(master.LTI_master):
             self.mass_nom = 1.00
             self.mass_max = 1.25
 
-        _, parametric  = ui.user_choice('Enable robust approach against parameter uncertainty?',['No', 'Yes'])
-
-        if parametric == 1:
+        if args.osc_par_uncertainty:
+            print('-- Enable parameter uncertainty')
             
             self.A_set = [
                         self.set_A(self.mass_min, self.spring_min),
@@ -87,6 +88,9 @@ class oscillator(master.LTI_master):
                         self.set_B(self.mass_max),
                         self.set_B(self.mass_max)
                         ]
+            
+        else:
+            print('-- Do not enable parameter uncertainty')
                 
         # State transition matrix
         self.A     = self.set_A(self.mass_nom, self.spring_nom)
@@ -137,262 +141,10 @@ class oscillator(master.LTI_master):
         
         return B
         
-class UAV(master.LTI_master):
-    
-    def __init__(self):
-        '''
-        Initialize the UAV model class, which can be 2D or 3D. The 3D case
-        corresponds to the UAV benchmark in the paper.
-
-        Returns
-        -------
-        None.
-
-        '''
-        
-        # Initialize superclass
-        master.LTI_master.__init__(self)
-        
-        # Number of time steps to lump together (can be used to make the model
-        # fully actuated)
-        self.lump = 1
-        
-        # Let the user make a choice for the model dimension
-        self.modelDim, _  = ui.user_choice('model dimension',[1,2])
-        
-        # Discretization step size
-        self.tau = 2.0
-        
-        mass_min = 0.9
-        mass_max = 1.1
-        mass_nom = 1
-        
-        # State transition matrix
-        Ablock = np.array([[1, self.tau],
-                           [-0.1/mass_nom, 1-0.1/mass_nom]])
-        
-        Ablock_set = [
-                     np.array([[1, self.tau],
-                               [-0.1/mass_min, 1-0.1/mass_min]]),
-                     np.array([[1, self.tau],
-                               [-0.1/mass_max, 1-0.1/mass_max]])
-                    ]
-        
-        # Input matrix
-        Bblock = np.array([[self.tau**2/(2*mass_nom)],
-                           [self.tau/mass_nom]])
-        
-        Bblock_set = [
-                    np.array([[self.tau**2/(2*mass_min)], 
-                              [self.tau/mass_min]]),
-                    np.array([[self.tau**2/(2*mass_max)], 
-                              [self.tau/mass_max]]),
-                    ]
-        
-        if self.modelDim==2:
-            self.A  = scipy.linalg.block_diag(Ablock, Ablock)
-            self.B  = scipy.linalg.block_diag(Bblock, Bblock)
-            
-            self.A_set = [scipy.linalg.block_diag(A, A) for A in Ablock_set]
-            self.B_set = [scipy.linalg.block_diag(B, B) for B in Bblock_set]
-        
-            # Disturbance matrix
-            self.Q  = np.array([[0],[0],[0],[0]])
-            
-            # Covariance of the process noise
-            self.noise = dict()
-            self.noise['w_cov'] = np.diag([0.1, 0.01] * 2)
-            
-        elif self.modelDim==1:
-            self.A = Ablock
-            self.B = Bblock
-            
-            self.A_set = Ablock_set
-            self.B_set = Bblock_set
-            
-            # Disturbance matrix
-            self.Q  = np.array([[0],[0]])
-            
-            # Covariance of the process noise
-            self.noise = dict()
-            self.noise['w_cov'] = np.diag([0.1, 0.01]) * 0.001 
-            
-        else:
-            print('No valid dimension for the drone model was provided')
-            sys.exit()
-        
-        # Determine system dimensions
-        self.n = np.size(self.A,1)
-        self.p = np.size(self.B,1)
-           
-    def set_spec(self):
-    
-        if self.modelDim == 1:
-            
-            from core.spec_definitions import oscillator_spec
-            spec = oscillator_spec()
-    
-        elif self.modelDim == 2:
-            
-            from core.spec_definitions import UAV_2D_spec
-            spec = UAV_2D_spec()        
-            
-        elif self.modelDim == 3:
-            
-            # Let the user make a choice for the model dimension
-            self.setup['noiseMultiplier'], _  = ui.user_choice('process noise multiplier',[1,0.1])
-            
-            from core.spec_definitions import UAV_3D_spec
-            spec = UAV_3D_spec(self.setup['noiseMultiplier'])   
-            
-        spec.problem_type = 'reachavoid'
-            
-        return spec
-        
-    def setTurbulenceNoise(self, folder, N):
-        '''
-        Set the turbulence noise samples for N samples
-
-        Parameters
-        ----------
-        N : int
-            Number of samples used.
-
-        Returns
-        -------
-        None.
-
-        '''
-        
-        samples = np.genfromtxt(folder + '/input/TurbulenceNoise_N=1000.csv', 
-                                delimiter=',')
-        
-        self.noise['samples'] = samples
-        
-class building_2room(master.LTI_master):
-    
-    def __init__(self):
-        '''
-        Initialize the 2-zone building automation system (BAS) model class,
-        which corresponds to the BAS benchmark in the paper.
-
-        Returns
-        -------
-        None.
-
-        '''
-        
-        # Initialize superclass
-        master.LTI_master.__init__(self)
-        
-        # Load building automation system (BAS) parameters
-        import core.BAS.parameters as BAS_class
-        self.BAS = BAS_class.parameters()
-        
-        # Number of time steps to lump together (can be used to make the model
-        # fully actuated)
-        self.lump = 1
-        
-        # Discretization step size
-        self.tau = 20 # NOTE: in minutes for BAS!
-
-        BAS = self.BAS
-        
-        # Steady state values
-        Twss        = BAS.Zone1['Twss'] + 5
-        Pout1       = BAS.Radiator['Zone1']['Prad'] * 1.5
-        Pout2       = BAS.Radiator['Zone2']['Prad'] * 1.5
-        
-        w1          = BAS.Radiator['w_r'] * 1.5
-        w2          = BAS.Radiator['w_r'] * 1.5
-        
-        BAS.Zone1['Cz'] = BAS.Zone1['Cz']
-        BAS.Zone1['Rn'] = BAS.Zone1['Rn']
-        
-        BAS.Zone2['Cz'] = BAS.Zone2['Cz']
-        BAS.Zone2['Rn'] = BAS.Zone2['Rn']
-        
-        m1          = BAS.Zone1['m']
-        m2          = BAS.Zone2['m']
-        
-        Rad_k1_z1   = BAS.Radiator['k1'] * 5
-        Rad_k1_z2   = BAS.Radiator['k1'] * 5
-        
-        Rad_k0_z1   = BAS.Radiator['k0']
-        Rad_k0_z2   = BAS.Radiator['k0']
-        
-        alpha1_z1   = BAS.Radiator['alpha1']
-        alpha1_z2   = BAS.Radiator['alpha1']
-        
-        alpha2_z1   = BAS.Radiator['alpha1']
-        alpha2_z2   = BAS.Radiator['alpha1']
-        
-        # Defining Deterministic Model corresponding matrices
-        A_cont      = np.zeros((4,4));
-        
-        # Room 1
-        A_cont[0,0] = ( -(1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']))-((Pout1*alpha2_z1 )/(BAS.Zone1['Cz'])) - ((m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz'])) - (1/(BAS.Zone1['Rn']*BAS.Zone1['Cz'])) )
-        A_cont[0,2] = (Pout1*alpha2_z1 )/(BAS.Zone1['Cz'])
-        
-        # Room 2
-        A_cont[1,1] = ( -(1/(BAS.Zone2['Rn']*BAS.Zone2['Cz']))-((Pout2*alpha2_z2 )/(BAS.Zone2['Cz'])) - ((m2*BAS.Materials['air']['Cpa'])/(BAS.Zone2['Cz'])) - (1/(BAS.Zone2['Rn']*BAS.Zone2['Cz'])) )
-        A_cont[1,3] = (Pout2*alpha2_z2 )/(BAS.Zone2['Cz'])
-        
-        # Heat transfer room 1 <-> room 2
-        A_cont[0,1] = ( (1/(BAS.Zone1['Rn']*BAS.Zone1['Cz'])) )
-        A_cont[1,0] = ( (1/(BAS.Zone2['Rn']*BAS.Zone2['Cz'])) )
-        
-        # Radiator 1
-        A_cont[2,0] = (Rad_k1_z1)
-        A_cont[2,2] = ( -(Rad_k0_z1*w1) - Rad_k1_z1 )
-        
-        # Radiator 2
-        A_cont[3,1] = (Rad_k1_z2)
-        A_cont[3,3] = ( -(Rad_k0_z2*w2) - Rad_k1_z2 )
-
-        B_cont      = np.zeros((4,4))
-        B_cont[0,0] = (m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz'])
-        B_cont[1,1] = (m2*BAS.Materials['air']['Cpa'])/(BAS.Zone2['Cz'])
-        B_cont[2,2] = (Rad_k0_z1*w1) # < Allows to change the boiler temperature
-        B_cont[3,3] = (Rad_k0_z2*w2) # < Allows to change the boiler temperature
-
-        W_cont  = np.array([
-                [ ((Twss)/(BAS.Zone1['Rn']*BAS.Zone1['Cz'])) + (alpha1_z1)/(BAS.Zone1['Cz']) ],
-                [ ((Twss-2)/(BAS.Zone2['Rn']*BAS.Zone2['Cz'])) + (alpha1_z2)/(BAS.Zone1['Cz']) ],
-                [ 0 ],
-                [ 0 ]
-                ])
-        
-        self.A = np.eye(4) + self.tau*A_cont
-        self.B = B_cont*self.tau
-        self.Q = W_cont*self.tau
-        
-        # Determine system dimensions
-        self.n = np.size(self.A,1)
-        self.p = np.size(self.B,1)
-
-        self.noise = dict()
-        self.noise['w_cov'] = 0.05*np.diag([0.2, 0.2, 0.2, 0.2])
-                
-        self.A_cont = A_cont
-        self.B_cont = B_cont
-        self.Q_cont = W_cont
-        
-    def set_spec(self):
-        
-        # Shortcut to boiler temperature        
-        T_boiler = self.BAS.Boiler['Tswbss']
-        
-        from core.spec_definitions import building_2room_spec
-        spec = building_2room_spec(T_boiler)        
-            
-        spec.problem_type = 'reachavoid'
-        
-        return spec
         
 class building_1room(master.LTI_master):
     
-    def __init__(self):
+    def __init__(self, args):
         '''
         Initialize the 1-zone building automation system (BAS) model class.
         Note that this is a downscaled version of the 2-zone model above.
@@ -406,8 +158,7 @@ class building_1room(master.LTI_master):
         # Initialize superclass
         master.LTI_master.__init__(self)
         
-        # Let the user make a choice for the model dimension
-        _, self.scenario  = ui.user_choice('Select the model size to run',['15x25','25x35','35x45','50x70','100x140'])
+        self.args = args
         
         # Number of time steps to lump together (can be used to make the model
         # fully actuated)
@@ -454,40 +205,41 @@ class building_1room(master.LTI_master):
         self.B = B_cont*self.tau
         self.Q = W_cont*self.tau
         
-        # Let the user make a choice for the model dimension
-        _, uncertainty  = ui.user_choice('Do you want to enable uncertainty about the radiator power output?',['No', 'Yes'])
-      
-        if uncertainty == 1:
+        if args.bld_par_uncertainty:
+            print('-- Enable parameter uncertainty')
           
-          f1 = 0.8
-          A0_cont      = np.zeros((2,2));
-          A0_cont[0,0] = -(1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']))-((f1*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])) - ((m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz']))
-          A0_cont[0,1] = (f1*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])
-          A0_cont[1,0] = (k1_a)
-          A0_cont[1,1] = -(k0_a*w) - k1_a
-          
-          f2 = 1.2
-          A1_cont      = np.zeros((2,2));
-          A1_cont[0,0] = -(1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']))-((f2*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])) - ((m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz']))
-          A1_cont[0,1] = (f2*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])
-          A1_cont[1,0] = (k1_a)
-          A1_cont[1,1] = -(k0_a*w) - k1_a
-          
-          self.A_set = [
-              np.eye(2) + self.tau*A0_cont,
-              np.eye(2) + self.tau*A1_cont
-                      ]
-          
-          self.B_set = [
-              self.B,
-              self.B
-              ]
-          
-          infl = (1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']*4)) * self.tau
-          max_temp_diff = 5 
-          
-          self.Q_uncertain = {'min': np.array([-infl * max_temp_diff, 0]),
-                              'max': np.array([infl * max_temp_diff,  0])} 
+            f1 = 0.8
+            A0_cont      = np.zeros((2,2));
+            A0_cont[0,0] = -(1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']))-((f1*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])) - ((m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz']))
+            A0_cont[0,1] = (f1*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])
+            A0_cont[1,0] = (k1_a)
+            A0_cont[1,1] = -(k0_a*w) - k1_a
+            
+            f2 = 1.2
+            A1_cont      = np.zeros((2,2));
+            A1_cont[0,0] = -(1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']))-((f2*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])) - ((m1*BAS.Materials['air']['Cpa'])/(BAS.Zone1['Cz']))
+            A1_cont[0,1] = (f2*Pout1*BAS.Radiator['alpha2'] )/(BAS.Zone1['Cz'])
+            A1_cont[1,0] = (k1_a)
+            A1_cont[1,1] = -(k0_a*w) - k1_a
+            
+            self.A_set = [
+                np.eye(2) + self.tau*A0_cont,
+                np.eye(2) + self.tau*A1_cont
+                        ]
+            
+            self.B_set = [
+                self.B,
+                self.B
+                ]
+            
+            infl = (1/(BAS.Zone1['Rn']*BAS.Zone1['Cz']*4)) * self.tau
+            max_temp_diff = 5 
+            
+            self.Q_uncertain = {'min': np.array([-infl * max_temp_diff, 0]),
+                                'max': np.array([infl * max_temp_diff,  0])} 
+            
+        else:
+            print('-- Do not enabled parameter uncertainty')
             
         # Determine system dimensions
         self.n = np.size(self.A,1)
@@ -499,15 +251,16 @@ class building_1room(master.LTI_master):
     def set_spec(self):
         
         from core.spec_definitions import building_1room_spec
-        spec = building_1room_spec(self.scenario)        
+        spec = building_1room_spec(self.args)        
             
         spec.problem_type = 'avoid'
         
         return spec
 
+
 class shuttle(master.LTI_master):
     
-    def __init__(self):
+    def __init__(self, args):
         '''
         Initialize the spaceshuttle rendezvous model class, adapted from
         a problem in the SReachTools MATLAB toolbox (see 
@@ -562,9 +315,10 @@ class shuttle(master.LTI_master):
         
         return spec
         
+    
 class anaesthesia_delivery(master.LTI_master):
     
-    def __init__(self):
+    def __init__(self, args):
         
         # Initialize superclass
         master.LTI_master.__init__(self)

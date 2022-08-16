@@ -52,7 +52,7 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
         controller = Controller(ScAb.model)
     
     tocDiff(False)
-    if ScAb.setup.main['verbose']:
+    if ScAb.args.verbose:
         print(' -- Starting Monte Carlo simulations...')
     
     mc = {'goal_reached': {}, 'traces': {}, 'action_traces': {}}
@@ -69,7 +69,7 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
         np.zeros(ScAb.partition['nr_regions'])
     
     # Column widths for tabular prints
-    if ScAb.setup.main['verbose']:
+    if ScAb.args.verbose:
         col_width = [6,8,6,6,46]
         tab = table(col_width)
 
@@ -82,12 +82,11 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
         init_state_idxs = ScAb.setup.montecarlo['init_states']
     
     # The gaussian random variables are precomputed to speed up the code
-    if ScAb.setup.sampling['gaussian'] is True:
-        w_array = np.random.multivariate_normal(
-            np.zeros(ScAb.model.n), 
-            ScAb.model.noise['w_cov'],
-           ( len(init_state_idxs), 
-             ScAb.setup.montecarlo['iterations'], ScAb.N ))
+    w_array = np.random.multivariate_normal(
+        np.zeros(ScAb.model.n), 
+        ScAb.model.noise['w_cov'],
+       ( len(init_state_idxs), 
+         ScAb.setup.montecarlo['iterations'], ScAb.N ))
 
     # For each of the monte carlo iterations
     if len(init_state_idxs) > 1:
@@ -109,7 +108,7 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
             continue
         # Otherwise, continue with the Monte Carlo simulation
         
-        if ScAb.setup.main['verbose']:
+        if ScAb.args.verbose:
             tab.print_row(['STATE','ITER','K','STATUS'], 
                           head=True)
         
@@ -120,7 +119,7 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
         mc['action_traces'][i] = dict()
         
         # For each of the monte carlo iterations
-        if ScAb.setup.main['verbose'] or len(init_state_idxs) > 1:
+        if ScAb.args.verbose or len(init_state_idxs) > 1:
             loop = range(ScAb.setup.montecarlo['iterations'])
         else:
             loop = progressbar(
@@ -150,13 +149,13 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
             
             elif action == -1:
                 # If action=-1, no policy known, and reachability is 0
-                if ScAb.setup.main['verbose']:
+                if ScAb.args.verbose:
                     tab.print_row([i, m, k, 
                        'No initial policy known, so abort'], 
                        sort="Warning")
             
             else:
-                if ScAb.setup.main['verbose']:
+                if ScAb.args.verbose:
                     tab.print_row([i, m, k, 
                        'Start Monte Carlo iteration'])
                                     
@@ -182,7 +181,7 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
                 # For each time step in the finite time horizon
                 while k < ScAb.N:
                     
-                    if ScAb.setup.main['verbose']:
+                    if ScAb.args.verbose:
                         tab.print_row([i, m, k, 'New time step'])
                     
                     # Compute all centers of regions associated with points
@@ -203,26 +202,26 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
                         # Then abort the current iteration, as we have achieved the goal
                         mc['goal_reached'][i][m] = True
                         
-                        if ScAb.setup.main['verbose']:
+                        if ScAb.args.verbose:
                             tab.print_row([i, m, k, 'Goal state reached'], sort="Success")
                         break
                     # If current region is in critical states...
                     elif x_region[k] in ScAb.partition['critical']:
                         # Then abort current iteration
-                        if ScAb.setup.main['verbose']:
+                        if ScAb.args.verbose:
                             tab.print_row([i, m, k, 'Critical state reached, so abort'], sort="Warning")
                         break
                     elif x_region[k] == -1:
-                        if ScAb.setup.main['verbose']:
+                        if ScAb.args.verbose:
                             tab.print_row([i, m, k, 'Absorbing state reached, so abort'], sort="Warning")
                         break
                     elif act[k] == -1:
-                        if ScAb.setup.main['verbose']:
+                        if ScAb.args.verbose:
                             tab.print_row([i, m, k, 'No policy known, so abort'], sort="Warning")
                         break
                     
                     # If loop was not aborted, we have a valid action
-                    if ScAb.setup.main['verbose']:
+                    if ScAb.args.verbose:
                         tab.print_row([i, m, k, 'In state: '+str(x_region[k])+' ('+str(x[k])+'), take action: '+str(act[k])])
                 
                     # Move predicted mean to the future belief to the target point of the next state
@@ -248,14 +247,8 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
                         # Implement the control into the physical (unobservable) system
                         x_plus = ScAb.model.A @ x[k] + ScAb.model.B @ u[k] + ScAb.model.Q_flat
                     
-                    if ScAb.setup.sampling['gaussian'] is True:
-                        # Use Gaussian process noise
-                        x[k+1] = x_plus + w_array[i_abs, m, k]
-                    else:
-                        # Use generated samples                                    
-                        disturbance = random.choice(ScAb.model.noise['samples'])
-                        
-                        x[k+1] = x_plus + disturbance
+                    # Use Gaussian process noise
+                    x[k+1] = x_plus + w_array[i_abs, m, k]
                         
                     # Add current state to trace
                     mc['traces'][i][m] += [x[k+1]]

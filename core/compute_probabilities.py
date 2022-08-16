@@ -24,123 +24,7 @@ from .commons import floor_decimal
 from .postprocessing.createPlots import draw_hull
 from .define_partition import computeRegionCenters, computeRegionIdx
 
-def computeScenarioBounds_sparse(setup, partition_setup, partition, trans, samples):
-    '''
-    Compute the transition probability intervals
-
-    Parameters
-    ----------
-    setup : dict
-        Setup dictionary.
-    partition_setup : dict
-        Dictionary of the partition.
-    partition : dict
-        Dictionay containing all information of the partitioning.
-    trans : dict
-        Dictionary with all data for the transition probabilities
-    samples : 2D Numpy array
-        Numpy array, with every row being a sample of the process noise.
-
-    Returns
-    -------
-    returnDict : dict
-        Dictionary with the computed (intervals of) transition probabilities.
-
-    '''
-    
-    # Number of decision variables always equal to one
-    d = 1
-    Nsamples = setup.sampling['samples']
-    beta = setup.sampling['confidence']
-    
-    # Initialize counts array
-    counts = dict()
-    
-    centers = computeRegionCenters(samples, partition_setup)
-    
-    for s in range(Nsamples):
-        
-        key = tuple(centers[s])
-        
-        if key in partition['R']['c_tuple']:
-            idx = partition['R']['c_tuple'][ key ]
-            if idx in counts:
-                counts[idx] += 1
-            else:
-                counts[idx] = 1
-    
-    # Count number of samples not in any region (i.e. in absorbing state)
-    k = int( Nsamples - sum(counts.values()) )
-    
-    deadlock_low = 1 - trans['memory'][k][1]
-    if k > Nsamples:
-        deadlock_upp = 1
-    else:
-        deadlock_upp = 1 - trans['memory'][k][0]
-
-    # Initialize vectors for probability bounds
-    probability_low = np.zeros(len(counts))
-    probability_upp = np.zeros(len(counts))
-    probability_approx = np.zeros(len(counts))
-    
-    successor_idxs = np.zeros(len(counts), dtype=int)
-
-    # Enumerate over all the non-zero bins
-    for i, (region,count) in enumerate(counts.items()):
-        
-        k = Nsamples - count
-        
-        if k > Nsamples:
-            probability_low[i] = 0                
-        else:
-            probability_low[i] = trans['memory'][k][0]
-        probability_upp[i] = trans['memory'][k][1]
-        
-        successor_idxs[i] = int(region)
-        
-        # Point estimate transition probability (count / total)
-        probability_approx[i] = count / Nsamples
-    
-    nr_decimals = 5
-    
-    #### PROBABILITY INTERVALS
-    probs_lb = floor_decimal(probability_low, nr_decimals)
-    probs_ub = floor_decimal(probability_upp, nr_decimals)
-    
-    # Create interval strings (only entries for prob > 0)
-    interval_strings = ["["+
-                      str(floor_decimal(max(1e-4, lb),5))+","+
-                      str(floor_decimal(min(1,    ub),5))+"]"
-                      for (lb, ub) in zip(probs_lb, probs_ub)]
-    
-    # Compute deadlock probability intervals
-    deadlock_lb = floor_decimal(deadlock_low, nr_decimals)
-    deadlock_ub = floor_decimal(deadlock_upp, nr_decimals)
-    
-    deadlock_string = '['+ \
-                       str(floor_decimal(max(1e-4, deadlock_lb),5))+','+ \
-                       str(floor_decimal(min(1,    deadlock_ub),5))+']'
-    
-    #### POINT ESTIMATE PROBABILITIES
-    probability_approx = np.round(probability_approx, nr_decimals)
-    
-    # Create approximate prob. strings (only entries for prob > 0)
-    approx_strings = [str(p) for p in probability_approx]
-    
-    # Compute approximate deadlock transition probabilities
-    deadlock_approx = np.round(1-sum(probability_approx), nr_decimals)
-    
-    returnDict = {
-        'interval_strings': interval_strings,
-        'successor_idxs': successor_idxs,
-        'approx_strings': approx_strings,
-        'deadlock_interval_string': deadlock_string,
-        'deadlock_approx': deadlock_approx,
-    }
-    
-    return returnDict
-
-def computeScenarioBounds_error(setup, partition_setup, partition, trans, clusters, error, exclude=False, verbose=False):
+def computeScenarioBounds_error(args, partition_setup, partition, trans, clusters, error, exclude=False, verbose=False):
     '''
     Compute the transition probability intervals
 
@@ -170,7 +54,7 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, cluste
     else:
         check_exclude = False
     
-    Nsamples = setup.sampling['samples']
+    Nsamples = args.noise_samples
     
     # Initialize counts array
     counts_low = np.zeros(partition_setup['number'])
@@ -185,7 +69,7 @@ def computeScenarioBounds_error(setup, partition_setup, partition, trans, cluste
                                   borderOutside=[True]*len(clusters['value']))
     
     epsilon = np.sqrt( 1/(2*Nsamples) * np.log(
-                2/setup.sampling['confidence']) )
+                2/args.confidence) )
     
     counts_absorb_low = 0
     counts_absorb_upp = 0
@@ -373,7 +257,7 @@ import matplotlib.pyplot as plt # Import Pyplot to generate plots
 import matplotlib.patches as patches
 from .commons import cm2inch
 
-def transition_plot(samples, error, i_show, i_hide, setup, model, spec, partition, 
+def transition_plot(samples, error, i_show, i_hide, args, setup, model, spec, partition, 
                     cut_value, backreach=False, backreach_inflated=False,
                     stateLabels=False):
     '''
@@ -419,7 +303,7 @@ def transition_plot(samples, error, i_show, i_hide, setup, model, spec, partitio
     ax.set_xlim(min_xy[is1], max_xy[is1])
     ax.set_ylim(min_xy[is2], max_xy[is2])
     
-    ax.set_title("N = "+str(setup.sampling['samples']),fontsize=10)
+    ax.set_title("N = "+str(args.noise_samples),fontsize=10)
     
     # Draw goal states
     for goal in partition['goal']:

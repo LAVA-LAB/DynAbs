@@ -18,17 +18,26 @@ Contact e-mail address:     thom.badings@ru.nl>
 ______________________________________________________________________________
 """
 
+import sys
 import numpy as np
 from core import model_definitions
 from core.preprocessing.user_interface import user_choice
 from inspect import getmembers, isclass # To get list of all available models
 
-def set_model_class():
+def set_model_class(input_model_name):
 
     # Retreive a list of all available models
     modelClasses = np.array(getmembers(model_definitions, isclass))
-    application, application_id  = user_choice('application',
-                                               list(modelClasses[:,0]))
-    model = modelClasses[application_id, 1]()
+    names   = modelClasses[:,0]
+    methods = modelClasses[:,1]
     
-    return model
+    # Check if the input model name is also present in the list
+    if sum(names == input_model_name) > 0:
+        
+        # Get method corresponding to this model
+        method = methods[names == input_model_name][0]
+        
+    else:
+        sys.exit("There does not exist a model with name `"+str(input_model_name)+"`.")
+    
+    return method

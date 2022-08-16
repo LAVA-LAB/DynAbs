@@ -25,7 +25,6 @@ import seaborn as sns           # Import Seaborn to plot heat maps
 from datetime import datetime   # Import Datetime to retreive current date/time
 import math                     # Import Math for mathematical operations
 
-from core.preprocessing.user_interface import user_choice
 from core.commons import createDirectory
 
 def loadOptions(file, setup):
@@ -163,26 +162,12 @@ class settings(object):
         plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
         plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
         
-        # Default scenario approach settings
-        sampling = dict()
-        gaussian = dict()
-        
-        # sampling['samples']    = 25 # Sample complexity used in scenario approach
-        # sampling['confidence'] = 1e-1 # Confidence level (beta)
-        sampling['gaussian']   = True # Use Gaussian noise if true
-        
         # Default MDP and prism settings
         mdp = dict()
         mdp['filename'] = 'Abstraction'
-        mdp['mode'] = ['estimate','interval'][1]
-        mdp['prism_java_memory'] = 1 # PRISM java memory allocation in GB
-        mdp['prism_model_writer'] = ['default','explicit'][1]
-        mdp['prism_folder'] = "/Users/..."
         
         # Default time/date settings
-        timing = dict()
-        # Retreive datetime string
-        timing['datetime'] = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
+        timing = {'datetime': datetime.now().strftime("%m-%d-%Y_%H-%M-%S")}
         
         # Default folder/directory settings
         # Retreive working folder
@@ -193,10 +178,7 @@ class settings(object):
         # Default plotting settings
         plot = dict()
         # TRUE/FALSE setup whether plots should be generated
-        plot['partitionPlot']           = False
         plot['3D_UAV']                  = False
-        plot['partitionPlot_plotHull']  = True
-        plot['probabilityPlots']        = True
         plot['exportFormats']           = ['pdf','png']
         
         # Default Monte Carelo settings
@@ -204,47 +186,16 @@ class settings(object):
         mc = dict()
         mc['init_states']           = False
         
-        # Main settings
-        main = dict()
-        main['verbose']             = True
-        main['iterations']          = 1
-        
         self.mdp = mdp
         self.plotting = plot
         self.montecarlo = mc
-        self.gaussian = gaussian
-        self.sampling = sampling
+        self.sampling = {}
         self.time = timing
         self.directories = directories
-        self.main = main
         
         self.cvx = {'solver': 'ECOS'}
         
         loadOptions(base_dir+'/options.txt', self)
-
-    def set_monte_carlo(self, iterations=None):
-        
-        if iterations is None:
-        
-            # If TRUE monte carlo simulations are performed
-            self.montecarlo['enabled'], _ = user_choice( \
-                                            'Monte Carlo simulations', [True, False])
-            if self.montecarlo['enabled']:
-                self.montecarlo['iterations'], _ = user_choice( \
-                                            'Monte Carlo iterations', 'integer')
-            else:
-                self.montecarlo['iterations'] = 0
-                
-        else:
-            self.montecarlo['enabled']=True
-            self.montecarlo['iterations']=int(iterations)
-            
-    def set_new_abstraction(self):
-        
-        _, choice = user_choice( \
-            'Start a new abstraction or load existing PRISM results?', 
-            ['New abstraction', 'Load existing results'])
-        self.main['newRun'] = not choice
 
     def set_output_directories(self, N, case_id):
         

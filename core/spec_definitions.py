@@ -118,7 +118,7 @@ class building_2room_spec(master.spec_master):
         
 class building_1room_spec(master.spec_master):
     
-    def __init__(self, scenario):
+    def __init__(self, args):
 
         # Initialize superclass
         master.spec_master.__init__(self)        
@@ -132,41 +132,47 @@ class building_1room_spec(master.spec_master):
         
         self.partition['boundary']  = np.array([[18.5, 23.5], [39, 46]])
         
-        # Partition size
-        if scenario == 0:
-            self.partition['number']  = [15, 25]
+        self.partition['number'] = list(args.bld_partition)
+        self.error['max_control_error'] = {'default': np.array(args.bld_control_error)}
+        
+        print('-- Partition:', args.bld_partition)
+        print('-- Size of target size:', args.bld_control_error)
+        
+        # # Partition size
+        # if scenario == 0:
+        #     self.partition['number']  = [15, 25]
             
-            self.error['max_control_error'] = {
-                'default': np.array([[-.2, .2], [-.5, .5]]),
-                }
+        #     self.error['max_control_error'] = {
+        #         'default': np.array([[-.2, .2], [-.5, .5]]),
+        #         }
             
-        elif scenario == 1:
-            self.partition['number']  = [25, 35]
+        # elif scenario == 1:
+        #     self.partition['number']  = [25, 35]
             
-            self.error['max_control_error'] = {
-                'default': np.array([[-.1, .1], [-.3, .3]]),
-                }
+        #     self.error['max_control_error'] = {
+        #         'default': np.array([[-.1, .1], [-.3, .3]]),
+        #         }
            
-        elif scenario == 2:
-            self.partition['number']  = [35, 45]
+        # elif scenario == 2:
+        #     self.partition['number']  = [35, 45]
             
-            self.error['max_control_error'] = {
-                'default': np.array([[-.1, .1], [-.3, .3]]),
-                }
+        #     self.error['max_control_error'] = {
+        #         'default': np.array([[-.1, .1], [-.3, .3]]),
+        #         }
             
-        elif scenario == 3:
-            self.partition['number']  = [50, 70]
+        # elif scenario == 3:
+        #     self.partition['number']  = [50, 70]
             
-            self.error['max_control_error'] = {
-                'default': np.array([[-.05, .05], [-.15, .15]]),
-                }
+        #     self.error['max_control_error'] = {
+        #         'default': np.array([[-.05, .05], [-.15, .15]]),
+        #         }
             
-        elif scenario == 4:
-            self.partition['number']  = [100, 140]
+        # elif scenario == 4:
+        #     self.partition['number']  = [70, 100]
             
-            self.error['max_control_error'] = {
-                'default': np.array([[-.03, .03], [-.1, .1]]),
-                }
+        #     self.error['max_control_error'] = {
+        #         'default': np.array([[-.05, .05], [-.15, .15]]),
+        #         }
             
         width = (self.partition['boundary'][:,1] - self.partition['boundary'][:,0]) / self.partition['number']
         

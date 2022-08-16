@@ -51,12 +51,6 @@ def define_model(setup, model_raw, spec):
     
     lump = model_raw.lump
     
-    # Create noise samples (for 3D UAV benchmark)
-    if model_raw.name in ['UAV'] and model_raw.modelDim == 3:
-        setup.setOptions(category='sampling', gaussian=False)
-        model_raw.setTurbulenceNoise(setup.directories['base'],
-                                 setup.sampling['samples'])
-    
     if lump == 0:
         model = makeModelFullyActuated(model_raw, 
                    manualDimension = 'auto', observer=False)
@@ -72,19 +66,6 @@ def define_model(setup, model_raw, spec):
     
     # Retreive system dimensions
     model.p      = np.size(model.B,1)   # Nr of inputs
-    
-    # If noise samples are used, recompute them
-    if setup.sampling['gaussian'] is False:
-        
-        f = model_raw.setup['noiseMultiplier']
-        
-        model.noise['samples'] = f * np.vstack(
-            (2*model.noise['samples'][:,0],
-             0.2*model.noise['samples'][:,0],
-             2*model.noise['samples'][:,1],
-             0.2*model.noise['samples'][:,1],
-             2*model.noise['samples'][:,2],
-             0.2*model.noise['samples'][:,2])).T
     
     uAvg = (model.uMin + model.uMax) / 2
     

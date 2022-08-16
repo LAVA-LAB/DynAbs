@@ -94,7 +94,7 @@ def oscillator_heatmap(ScAb, title = 'auto'):
     ax.set_xlabel('Var 1', fontsize=15)
     ax.set_ylabel('Var 2', fontsize=15)
     if title == 'auto':
-        ax.set_title("N = "+str(ScAb.setup.sampling['samples']), fontsize=20)
+        ax.set_title("N = "+str(ScAb.args.noise_samples), fontsize=20)
     else:
         ax.set_title(str(title), fontsize=20)
     
@@ -103,7 +103,7 @@ def oscillator_heatmap(ScAb, title = 'auto'):
 
     # Save figure
     filename = ScAb.setup.directories['outputFcase']+'safeset_N=' + \
-                str(ScAb.setup.sampling['samples'])
+                str(ScAb.args.noise_samples)
     for form in ScAb.setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
@@ -175,7 +175,7 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
     ax.set_ylim(min_xy[1] - width[1], max_xy[1] + width[1])
     
     if title == 'auto':
-        ax.set_title("N = "+str(ScAb.setup.sampling['samples']),fontsize=10)
+        ax.set_title("N = "+str(ScAb.args.noise_samples),fontsize=10)
     else:
         ax.set_title(str(title),fontsize=10)
     
