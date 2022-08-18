@@ -195,7 +195,7 @@ class anaesthesia_delivery_spec(master.spec_master):
             np.array([[4, 6], [0, 10], [0, 10]])
             ]
         
-        self.goal = None
+        # self.goal = None
         self.critical = None
         
         self.error['max_control_error'] = {
