@@ -2,26 +2,19 @@
 # -*- coding: utf-8 -*-
 
 """
- ______________________________________
-|                                      |
-|  SCENARIO-BASED ABSTRACTION PROGRAM  |
-|______________________________________|
 
 Implementation of the method proposed in the paper:
+ "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
+  Dynamical Models with Epistemic Uncertainty"
 
-  Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & 
-  Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous 
-  Systems with Non-Gaussian Noise. AAAI 2022.
-
-Originally coded by:        Thom S. Badings
-Contact e-mail address:     thom.badings@ru.nl>
+Originally coded by:        <anonymized>
+Contact e-mail address:     <anonymized>
 ______________________________________________________________________________
 """
 
 import sys
 import numpy as np
 from core import model_definitions
-from core.preprocessing.user_interface import user_choice
 from inspect import getmembers, isclass # To get list of all available models
 
 def set_model_class(input_model_name):

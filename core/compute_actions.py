@@ -1,142 +1,26 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Feb 21 15:30:09 2022
-
-@author: Thom Badings
-"""
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
- ______________________________________
-|                                      |
-|  SCENARIO-BASED ABSTRACTION PROGRAM  |
-|______________________________________|
 
 Implementation of the method proposed in the paper:
+ "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
+  Dynamical Models with Epistemic Uncertainty"
 
-  Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & 
-  Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous 
-  Systems with Non-Gaussian Noise. AAAI 2022.
-
-Originally coded by:        Thom S. Badings
-Contact e-mail address:     thom.badings@ru.nl>
+Originally coded by:        <anonymized>
+Contact e-mail address:     <anonymized>
 ______________________________________________________________________________
 """
 
 import numpy as np
 from progressbar import progressbar # Import to create progress bars
-import itertools                # Import to crate iterators
-from scipy.spatial import Delaunay # Import to create convex hulls
+import itertools                    # Import to create iterators
 from copy import deepcopy
-
 import cvxpy as cp
 
 from .define_partition import computeRegionIdx
-from .commons import in_hull, overapprox_box, tocDiff
+from .commons import overapprox_box, tocDiff
 from .cvx_opt import LP_vertices_contained
-
-def defInvArea(model):
-    '''
-    Compute the predecessor set (without the shift due to the target
-    point). This acccounts to computing, for all u_k, the set
-    A^-1 (B u_k - q_k)
-
-    Parameters
-    ----------
-    model : dict
-
-    Returns
-    -------
-    x_inv_area : 2D Numpy array
-        Predecessor set (every row is a vertex).
-
-    '''
-    
-    # Determine the set of extremal control inputs
-    u = [[model.uMin[i], model.uMax[i]] for i in 
-          range(model.p)]
-    
-    # Determine the inverse image of the extreme control inputs
-    x_inv_area = np.zeros((2**model.p, model.n))
-    for i,elem in enumerate(itertools.product(*u)):
-        list_elem = list(elem)
-        
-        # Calculate inverse image of the current extreme control input
-        x_inv_area[i,:] = model.A_inv @ \
-            (model.B @ np.array(list_elem).T + 
-             model.Q_flat)  
-
-    return x_inv_area
-
-
-def defInvHull(x_inv_area):
-    '''
-    Define the convex hull object of the predecessor set        
-
-    Parameters
-    ----------
-    x_inv_area : 2D Numpy array
-        Predecessor set (every row is a vertex).
-
-    Returns
-    -------
-    x_inv_hull : hull
-        Convex hull object.
-
-    '''
-    
-    x_inv_hull = Delaunay(x_inv_area, qhull_options='QJ')
-    
-    return x_inv_hull
-
-
-def defBasisVectors(model, verbose=False):
-    '''
-    Compute the basis vectors of the predecessor set, computed from the
-    average control inputs to the maximum in every dimension of the
-    control space.
-    Note that the drift does not play a role here.  
-
-    Parameters
-    ----------
-    model : dict
-
-    Returns
-    -------
-    basis_vectors : 2D Numpy array
-        Numpy array of basis vectors (every row is a vector).
-
-    '''
-    
-    u_avg = np.array(model.uMax + model.uMin)/2    
-
-    # Compute basis vectors (with average of all controls as origin)
-    u = np.tile(u_avg, (model.n,1)) + np.diag(model.uMax - u_avg)
-    
-    origin = model.A_inv @ (model.B @ np.array(u_avg).T)   
-            
-    basis_vectors = np.zeros((model.n, model.n))
-    
-    for i,elem in enumerate(u):
-        
-        # Calculate inverse image of the current extreme control input
-        point = model.A_inv @ (model.B @ elem.T)    
-        
-        basis_vectors[i,:] = point - origin
-    
-        if verbose:
-            print(' ---- Length of basis',i,':',
-              np.linalg.norm(basis_vectors[i,:]))
-    
-    return basis_vectors
-
-
-def f7(seq):
-    seen = set()
-    seen_add = seen.add
-    return [int(x) for x in seq if not (x in seen or seen_add(x))]
 
 
 def def_backward_reach(model):
@@ -172,6 +56,7 @@ def def_backward_reach(model):
     return backreach
 
 
+
 def partial_model(flags, model, spec, dim_n, dim_p):
     
     #TODO: improve this function.
@@ -200,6 +85,7 @@ def partial_model(flags, model, spec, dim_n, dim_p):
     model.uMax = model.uMax[dim_p]
 
     return model, spec
+
 
 
 def rotate_BRS(vector):
@@ -234,6 +120,8 @@ def rotate_BRS(vector):
     
     return matrix
 
+
+
 def rotate_2D_vector(vector):
     '''
     Compute the rotation matrix to rotate a vector back to x-axis aligned
@@ -265,6 +153,7 @@ def rotate_2D_vector(vector):
     return matrix
 
 
+
 def project_to_line(BRS, points):
     '''
     Project given points to the line spanned by a 2-point backward reach set
@@ -292,6 +181,7 @@ def project_to_line(BRS, points):
     return proj_points
 
 
+
 def find_backward_inflated(A_hat, error, alpha, G):
 
     x = cp.Variable(len(A_hat))
@@ -306,6 +196,7 @@ def find_backward_inflated(A_hat, error, alpha, G):
     prob.solve(solver='ECOS')
     
     return prob, x.value, y.value
+
 
 
 class epistemic_error(object):
@@ -361,33 +252,10 @@ class epistemic_error(object):
         return e_error.min(axis=0), e_error.max(axis=0)
 
 
-def compute_epistemic_error(model, vertices):
-
-    # Compute matrix of all possible control inputs
-    control_mat = [[model.uMin[i], model.uMax[i]] for i in 
-          range(model.p)]
-    
-    e_error_neg = np.zeros((len(model.A_set) * 2**model.p, model.n))
-    e_error_pos = np.zeros((len(model.A_set) * 2**model.p, model.n))
-    
-    i = 0
-
-    # Compute epistemic error
-    for A_vertex, B_vertex in zip(model.A_set, model.B_set):
-        for u in itertools.product(*control_mat):
-        
-            e_error = ((A_vertex - model.A) @ vertices.T).T + (B_vertex - model.B) @ u
-            
-            e_error_neg[i] = e_error.min(axis=0)
-            e_error_pos[i] = e_error.max(axis=0)
-            i += 1
-        
-    return e_error_neg.min(axis=0), e_error_pos.max(axis=0)
-
 
 def enabledActionsImprecise(setup, flags, partition, actions, model, spec, 
                             dim_n=False, dim_p=False, verbose=False,
-                            print_every=100):
+                            print_every=39):
     
     # Compute the backward reachable set (not accounting for target point yet)    
     if dim_n is False or dim_p is False or len(dim_n) == model.n:
@@ -537,6 +405,6 @@ def enabledActionsImprecise(setup, flags, partition, actions, model, spec,
             
         if i % print_every == 0:
             print('Action to',act.center,'enabled in',len(s_min_list),'states') 
-            #':',[partition['R']['center'][s_min_list]])
+            print(partition['R']['center'][s_min_list])
             
     return enabled, enabled_inv, error

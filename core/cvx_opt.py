@@ -1,8 +1,15 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Feb 10 19:29:47 2022
 
-@author: Thom Badings
+"""
+
+Implementation of the method proposed in the paper:
+ "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
+  Dynamical Models with Epistemic Uncertainty"
+
+Originally coded by:        <anonymized>
+Contact e-mail address:     <anonymized>
+______________________________________________________________________________
 """
 
 import cvxpy as cp
@@ -52,6 +59,8 @@ class Controller(object):
             return False, None, None
         else: 
             return True, self.x_plus.value, self.u.value
+        
+        
         
 class LP_vertices_contained(object):
     

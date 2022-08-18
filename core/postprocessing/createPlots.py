@@ -2,19 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
- ______________________________________
-|                                      |
-|  SCENARIO-BASED ABSTRACTION PROGRAM  |
-|______________________________________|
 
 Implementation of the method proposed in the paper:
+ "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
+  Dynamical Models with Epistemic Uncertainty"
 
-  Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & 
-  Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous 
-  Systems with Non-Gaussian Noise. AAAI 2022.
-
-Originally coded by:        Thom S. Badings
-Contact e-mail address:     thom.badings@ru.nl>
+Originally coded by:        <anonymized>
+Contact e-mail address:     <anonymized>
 ______________________________________________________________________________
 """
 
@@ -29,7 +23,6 @@ from matplotlib.patches import Rectangle
 import matplotlib.patches as patches
 
 from ..commons import printWarning, mat_to_vec, cm2inch
-from core.monte_carlo import monte_carlo
 
 def draw_hull(points, color, linewidth=0.1):
 
@@ -422,7 +415,7 @@ def reachabilityHeatMap(ScAb, montecarlo = False, title = 'auto'):
     fig.tight_layout()
 
     # Save figure
-    filename = ScAb.setup.directories['outputFcase']+'safeset_N=' + \
+    filename = ScAb.setup.directories['outputFcase']+'2D_Heatmap_N=' + \
                 str(ScAb.args.noise_samples)
     for form in ScAb.setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')

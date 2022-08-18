@@ -2,19 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
- ______________________________________
-|                                      |
-|  SCENARIO-BASED ABSTRACTION PROGRAM  |
-|______________________________________|
 
 Implementation of the method proposed in the paper:
+ "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
+  Dynamical Models with Epistemic Uncertainty"
 
-  Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & 
-  Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous 
-  Systems with Non-Gaussian Noise. AAAI 2022.
-
-Originally coded by:        Thom S. Badings
-Contact e-mail address:     thom.badings@ru.nl>
+Originally coded by:        <anonymized>
+Contact e-mail address:     <anonymized>
 ______________________________________________________________________________
 """
 
@@ -23,12 +17,10 @@ import pandas as pd             # Import Pandas to store data in frames
 import matplotlib.pyplot as plt # Import Pyplot to generate plots
 
 # Load main classes and methods
-from matplotlib import cm
-from scipy.spatial import ConvexHull
 from matplotlib.patches import Rectangle
 import matplotlib.patches as patches
 
-from ..commons import printWarning, mat_to_vec, cm2inch
+from ..commons import printWarning, cm2inch
 from core.monte_carlo import monte_carlo
 
 def oscillator_heatmap(ScAb, title = 'auto'):

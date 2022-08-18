@@ -2,19 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
- ______________________________________
-|                                      |
-|  SCENARIO-BASED ABSTRACTION PROGRAM  |
-|______________________________________|
 
 Implementation of the method proposed in the paper:
+ "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
+  Dynamical Models with Epistemic Uncertainty"
 
-  Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & 
-  Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous 
-  Systems with Non-Gaussian Noise. AAAI 2022.
-
-Originally coded by:        Thom S. Badings
-Contact e-mail address:     thom.badings@ru.nl>
+Originally coded by:        <anonymized>
+Contact e-mail address:     <anonymized>
 ______________________________________________________________________________
 """
 
@@ -23,7 +17,6 @@ import itertools                # Import to crate iterators
 import csv                      # Import to create/load CSV files
 import sys                      # Allows to terminate the code at some point
 import os                       # Import OS to allow creationg of folders
-import random                   # Import to use random variables
 import pandas as pd             # Import Pandas to store data in frames
 import subprocess
 
@@ -136,8 +129,10 @@ class Abstraction(object):
         
         # Determine origin of partition
         self.spec.partition['number'] = np.array(self.spec.partition['number'])
-        self.spec.partition['width'] = np.array([-1,1]) @ self.spec.partition['boundary'].T / self.spec.partition['number']
-        self.spec.partition['origin'] = 0.5 * np.ones(2) @ self.spec.partition['boundary'].T
+        self.spec.partition['width'] = np.array([-1,1]) @ \
+            self.spec.partition['boundary'].T / self.spec.partition['number']
+        self.spec.partition['origin'] = 0.5 * np.ones(2) @ \
+            self.spec.partition['boundary'].T
         
         self.partition['R'] = definePartitions(self.model.n,
                             self.spec.partition['number'],
@@ -148,18 +143,20 @@ class Abstraction(object):
         self.partition['nr_regions'] = len(self.partition['R']['center'])
         
         # Determine goal regions
-        self.partition['goal'], self.partition['goal_slices'], self.partition['goal_idx'] = define_spec_region(
-            allCenters = self.partition['R']['c_tuple'], 
-            sets = self.spec.goal,
-            partition = self.spec.partition,
-            borderOutside = True)
+        self.partition['goal'], self.partition['goal_slices'], \
+            self.partition['goal_idx'] = define_spec_region(
+                allCenters = self.partition['R']['c_tuple'], 
+                sets = self.spec.goal,
+                partition = self.spec.partition,
+                borderOutside = True)
         
         # Determine critical regions
-        self.partition['critical'], self.partition['critical_slices'], self.partition['critical_idx'] = define_spec_region(
-            allCenters = self.partition['R']['c_tuple'], 
-            sets = self.spec.critical,
-            partition = self.spec.partition,
-            borderOutside = True)
+        self.partition['critical'], self.partition['critical_slices'], \
+            self.partition['critical_idx'] = define_spec_region(
+                allCenters = self.partition['R']['c_tuple'], 
+                sets = self.spec.critical,
+                partition = self.spec.partition,
+                borderOutside = True)
         
         print(' -- Number of regions:',self.partition['nr_regions'])
         print(' -- Number of goal regions:',len(self.partition['goal']))
@@ -201,10 +198,6 @@ class Abstraction(object):
         if type(self.spec.targets['number']) == str:
             # Set default target points to the center of every region
             
-            # self.spec.targets['number'] = self.spec.partition['number']
-            # self.spec.targets['width'] = self.spec.partition['width']
-            # self.spec.targets['origin'] = self.spec.partition['origin']
-            
             for center, (tup,idx) in zip(self.partition['R']['center'],
                                         self.partition['R']['idx'].items()):
                 
@@ -212,10 +205,7 @@ class Abstraction(object):
                                                   backreach_obj)
                 self.actions['tup2idx'][tup] = idx
             
-        else:
-            # self.spec.targets['number'] = np.array(self.spec.targets['number'])
-            # self.spec.targets['width'] = np.array([-1,1]) @ self.spec.targets['boundary'].T / self.spec.targets['number']
-            # self.spec.targets['origin'] = 0.5 * np.ones(2) @ self.spec.targets['boundary'].T
+        else:  
             
             print(' -- Compute manual target points; no. per dim:',self.spec.targets['number'])
         
@@ -465,8 +455,8 @@ class Abstraction(object):
         # Create PRISM file (explicit way)
         model_size, self.mdp.prism_file, self.mdp.spec_file, \
         self.mdp.specification = \
-            self.mdp.writePRISM_explicit(self.actions, self.partition, self.trans, problem_type, 
-                                         self.args.mdp_mode)   
+            self.mdp.writePRISM_explicit(self.actions, self.partition, 
+                                 self.trans, problem_type, self.args.mdp_mode)   
 
         self.time['4_MDPcreated'] = tocDiff(False)
         print('MDP created - time:',self.time['4_MDPcreated'])
@@ -485,7 +475,7 @@ class Abstraction(object):
 
         '''
 
-        prism_folder = self.setup.mdp['prism_folder'] 
+        prism_folder = self.args.prism_folder
         
         print('\n+++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
         
@@ -555,7 +545,7 @@ class Abstraction(object):
         self.results['optimal_reward'] = rewards_k0.flatten()
         
         # Convert avoid probability to the safety probability
-        if self.spec.problem_type:
+        if self.spec.problem_type == 'avoid':
             self.results['optimal_reward'] = 1 - self.results['optimal_reward']
         
         for i,row in enumerate(policy_all):    
@@ -782,21 +772,6 @@ class scenarioBasedAbstraction(Abstraction):
                 else:
                     exclude = exclude_samples(samples, 
                                       self.spec.partition['width'])
-                
-                '''
-                # Plot one transition plus samples
-                a_plot = [np.round(self.actions['nr_actions'] / 2 ).astype(int),
-                          self.actions['nr_actions']-1]
-                
-                st = self.partition['R']['c_tuple'][2.5, -7.5]
-                if a_idx in self.actions['enabled'][st]: #[390]: # a_plot:
-                    
-                    transition_plot(samples, act.error, 
-                        (0,1), (), self.args, self.setup, self.model, 
-                        self.spec, self.partition,
-                        np.array([]), backreach=act.backreach,
-                        backreach_inflated=act.backreach_infl)
-                '''
                 
                 prob[a_idx] = computeScenarioBounds_error(self.args, 
                       self.spec.partition, self.partition, self.trans, 

@@ -1,8 +1,15 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Apr  4 07:29:04 2022
 
-@author: Thom Badings
+"""
+
+Implementation of the method proposed in the paper:
+ "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
+  Dynamical Models with Epistemic Uncertainty"
+
+Originally coded by:        <anonymized>
+Contact e-mail address:     <anonymized>
+______________________________________________________________________________
 """
 
 import numpy as np
@@ -44,77 +51,7 @@ class oscillator_spec(master.spec_master):
             }
         self.error['max_action_distance'] = np.array([80,80])
         
-class UAV_2D_spec(master.spec_master):
-    
-    def __init__(self):
         
-        # Initialize superclass
-        master.spec_master.__init__(self)   
-        
-        self.end_time = 32
-        
-        # Authority limit for the control u, both positive and negative
-        self.control['uMin'] = [-4, -4]
-        self.control['uMax'] = [4, 4]        
-        
-        # Partition size
-        self.partition['boundary']  = np.array([[-11, 11], 
-                                                [-6, 6], 
-                                                [-11, 11], 
-                                                [-6, 6]])
-        self.partition['number']    = [11, 9, 11, 9]
-        
-        self.targets['boundary']    = np.array([[-9, 9], 
-                                                [-6+8/3, 6-8/3], 
-                                                [-9, 9], 
-                                                [-6+8/3, 6-8/3]])
-        self.targets['number']      = [9, 5, 9, 5]
-        
-        # Specification information
-        self.goal = [
-            np.array([[6, 10], 'all', [6, 10], 'all'])
-            ]
-        self.critical = None #[
-            #np.array([[-8, -6], 'all', [-2, 0], 'all'])
-            #]
-        
-        self.x0 = np.array([-6,0,-8,0]) 
-        
-        self.error['max_control_error'] = np.array([
-                                                [-2, 2], 
-                                                [-1.5, 1.5],
-                                                [-2, 2], 
-                                                [-1.5, 1.5]])
-        self.error['max_action_distance'] = np.array([6,8,6,8])
-        
-class building_2room_spec(master.spec_master):
-    
-    def __init__(self, T_boiler):
-        
-        # Initialize superclass
-        master.spec_master.__init__(self)   
-        
-        self.end_time = 32
-        
-        # Authority limit for the control u, both positive and negative
-        self.control['uMin'] = [14, 14, T_boiler-10, T_boiler-10]
-        self.control['uMax'] = [26, 26, T_boiler+10, T_boiler+10]     
-
-        # Partition size
-        self.partition['boundary']  = np.array([[20-2.1, 20+2.1], 
-                                                [20-2.1, 20+2.1], 
-                                                [38.3-0.9, 38.3+0.9], 
-                                                [38.3-0.9, 38.3+0.9]])
-        self.partition['number']  = [21,21,9,9]
-        
-        self.targets['boundary']  = self.partition['boundary']
-        self.targets['number']    = self.partition['number']
-        
-        # Specification information
-        self.goal = [
-            np.array([[20, 20.1], [20, 20.1], 'all', 'all'])
-            ]
-        self.critical = None
         
 class building_1room_spec(master.spec_master):
     
@@ -241,12 +178,14 @@ class anaesthesia_delivery_spec(master.spec_master):
         self.end_time = 10
 
         # Authority limit for the control u, both positive and negative
-        self.control['uMin'] = [0]
+        self.control['uMin'] = [-10]
         self.control['uMax'] = [40]
         
         # Partition size
         self.partition['boundary']  = np.array([[1, 6], [0, 10], [0, 10]])
-        self.partition['number']  = [10, 30, 30]
+        self.partition['number']  = [20, 20, 20]
+        
+        width = self.partition['boundary'] @ np.array([-1, 1]) / self.partition['number']
         
         # Actions per dimension (if 'auto', equal to nr of regions)
         self.targets['boundary']    = 'auto' #self.partition['boundary']
@@ -256,8 +195,9 @@ class anaesthesia_delivery_spec(master.spec_master):
             np.array([[4, 6], [0, 10], [0, 10]])
             ]
         
+        self.goal = None
         self.critical = None
         
         self.error['max_control_error'] = {
-            'default': np.array([[-0.5, 0.5], [-0.5, 0.5], [-0.5, 0.5]]) 
+            'default': np.vstack(([-1.4, -1.4, -1.4]*width, [1.4, 1.4, 1.4]*width)).T
             }

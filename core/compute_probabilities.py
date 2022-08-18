@@ -2,34 +2,35 @@
 # -*- coding: utf-8 -*-
 
 """
- ______________________________________
-|                                      |
-|  SCENARIO-BASED ABSTRACTION PROGRAM  |
-|______________________________________|
 
 Implementation of the method proposed in the paper:
+ "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
+  Dynamical Models with Epistemic Uncertainty"
 
-  Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & 
-  Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous 
-  Systems with Non-Gaussian Noise. AAAI 2022.
-
-Originally coded by:        Thom S. Badings
-Contact e-mail address:     thom.badings@ru.nl>
+Originally coded by:        <anonymized>
+Contact e-mail address:     <anonymized>
 ______________________________________________________________________________
 """
 
 import numpy as np
 import itertools
-from .commons import floor_decimal
-from .postprocessing.createPlots import draw_hull
-from .define_partition import computeRegionCenters, computeRegionIdx
+import matplotlib.pyplot as plt # Import Pyplot to generate plots
+import matplotlib.patches as patches
 
-def computeScenarioBounds_error(args, partition_setup, partition, trans, clusters, error, exclude=False, verbose=False):
+from .commons import cm2inch, floor_decimal
+from .postprocessing.createPlots import draw_hull
+from .define_partition import computeRegionIdx
+
+
+def computeScenarioBounds_error(args, partition_setup, partition, trans, 
+                                clusters, error, exclude=False, verbose=False):
     '''
     Compute the transition probability intervals
 
     Parameters
     ----------
+    args : obj
+        Object with arguments passed to the program
     setup : dict
         Setup dictionary.
     partition_setup : dict
@@ -82,9 +83,7 @@ def computeScenarioBounds_error(args, partition_setup, partition, trans, cluster
     
     nrPerDim = np.array(partition_setup['number'])
     
-    
     ###
-    
     
     # Compute number of samples fully outside of partition.
     # If all indices are outside the partition, then it is certain that 
@@ -125,7 +124,6 @@ def computeScenarioBounds_error(args, partition_setup, partition, trans, cluster
     c_rem    = np.arange( len(clusters['value']) )[keep]
             
     ###
-    
     
     # For the remaining samples, only increment the upper bound count
     for x,c in enumerate(c_rem):        
@@ -173,9 +171,7 @@ def computeScenarioBounds_error(args, partition_setup, partition, trans, cluster
             if not index_tuples.isdisjoint( partition['critical_idx'] ):
                 counts_critical_upp += clusters['value'][c]
     
-    
     ###
-    
     
     counts_nonzero = [[partition['R']['idx'][idx], counts_low[idx], cu] 
                         for idx, cu in np.ndenumerate(counts_upp) if cu > 0 
@@ -215,7 +211,6 @@ def computeScenarioBounds_error(args, partition_setup, partition, trans, cluster
     nr_decimals = 5
     Pmin = 1e-4
     
-    
     #### PROBABILITY INTERVALS
     probs_lb = np.maximum(Pmin, floor_decimal(probability_low, nr_decimals))
     probs_ub = np.minimum(1,    floor_decimal(probability_upp, nr_decimals))
@@ -253,9 +248,6 @@ def computeScenarioBounds_error(args, partition_setup, partition, trans, cluster
     return returnDict
 
 
-import matplotlib.pyplot as plt # Import Pyplot to generate plots
-import matplotlib.patches as patches
-from .commons import cm2inch
 
 def transition_plot(samples, error, i_show, i_hide, args, setup, model, spec, partition, 
                     cut_value, backreach=False, backreach_inflated=False,

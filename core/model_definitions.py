@@ -2,30 +2,19 @@
 # -*- coding: utf-8 -*-
 
 """
- ______________________________________
-|                                      |
-|  SCENARIO-BASED ABSTRACTION PROGRAM  |
-|______________________________________|
 
 Implementation of the method proposed in the paper:
+ "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
+  Dynamical Models with Epistemic Uncertainty"
 
-  Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & 
-  Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous 
-  Systems with Non-Gaussian Noise. AAAI 2022.
-
-Originally coded by:        Thom S. Badings
-Contact e-mail address:     thom.badings@ru.nl>
+Originally coded by:        <anonymized>
+Contact e-mail address:     <anonymized>
 ______________________________________________________________________________
 """
 
 import numpy as np              # Import Numpy for computations
-import scipy.linalg             # Import to enable matrix operations
-import sys                      # Import to allow terminating the script
-
 from .preprocessing.define_gears_order import discretizeGearsMethod        
-import core.preprocessing.user_interface as ui
 import core.preprocessing.master_classes as master
-from .commons import setStateBlock
 
 class oscillator(master.LTI_master):
     
@@ -339,8 +328,11 @@ class anaesthesia_delivery(master.LTI_master):
         
         # Input matrix
         self.B  = np.array([[0.01883],
-                            [0.0002],
-                            [0.00001] ])
+                            [0.005],
+                            [0.003] ])
+        
+        self.A = np.eye(3) + self.tau * (self.A - np.eye(3))
+        self.B = self.tau * self.B
         
         # Disturbance matrix
         self.Q  = np.array([[0],[0],[0]])

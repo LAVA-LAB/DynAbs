@@ -1,8 +1,15 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jun 28 08:49:42 2022
 
-@author: Thom Badings
+"""
+
+Implementation of the method proposed in the paper:
+ "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
+  Dynamical Models with Epistemic Uncertainty"
+
+Originally coded by:        <anonymized>
+Contact e-mail address:     <anonymized>
+______________________________________________________________________________
 """
 
 import itertools
@@ -38,6 +45,8 @@ class action(object):
         
         if not backreach_obj is None:
             self.backreach_infl = self.backreach_obj.verts_infl + shift
+        
+        
         
 class backreachset(object):
     '''

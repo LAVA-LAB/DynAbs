@@ -2,19 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
- ______________________________________
-|                                      |
-|  SCENARIO-BASED ABSTRACTION PROGRAM  |
-|______________________________________|
 
 Implementation of the method proposed in the paper:
+ "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
+  Dynamical Models with Epistemic Uncertainty"
 
-  Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & 
-  Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous 
-  Systems with Non-Gaussian Noise. AAAI 2022.
-
-Originally coded by:        Thom S. Badings
-Contact e-mail address:     thom.badings@ru.nl>
+Originally coded by:        <anonymized>
+Contact e-mail address:     <anonymized>
 ______________________________________________________________________________
 """
 
@@ -178,7 +172,6 @@ class settings(object):
         # Default plotting settings
         plot = dict()
         # TRUE/FALSE setup whether plots should be generated
-        plot['3D_UAV']                  = False
         plot['exportFormats']           = ['pdf','png']
         
         # Default Monte Carelo settings
@@ -192,7 +185,6 @@ class settings(object):
         self.sampling = {}
         self.time = timing
         self.directories = directories
-        
         self.cvx = {'solver': 'ECOS'}
         
         loadOptions(base_dir+'/options.txt', self)

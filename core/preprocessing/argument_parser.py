@@ -1,7 +1,18 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+
+Implementation of the method proposed in the paper:
+ "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
+  Dynamical Models with Epistemic Uncertainty"
+
+Originally coded by:        <anonymized>
+Contact e-mail address:     <anonymized>
+______________________________________________________________________________
+"""
+
 import argparse
-import pathlib
-from ast import literal_eval
-import statistics
 
 def parse_arguments():
     """
@@ -63,10 +74,16 @@ def parse_arguments():
                         help="Enable parameter uncertainty in oscillator benchmark")
     parser.set_defaults(osc_par_uncertainty=False)
     
+    parser.add_argument('--osc_mc_step', type=int, action="store", dest='osc_mc_step', 
+                        default=0.2, help="Steps (factor) at which to increase parameter deviation from nominal value")
+    
+    parser.add_argument('--osc_mc_iter', type=int, action="store", dest='osc_mc_iter', 
+                        default=100, help="Monte Carlo simulations to evaluate controller safety")
+    
     ####
     #### Building temperature model arguments ####
     parser.add_argument('--bld_partition', type=list, action="store", dest='bld_partition', 
-                        default=[10, 10], help="Size of the state space partition")
+                        default=[25, 35], help="Size of the state space partition")
     
     parser.add_argument('--bld_control_error', type=list, action="store", dest='bld_control_error', 
                         default=[[-.1, .1], [-.3, .3]], help="Size of the state space partition")

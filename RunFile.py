@@ -2,10 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
- ______________________________________
-|                                      |
-|  SCENARIO-BASED ABSTRACTION PROGRAM  |
-|______________________________________|
+
+Implementation of the method proposed in the paper:
+ "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
+  Dynamical Models with Epistemic Uncertainty"
+
+Originally coded by:        <anonymized>
+Contact e-mail address:     <anonymized>
 ______________________________________________________________________________
 """
 
@@ -23,7 +26,6 @@ import matplotlib as mpl
 from core.define_model import define_model
 from core.scenarioBasedAbstraction import scenarioBasedAbstraction
 from core.monte_carlo import monte_carlo
-from core.preprocessing.user_interface import load_PRISM_result_file
 from core.preprocessing.set_model_class import set_model_class
 from core.commons import createDirectory
 
@@ -31,6 +33,7 @@ from core.preprocessing.master_classes import settings, result_exporter
 from core.preprocessing.argument_parser import parse_arguments
 
 from core.postprocessing.harmonic_oscillator import oscillator_experiment
+from core.postprocessing.anaesthesia_delivery import heatmap_3D
 
 np.random.seed(1)
 mpl.rcParams['figure.dpi'] = 300
@@ -42,7 +45,15 @@ print('Base directory:', base_dir)
 #-----------------------------------------------------------------------------
 
 args = parse_arguments()
-args.prism_folder = "~/Documents/prism-imc/prism/"
+args.model = 'building_1room'
+args.bld_par_uncertainty = True
+args.prism_java_memory = 8
+
+args.model = 'anaesthesia_delivery'
+
+with open(os.path.join(base_dir, 'path_to_prism.txt')) as f:
+    args.prism_folder = str(f.readlines()[0])
+    print('-- Path to PRISM is:', args.prism_folder)
 
 #-----------------------------------------------------------------------------
 # Create model and set specification
@@ -71,6 +82,8 @@ print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\
 ScAb = scenarioBasedAbstraction(args, setup, define_model(setup, model, spec))
 ScAb.define_states()
 
+# %%
+
 #-----------------------------------------------------------------------------
 # Define actions (only required once outside iterative scheme)
 #-----------------------------------------------------------------------------
@@ -81,6 +94,8 @@ createDirectory(ScAb.setup.directories['outputF'])
 # Create actions and determine which ones are enabled
 ScAb.define_target_points()
 ScAb.define_actions()
+
+# %%
 
 # %%
 #-----------------------------------------------------------------------------
@@ -97,7 +112,9 @@ case_id = 0
 exporter = result_exporter()
 
 if ScAb.model.name == 'oscillator':
-    harm_osc = oscillator_experiment(f_min=0, f_max=2.01, f_step=0.2, monte_carlo_iterations=100)
+    harm_osc = oscillator_experiment(f_min=0, f_max=2.01, 
+                                     f_step=args.osc_mc_step,
+                                     monte_carlo_iterations=args.osc_mc_iter)
 else:
     harm_osc = False
 
@@ -133,11 +150,14 @@ for case_id in range(0, ScAb.args.iterations):
     writer.save()
     plt.close('all')
     
-    exporter.add_to_df(pd.DataFrame(data=N, index=[case_id], columns=['N']), 'general')
+    exporter.add_to_df(pd.DataFrame(data=N, index=[case_id], columns=['N']), 
+                       'general')
     exporter.add_to_df(time_df, 'run_times')
-    exporter.add_to_df(pd.DataFrame(data=model_size, index=[case_id]), 'model_size')
+    exporter.add_to_df(pd.DataFrame(data=model_size, index=[case_id]), 
+                       'model_size')
     
     if harm_osc:
+        print('-- Monte Carlo simulations to determine controller safety...')
         harm_osc.add_iteration(ScAb, case_id)
         
 # Save overall data in Excel (for all iterations combined)   
@@ -148,7 +168,16 @@ print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\
 print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
 if harm_osc:
+    print('-- Export results for longitudinal drone dynamics as in paper...')
+    
     harm_osc.export(ScAb)
 
     harm_osc.plot_trace(ScAb, spring=ScAb.model.spring_nom, 
                         state_center=(-6.5,-2.5))
+    
+if ScAb.model.name == 'anaesthesia_delivery':
+
+    centers = ScAb.partition['R']['center']
+    values = ScAb.results['optimal_reward']
+
+    heatmap_3D(ScAb.setup, centers, values)
