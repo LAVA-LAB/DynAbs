@@ -13,6 +13,7 @@ ______________________________________________________________________________
 """
 
 import argparse
+from ast import literal_eval
 
 def parse_arguments():
     """
@@ -42,7 +43,7 @@ def parse_arguments():
     parser.add_argument('--sample_clustering', type=float, action="store", dest='sample_clustering', 
                         default=1e-2, help="Distance at which to cluster noise samples")
     
-    parser.add_argument('--prism_java_memory', type=float, action="store", dest='prism_java_memory', 
+    parser.add_argument('--prism_java_memory', type=int, action="store", dest='prism_java_memory', 
                         default=1, help="Max. memory usage by JAVA / PRISM")
     
     parser.add_argument('--iterations', type=int, action="store", dest='iterations', 
@@ -82,11 +83,11 @@ def parse_arguments():
     
     ####
     #### Building temperature model arguments ####
-    parser.add_argument('--bld_partition', type=list, action="store", dest='bld_partition', 
-                        default=[25, 35], help="Size of the state space partition")
+    parser.add_argument('--bld_partition', type=str, action="store", dest='bld_partition', 
+                        default='[25,35]', help="Size of the state space partition")
     
-    parser.add_argument('--bld_control_error', type=list, action="store", dest='bld_control_error', 
-                        default=[[-.1, .1], [-.3, .3]], help="Size of the state space partition")
+    parser.add_argument('--bld_control_error', type=str, action="store", dest='bld_control_error', 
+                        default='[[-.1, .1], [-.3, .3]]', help="Size of the state space partition")
     
     parser.add_argument('--bld_par_uncertainty', dest='bld_par_uncertainty', action='store_true',
                         help="Enable parameter uncertainty in temperature control benchmark")
@@ -94,6 +95,9 @@ def parse_arguments():
     
     ####
     ####
+    #### Anaesthesia delivery model arguments ####
+    parser.add_argument('--drug_partition', type=str, action="store", dest='drug_partition', 
+                        default='[20,20,20]', help="Size of the state space partition")
     
     # Now, parse the command line arguments and store the
     # values in the `args` variable
@@ -103,5 +107,20 @@ def parse_arguments():
     
     if len(unknown) > 0:
         print('\nWarning: There are unknown arguments:\n', unknown,'\n')
+    
+    args.bld_control_error = literal_eval(args.bld_control_error)
+    print(args.bld_control_error)
+    
+    
+    try:
+        args.bld_partition = [int(args.bld_partition)]
+    except:
+        args.bld_partition = list(literal_eval(args.bld_partition))    
+    
+    try:
+        args.drug_partition = [int(args.drug_partition)]
+    except:
+        args.drug_partition = list(literal_eval(args.drug_partition))
+
 
     return args

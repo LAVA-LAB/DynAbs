@@ -367,8 +367,6 @@ def reachabilityHeatMap(ScAb, montecarlo = False, title = 'auto'):
                ScAb.spec.partition['width'], 
                orig, onlyCenter=True)['center']
         
-        print(cut_centers)
-        
     elif ScAb.model.n == 4:
         
         x_nr = ScAb.spec.partition['number'][0]

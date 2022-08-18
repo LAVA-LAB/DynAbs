@@ -312,6 +312,8 @@ class anaesthesia_delivery(master.LTI_master):
         # Initialize superclass
         master.LTI_master.__init__(self)
         
+        self.args = args
+        
         # Number of time steps to lump together (can be used to make the model
         # fully actuated)
         self.lump = 1
@@ -348,7 +350,7 @@ class anaesthesia_delivery(master.LTI_master):
     def set_spec(self):
         
         from core.spec_definitions import anaesthesia_delivery_spec
-        spec = anaesthesia_delivery_spec()     
+        spec = anaesthesia_delivery_spec(self.args)     
         
         spec.problem_type = 'reachavoid'
             

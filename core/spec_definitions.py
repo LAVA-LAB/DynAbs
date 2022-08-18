@@ -169,7 +169,7 @@ class shuttle_spec(master.spec_master):
         
 class anaesthesia_delivery_spec(master.spec_master):
     
-    def __init__(self):
+    def __init__(self, args):
 
         # Initialize superclass
         master.spec_master.__init__(self)        
@@ -183,7 +183,7 @@ class anaesthesia_delivery_spec(master.spec_master):
         
         # Partition size
         self.partition['boundary']  = np.array([[1, 6], [0, 10], [0, 10]])
-        self.partition['number']  = [20, 20, 20]
+        self.partition['number']  = list(args.drug_partition) #[20, 20, 20]
         
         width = self.partition['boundary'] @ np.array([-1, 1]) / self.partition['number']
         
