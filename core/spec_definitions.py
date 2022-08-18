@@ -175,7 +175,7 @@ class anaesthesia_delivery_spec(master.spec_master):
         master.spec_master.__init__(self)        
         
         # Step-bound on spec
-        self.end_time = 10
+        self.end_time = 20
 
         # Authority limit for the control u, both positive and negative
         self.control['uMin'] = [-10]
