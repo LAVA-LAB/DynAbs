@@ -53,12 +53,18 @@ class Controller(object):
         self.error_neg.value = error[:,0]
         self.error_pos.value = error[:,1]
         
-        self.prob.solve(warm_start = True, solver='ECOS')
-        
-        if self.prob.status == 'infeasible':
+        try:
+            self.prob.solve(warm_start = True, solver='ECOS')
+            
+            if self.prob.status == 'infeasible':
+                return False, None, None
+            else: 
+                return True, self.x_plus.value, self.u.value
+            
+        except:
+            # Throw an exception is CVXPY solver failed
+            print('-- Warning: Could not solve LP; skip this action')
             return False, None, None
-        else: 
-            return True, self.x_plus.value, self.u.value
         
         
         
@@ -91,18 +97,24 @@ class LP_vertices_contained(object):
         
         self.P_vertices.value = vertices
         
-        if self.solver == 'GUROBI':
-            self.prob.solve(warm_start = True, solver='GUROBI')
-        elif self.solver == 'ECOS':
-            self.prob.solve(warm_start = True, solver='ECOS')
-        elif self.solver == 'OSQP':
-            self.prob.solve(warm_start = True, solver='OSQP', eps_abs=1e-4, eps_rel=1e-4)
-        elif self.solver == 'SCS':
-            self.prob.solve(warm_start = True, solver='SCS')
-        else:
-            self.prob.solve(warm_start = True)
-        
-        if self.prob.status != "infeasible":
-            return True
-        else:
+        try:
+            if self.solver == 'GUROBI':
+                self.prob.solve(warm_start = True, solver='GUROBI')
+            elif self.solver == 'ECOS':
+                self.prob.solve(warm_start = True, solver='ECOS')
+            elif self.solver == 'OSQP':
+                self.prob.solve(warm_start = True, solver='OSQP', eps_abs=1e-4, eps_rel=1e-4)
+            elif self.solver == 'SCS':
+                self.prob.solve(warm_start = True, solver='SCS')
+            else:
+                self.prob.solve(warm_start = True)
+                
+            if self.prob.status != "infeasible":
+                return True
+            else:
+                return False
+        except:
+            # Throw an exception is CVXPY solver failed
+            print('-- Warning: Could not solve LP; skip this state')
             return False
+        

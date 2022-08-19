@@ -188,8 +188,11 @@ class anaesthesia_delivery_spec(master.spec_master):
         width = self.partition['boundary'] @ np.array([-1, 1]) / self.partition['number']
         
         # Actions per dimension (if 'auto', equal to nr of regions)
-        self.targets['boundary']    = 'auto' #self.partition['boundary']
-        self.targets['number']      = 'auto' #self.partition['number']
+        self.targets['boundary']    = self.partition['boundary']
+        
+        self.targets['boundary'][:,0] = self.targets['boundary'][:,0] + width
+        self.targets['boundary'][:,1] = self.targets['boundary'][:,1] - width
+        self.targets['number']      = list(np.array(self.partition['number'])-2)
         
         self.goal = [
             np.array([[4, 6], [0, 10], [0, 10]])

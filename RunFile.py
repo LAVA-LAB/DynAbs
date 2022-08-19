@@ -45,17 +45,6 @@ print('Base directory:', base_dir)
 #-----------------------------------------------------------------------------
 
 args = parse_arguments()
-#args.model = 'anaesthesia_delivery'
-# args.drug_partition = [10,10,10]
-#args.bld_par_uncertainty = True
-#args.prism_java_memory = 32
-
-args.model = 'drone'
-args.drone_spring = True
-args.iterations = 1
-args.partition_plot = True
-args.drone_mc_iter = 20
-args.drone_mc_step = 1
 
 with open(os.path.join(base_dir, 'path_to_prism.txt')) as f:
     args.prism_folder = str(f.readlines()[0])
