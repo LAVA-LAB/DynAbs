@@ -224,8 +224,14 @@ def oscillator_traces(ScAb, traces, action_traces, plot_trace_ids=None,
             # Interpolation for different methods:
             alpha = np.linspace(0, 1, 75)
             
-            interpolator =  interp1d(distance, points, kind='quadratic', 
-                                     axis=0)
+            if len(points) > 2:
+                interpolator =  interp1d(distance, points, kind='quadratic', 
+                                         axis=0)
+            elif len(points) == 2:
+                interpolator =  interp1d(distance, points, kind='linear', 
+                                         axis=0)
+            else:
+                continue
             interpolated_points = interpolator(alpha)
             
             # Plot trace

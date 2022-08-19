@@ -16,11 +16,11 @@ import numpy as np              # Import Numpy for computations
 from .preprocessing.define_gears_order import discretizeGearsMethod        
 import core.preprocessing.master_classes as master
 
-class oscillator(master.LTI_master):
+class drone(master.LTI_master):
     
     def __init__(self, args):
         '''
-        Initialize oscillator model class, which is a 1-dimensional dummy problem,
+        Initialize drone model class, which is a 1-dimensional dummy problem,
         modelled as a double integrator.
 
         Returns
@@ -39,7 +39,7 @@ class oscillator(master.LTI_master):
         # Discretization step size
         self.tau = 1
         
-        if args.osc_spring:
+        if args.drone_spring:
             print('-- Enable spring coefficient')
             
             self.spring_min = 0.40
@@ -61,7 +61,7 @@ class oscillator(master.LTI_master):
             self.mass_nom = 1.00
             self.mass_max = 1.25
 
-        if args.osc_par_uncertainty:
+        if args.drone_par_uncertainty:
             print('-- Enable parameter uncertainty')
             
             self.A_set = [
@@ -100,9 +100,9 @@ class oscillator(master.LTI_master):
         
     def set_spec(self):
         
-        from core.spec_definitions import oscillator_spec
+        from core.spec_definitions import drone_spec
         
-        spec = oscillator_spec()
+        spec = drone_spec()
         spec.problem_type = 'reachavoid'
         
         return spec
@@ -131,7 +131,7 @@ class oscillator(master.LTI_master):
         return B
         
         
-class building_1room(master.LTI_master):
+class building_temp(master.LTI_master):
     
     def __init__(self, args):
         '''
@@ -239,8 +239,8 @@ class building_1room(master.LTI_master):
 
     def set_spec(self):
         
-        from core.spec_definitions import building_1room_spec
-        spec = building_1room_spec(self.args)        
+        from core.spec_definitions import building_temp_spec
+        spec = building_temp_spec(self.args)        
             
         spec.problem_type = 'avoid'
         

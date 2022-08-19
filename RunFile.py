@@ -50,6 +50,13 @@ args = parse_arguments()
 #args.bld_par_uncertainty = True
 #args.prism_java_memory = 32
 
+args.model = 'drone'
+args.drone_spring = True
+args.iterations = 1
+args.partition_plot = True
+args.drone_mc_iter = 20
+args.drone_mc_step = 1
+
 with open(os.path.join(base_dir, 'path_to_prism.txt')) as f:
     args.prism_folder = str(f.readlines()[0])
     print('-- Path to PRISM is:', args.prism_folder)
@@ -110,10 +117,10 @@ case_id = 0
 # Create empty DataFrames to store iterative results
 exporter = result_exporter()
 
-if ScAb.model.name == 'oscillator':
+if ScAb.model.name == 'drone':
     harm_osc = oscillator_experiment(f_min=0, f_max=2.01, 
-                                     f_step=args.osc_mc_step,
-                                     monte_carlo_iterations=args.osc_mc_iter)
+                                     f_step=args.drone_mc_step,
+                                     monte_carlo_iterations=args.drone_mc_iter)
 else:
     harm_osc = False
 

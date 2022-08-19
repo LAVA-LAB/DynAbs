@@ -15,7 +15,7 @@ ______________________________________________________________________________
 import numpy as np
 import core.preprocessing.master_classes as master
 
-class oscillator_spec(master.spec_master):
+class drone_spec(master.spec_master):
     
     def __init__(self):
 
@@ -53,7 +53,7 @@ class oscillator_spec(master.spec_master):
         
         
         
-class building_1room_spec(master.spec_master):
+class building_temp_spec(master.spec_master):
     
     def __init__(self, args):
 
@@ -70,10 +70,10 @@ class building_1room_spec(master.spec_master):
         self.partition['boundary']  = np.array([[18.5, 23.5], [39, 46]])
         
         self.partition['number'] = list(args.bld_partition)
-        self.error['max_control_error'] = {'default': np.array(args.bld_control_error)}
+        self.error['max_control_error'] = {'default': np.array(args.bld_target_size)}
         
         print('-- Partition:', args.bld_partition)
-        print('-- Size of target size:', args.bld_control_error)
+        print('-- Size of target size:', args.bld_target_size)
         
         # # Partition size
         # if scenario == 0:

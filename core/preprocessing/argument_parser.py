@@ -55,7 +55,7 @@ def parse_arguments():
     
     # Number of Monte Carlo simulation iterations
     parser.add_argument('--monte_carlo_iter', type=int, action="store", dest='monte_carlo_iter', 
-                        default=0, help="Model to load")
+                        default=0, help="Number of Monte Carlo simulations to perform")
     
     parser.add_argument('--partition_plot', dest='partition_plot', action='store_true',
                         help="If enabled, create plot of state space partition")
@@ -66,19 +66,19 @@ def parse_arguments():
     parser.set_defaults(verbose=False)
     
     ####
-    #### Oscillator model arguments ####
-    parser.add_argument('--osc_spring', dest='osc_spring', action='store_true',
-                        help="Enable spring coefficient in oscillator benchmark")
-    parser.set_defaults(osc_spring=False)
+    #### Drone model arguments ####
+    parser.add_argument('--drone_spring', dest='drone_spring', action='store_true',
+                        help="Enable spring coefficient in drone benchmark")
+    parser.set_defaults(drone_spring=False)
     
-    parser.add_argument('--osc_par_uncertainty', dest='osc_par_uncertainty', action='store_true',
-                        help="Enable parameter uncertainty in oscillator benchmark")
-    parser.set_defaults(osc_par_uncertainty=False)
+    parser.add_argument('--drone_par_uncertainty', dest='drone_par_uncertainty', action='store_true',
+                        help="Enable parameter uncertainty in drone benchmark")
+    parser.set_defaults(drone_par_uncertainty=False)
     
-    parser.add_argument('--osc_mc_step', type=int, action="store", dest='osc_mc_step', 
+    parser.add_argument('--drone_mc_step', type=int, action="store", dest='drone_mc_step', 
                         default=0.2, help="Steps (factor) at which to increase parameter deviation from nominal value")
     
-    parser.add_argument('--osc_mc_iter', type=int, action="store", dest='osc_mc_iter', 
+    parser.add_argument('--drone_mc_iter', type=int, action="store", dest='drone_mc_iter', 
                         default=100, help="Monte Carlo simulations to evaluate controller safety")
     
     ####
@@ -86,8 +86,8 @@ def parse_arguments():
     parser.add_argument('--bld_partition', type=str, action="store", dest='bld_partition', 
                         default='[25,35]', help="Size of the state space partition")
     
-    parser.add_argument('--bld_control_error', type=str, action="store", dest='bld_control_error', 
-                        default='[[-.1, .1], [-.3, .3]]', help="Size of the state space partition")
+    parser.add_argument('--bld_target_size', type=str, action="store", dest='bld_target_size', 
+                        default='[[-.1, .1], [-.3, .3]]', help="Size of the target sets used")
     
     parser.add_argument('--bld_par_uncertainty', dest='bld_par_uncertainty', action='store_true',
                         help="Enable parameter uncertainty in temperature control benchmark")
@@ -108,7 +108,7 @@ def parse_arguments():
     if len(unknown) > 0:
         print('\nWarning: There are unknown arguments:\n', unknown,'\n')
     
-    args.bld_control_error = literal_eval(args.bld_control_error)
+    args.bld_target_size = literal_eval(args.bld_target_size)
     
     try:
         args.bld_partition = [int(args.bld_partition)]
