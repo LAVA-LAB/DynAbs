@@ -121,7 +121,7 @@ This shell script contains one variable that controls the number of iterations t
 
 # What arguments can be passed?
 
-Below, we list all arguments that can be passed to the command for running SLURF. Arguments are given as `--<argument name> <value>`. Note that only the `model` argument is required; all others are optional (and have certain default values).
+Below, we list all arguments that can be passed to the command for running the program. Arguments are given as `--<argument name> <value>`. Note that only the `model` argument is required; all others are optional (and have certain default values).
 
 | Argument           | Required? | Default            | Type                     | Description |
 | ---                | ---       | ---                | ---                      | ---         |
