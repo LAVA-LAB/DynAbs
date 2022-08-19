@@ -4,7 +4,7 @@ This artefact contains the source code for the AAAI 2023 submission with the tit
 
 - "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic Dynamical Models with Epistemic Uncertainty"
 
-This repository contains everything that is needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM. Using the instructions below, the experiments may be replicated on a virtual machine, or on your own machine.
+This repository contains all code and instructions that are needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM.
 
 Python version: `3.8.8`. For a list of the required Python packages, please see the `requirements.txt` file. 
 
@@ -30,8 +30,14 @@ We recommend using the artefact on a virtual environment, in order to keep thing
 
 To create a virtual environment with Conda, run the following command:
 
-```
+```bash
 $ conda create --name abstract_env
+```
+
+Then, to activate the virtual environment, run:
+
+```bash
+$ conda activate abstract_env
 ```
 
 ## 2. Install dependencies
@@ -83,7 +89,7 @@ To ensure that PRISM can be found by the script, **you need to modify the path t
 
 ------
 
-# Running the program
+# How to run for a single model?
 
 A minimal example of running the program is as follows:
 
@@ -101,18 +107,30 @@ All results are stored in the `output/` folder. When running `SBA-RunFile.py` fo
 
 ------
 
-# Overview of arguments
+# How to run experiments from the paper?
 
-Below, we list all arguments that can be passed to the command for running SLURF. Arguments are given as `--<argument name> <value>`.
+The figures and tables in the experimental section of the paper can be reproduced by running the shell script `run_experiments.sh` in the root folder of the repository:
+
+```bash
+bash run_experiments.sh
+```
+
+This shell script contains one variable that controls the number of iterations to perform for some experiments. To reduce the computation time, you may lower the number of iterations.
+
+------
+
+# What arguments can be passed?
+
+Below, we list all arguments that can be passed to the command for running SLURF. Arguments are given as `--<argument name> <value>`. Note that only the `model` argument is required; all others are optional (and have certain default values).
 
 | Argument           | Required? | Default            | Type                     | Description |
 | ---                | ---       | ---                | ---                      | ---         |
+| model              | Yes       | N/A                | str                      | Name of the model to load (options are: `drone`, `building_temp`, or `anaesthesia_delivery`) |
 | noise_samples      | No        | 20000              | int                      | Number of noise samples to use for computing transition probability intervals |
 | confidence         | No        | 1e-8               | float                    | Confidence level on individual transitions |
 | sample_clustering  | No        | 1e-2               | float                    | Distance at which to cluster (merge) similar noise samples |
 | prism_java_memory  | No        | 1                  | int                      | Max. memory usage by JAVA / PRISM |
 | iterations         | No        | 1                  | int                      | Number of repetitions of computing iMDP probability intervals |
-| model              | Yes       | N/A                | str                      | Name of the model to load (options are: `drone`, `building_temp`, or `anaesthesia_delivery`) |
 | monte_carlo_iter   | No        | 0                  | int                      | Number of Monte Carlo simulations to perform |
 | partition_plot     | No        | False              | Boolean (no value!)      | If argument `--partition_plot` is passed, create partition plot |
 | verbose            | No        | False              | Boolean (no value!)      | If argument `--verbose` is passed, more verbose output is provided by the script |
@@ -120,7 +138,7 @@ Below, we list all arguments that can be passed to the command for running SLURF
 Moreover, the following arguments can specifically be passed for running one of the benchmarks from the paper.
 | Benchmark            | Argument              | Required? | Default            | Type                      | Description |
 | ---                  | ---                   | ---       | ---                | ---                       | ---         |
-| drone                | drone_spring          | No        | False              | Boolean (no value)        | If `--drone_spring` is passed, enable parameter uncertainty |
+| drone                | drone_spring          | No        | False              | Boolean (no value)        | If `--drone_spring` is passed, the spring coefficient is modelled |
 | drone                | drone_par_uncertainty | No        | False              | Boolean (no value)        | If `--drone_par_uncertainty` is passed, enable parameter uncertainty |
 | drone                | drone_mc_step         | No        | 0.2                | float                     | Step size in which to increment parameter deviation (to create Figs. 5 and 9 as in paper) |
 | drone                | drone_mc_iter         | No        | 0.2                | int                       | Number of Monte Carlo simulations (to create Figs. 5 and 9 as in paper) |
