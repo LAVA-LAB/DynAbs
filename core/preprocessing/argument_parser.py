@@ -109,8 +109,6 @@ def parse_arguments():
         print('\nWarning: There are unknown arguments:\n', unknown,'\n')
     
     args.bld_control_error = literal_eval(args.bld_control_error)
-    print(args.bld_control_error)
-    
     
     try:
         args.bld_partition = [int(args.bld_partition)]
