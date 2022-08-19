@@ -352,6 +352,6 @@ class anaesthesia_delivery(master.LTI_master):
         from core.spec_definitions import anaesthesia_delivery_spec
         spec = anaesthesia_delivery_spec(self.args)     
         
-        spec.problem_type = 'reachavoid'
+        spec.problem_type = 'avoid'
             
         return spec
