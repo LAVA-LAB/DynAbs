@@ -51,7 +51,7 @@ def parse_arguments():
     
     # Argument for model to load
     parser.add_argument('--model', type=str, action="store", dest='model', 
-                        default=False, help="Model to load")
+                        default=False, help="Model to load", required=True)
     
     # Number of Monte Carlo simulation iterations
     parser.add_argument('--monte_carlo_iter', type=int, action="store", dest='monte_carlo_iter', 

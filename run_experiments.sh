@@ -27,4 +27,4 @@ python3 RunFile.py --model 'building_temp' --prism_java_memory 8 --drug_partitio
 #
 # Anaesthesia delivery problem
 echo -e "++++++++ RUN ANAESTHESIA DELIVERY BENCHMARK ++++++++\n";
-python3 RunFile.py --model 'anaesthesia_delivery' --prism_java_memory 32 --drug_partition [20,30,30];
+python3 RunFile.py --model 'anaesthesia_delivery' --prism_java_memory 32 --drug_partition [25,40,40];
