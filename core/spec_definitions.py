@@ -45,7 +45,7 @@ class drone_spec(master.spec_master):
         
         self.critical = None
         
-        self.error['max_control_error'] = {
+        self.error['target_set_size'] = {
             'default': np.array([[-1.2, 1.2], [-1.2, 1.2]]),
             'extra': np.array([[-1.5, 1.5], [-6, 6]])
             }
@@ -70,46 +70,10 @@ class building_temp_spec(master.spec_master):
         self.partition['boundary']  = np.array([[18.5, 23.5], [39, 46]])
         
         self.partition['number'] = list(args.bld_partition)
-        self.error['max_control_error'] = {'default': np.array(args.bld_target_size)}
+        self.error['target_set_size'] = {'default': np.array(args.bld_target_size)}
         
         print('-- Partition:', args.bld_partition)
         print('-- Size of target size:', args.bld_target_size)
-        
-        # # Partition size
-        # if scenario == 0:
-        #     self.partition['number']  = [15, 25]
-            
-        #     self.error['max_control_error'] = {
-        #         'default': np.array([[-.2, .2], [-.5, .5]]),
-        #         }
-            
-        # elif scenario == 1:
-        #     self.partition['number']  = [25, 35]
-            
-        #     self.error['max_control_error'] = {
-        #         'default': np.array([[-.1, .1], [-.3, .3]]),
-        #         }
-           
-        # elif scenario == 2:
-        #     self.partition['number']  = [35, 45]
-            
-        #     self.error['max_control_error'] = {
-        #         'default': np.array([[-.1, .1], [-.3, .3]]),
-        #         }
-            
-        # elif scenario == 3:
-        #     self.partition['number']  = [50, 70]
-            
-        #     self.error['max_control_error'] = {
-        #         'default': np.array([[-.05, .05], [-.15, .15]]),
-        #         }
-            
-        # elif scenario == 4:
-        #     self.partition['number']  = [70, 100]
-            
-        #     self.error['max_control_error'] = {
-        #         'default': np.array([[-.05, .05], [-.15, .15]]),
-        #         }
             
         width = (self.partition['boundary'][:,1] - self.partition['boundary'][:,0]) / self.partition['number']
         
@@ -139,31 +103,39 @@ class shuttle_spec(master.spec_master):
         self.control['uMax'] = [0.1, 0.1]
         
         self.partition['boundary']  = np.array([[-1, 1], [-1, 0], [-0.02, 0.02], [-0.02, 0.02]])
-        self.partition['number']  = [20, 10, 4, 4]
+        self.partition['number']    = [20, 10, 4, 4]
         
         # Actions per dimension (if 'auto', equal to nr of regions)
-        self.targets['boundary']    = self.partition['boundary']
-        self.targets['number']      = self.partition['number']
+        self.targets['boundary']    = 'auto'
+        self.targets['number']      = 'auto'
             
         self.goal = [
-            np.array([[-0.05, 0.05], [-0.05, -0.04], 'all', 'all'])
+            np.array([[-0.05, 0.05], [-0.05, -0.04], 'all', 'all'], dtype='object')
             ]
         
-        #TODO: set critical states
-        self.critical = None
-        
-        # self.critical = np.vstack((
-        #         setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.05, .1)]).flatten(), b=[-.05], c='all', d='all'),
-        #         setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.05, .1)]).flatten(), b=[-.15], c='all', d='all'),
-        #         setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.15, .1)]).flatten(), b=[-.25], c='all', d='all'),
-        #         setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.25, .1)]).flatten(), b=[-.35], c='all', d='all'),
-        #         setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.35, .1)]).flatten(), b=[-.45], c='all', d='all'),
-        #         setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.45, .1)]).flatten(), b=[-.55], c='all', d='all'),
-        #         setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.55, .1)]).flatten(), b=[-.65], c='all', d='all'),
-        #         setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.65, .1)]).flatten(), b=[-.75], c='all', d='all'),
-        #         setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.75, .1)]).flatten(), b=[-.85], c='all', d='all'),
-        #         setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.85, .1)]).flatten(), b=[-.95], c='all', d='all')
-        #         ))
+        self.critical = np.vstack((
+                np.array([[-1, -0.05], [-0.2, 0], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.15], [-0.3, -0.2], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.25], [-0.4, -0.3], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.35], [-0.5, -0.4], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.45], [-0.6, -0.5], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.55], [-0.7, -0.6], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.65], [-0.8, -0.7], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.75], [-0.9, -0.8], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.85], [-1.0, -0.9], 'all', 'all'], dtype='object')
+        ))
+
+                # setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.05, .1)]).flatten(), b=[-.05], c='all', d='all'),
+                # setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.05, .1)]).flatten(), b=[-.15], c='all', d='all'),
+                # setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.15, .1)]).flatten(), b=[-.25], c='all', d='all'),
+                # setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.25, .1)]).flatten(), b=[-.35], c='all', d='all'),
+                # setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.35, .1)]).flatten(), b=[-.45], c='all', d='all'),
+                # setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.45, .1)]).flatten(), b=[-.55], c='all', d='all'),
+                # setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.55, .1)]).flatten(), b=[-.65], c='all', d='all'),
+                # setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.65, .1)]).flatten(), b=[-.75], c='all', d='all'),
+                # setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.75, .1)]).flatten(), b=[-.85], c='all', d='all'),
+                # setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.85, .1)]).flatten(), b=[-.95], c='all', d='all')
+                # ))
         
         self.end_time = 16
         
@@ -202,6 +174,6 @@ class anaesthesia_delivery_spec(master.spec_master):
         self.goal = None
         self.critical = None
         
-        self.error['max_control_error'] = {
+        self.error['target_set_size'] = {
             'default': np.vstack(([-1.4, -1.4, -1.4]*width, [1.4, 1.4, 1.4]*width)).T
             }

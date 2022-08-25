@@ -99,7 +99,7 @@ $ python3 RunFile.py --model 'drone'
 
 This runs the longitudinal drone dynamics benchmark (see the paper for details), with the default options.
 
-All results are stored in the `output/` folder. When running `SBA-RunFile.py` for a new abstraction, a new folder is created that contains the application name and the current datetime, such as `ScAb_drone_08-19-2022_07-46-44/`. For every iteration, a subfolder is created, inwhich all results specific to that single iteration are saved. This includes:
+All results are stored in the `output/` folder. When running `SBA-RunFile.py` for a new abstraction, a new folder is created that contains the application name and the current datetime, such as `Ab_drone_08-19-2022_07-46-44/`. For every iteration, a subfolder is created, inwhich all results specific to that single iteration are saved. This includes:
 
 - The PRISM model files (namely a `.lab`, `.sta`, and `.tra` file).
 - An Excel file that describes all results, such as the optimal policy, model size, run times, etc., of the current iteration.

@@ -100,7 +100,7 @@ def computeRegionIdx(points, partition, borderOutside=False):
     
     return indices, indices_nonneg
 
-def definePartitions(dim, nrPerDim, regionWidth, origin, onlyCenter=False):
+def define_partition(dim, nrPerDim, regionWidth, origin):
     '''
     Define the partitions object `partitions` based on given settings.
 
@@ -114,10 +114,7 @@ def definePartitions(dim, nrPerDim, regionWidth, origin, onlyCenter=False):
     regionWidth : list
         Width of the regions in every dimension.
     origin : list
-        Coordinates of the origin of the continuous state space.
-    onlyCenter : Boolean, default=False
-        If True, only the center of the regions is computed. 
-        If False, the full partition (e.g. vertices) is computed        
+        Coordinates of the origin of the continuous state space. 
 
     Returns
     -------
@@ -147,10 +144,9 @@ def definePartitions(dim, nrPerDim, regionWidth, origin, onlyCenter=False):
                  'idx': {},
                  'c_tuple': {}}
     
-    if not onlyCenter:
-        partition['low'] = np.zeros((nr_regions, dim), dtype=float)
-        partition['upp'] = np.zeros((nr_regions, dim), dtype=float)
-        
+    partition['low'] = np.zeros((nr_regions, dim), dtype=float)
+    partition['upp'] = np.zeros((nr_regions, dim), dtype=float)
+    
     for i,(pos,idx) in enumerate(zip(itertools.product(*widthArrays),
                                      itertools.product(*idxArrays))):
         
@@ -160,11 +156,10 @@ def definePartitions(dim, nrPerDim, regionWidth, origin, onlyCenter=False):
         
         partition['center'][i] = np.round(center, decimals=dec)
         partition['c_tuple'][tuple(np.round(center, decimals=dec))] = i
-        if not onlyCenter:
-            partition['low'][i] = np.round(center - regionWidth/2, 
-                                            decimals=dec)
-            partition['upp'][i] = np.round(center + regionWidth/2, 
-                                            decimals=dec)
+        partition['low'][i] = np.round(center - regionWidth/2, 
+                                        decimals=dec)
+        partition['upp'][i] = np.round(center + regionWidth/2, 
+                                        decimals=dec)
         partition['idx'][tuple(idx)] = i
     
     return partition

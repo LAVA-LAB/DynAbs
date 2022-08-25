@@ -46,10 +46,10 @@ def define_model(setup, model_raw, spec):
     lump = model_raw.lump
     
     if lump == 0:
-        model = makeModelFullyActuated(model_raw, 
+        model = make_fully_actuated(model_raw, 
                    manualDimension = 'auto', observer=False)
     else:
-        model = makeModelFullyActuated(model_raw, 
+        model = make_fully_actuated(model_raw, 
                    manualDimension = lump, observer=False)
         
     # Determine inverse A matrix
@@ -67,7 +67,7 @@ def define_model(setup, model_raw, spec):
         model.equilibrium = np.linalg.inv(np.eye(model.n) - model.A) @ \
             (model.B @ uAvg + model.Q_flat)
     
-    return {'model': model, 'spec': spec}
+    return model, spec
 
 def find_connected_components(A, B, n, p):
     
@@ -89,7 +89,7 @@ def find_connected_components(A, B, n, p):
     
     return dim_n, dim_p
 
-def makeModelFullyActuated(model, manualDimension='auto', observer=False):
+def make_fully_actuated(model, manualDimension='auto', observer=False):
     '''
     Given a model in `model`, render it fully actuated.
 

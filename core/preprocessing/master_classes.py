@@ -166,7 +166,7 @@ class settings(object):
         # Default folder/directory settings
         # Retreive working folder
         directories['output']   = directories['base']+'/output/'
-        directories['outputF']  = directories['output']+'ScAb_'+application+'_'+ \
+        directories['outputF']  = directories['output']+'Ab_'+application+'_'+ \
                                         timing['datetime']+'/'
         
         # Default plotting settings
@@ -288,11 +288,11 @@ class result_exporter(object):
         
         return iterative_results
     
-    def create_writer(self, ScAb, model_size, case_id, N):
+    def create_writer(self, Ab, model_size, case_id, N):
         
         # Save case-specific data in Excel
-        output_file = ScAb.setup.directories['outputFcase'] + \
-            ScAb.setup.time['datetime'] + '_N='+str(N)+'_data_export.xlsx'
+        output_file = Ab.setup.directories['outputFcase'] + \
+            Ab.setup.time['datetime'] + '_N='+str(N)+'_data_export.xlsx'
         
         # Create a Pandas Excel writer using XlsxWriter as the engine
         writer = pd.ExcelWriter(output_file, engine='xlsxwriter')
@@ -302,10 +302,10 @@ class result_exporter(object):
         model_size_df.to_excel(writer, sheet_name='Model size')
         
         # Load data into dataframes
-        policy_df   = pd.DataFrame( ScAb.results['optimal_policy'], 
-         columns=range(ScAb.partition['nr_regions']), index=range(ScAb.N)).T
-        reward_df   = pd.Series( ScAb.results['optimal_reward'], 
-         index=range(ScAb.partition['nr_regions'])).T
+        policy_df   = pd.DataFrame( Ab.results['optimal_policy'], 
+         columns=range(Ab.partition['nr_regions']), index=range(Ab.N)).T
+        reward_df   = pd.Series( Ab.results['optimal_reward'], 
+         index=range(Ab.partition['nr_regions'])).T
         
         # Write dataframes to a different worksheet
         policy_df.to_excel(writer, sheet_name='Optimal policy')

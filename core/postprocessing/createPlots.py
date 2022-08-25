@@ -46,7 +46,7 @@ def draw_hull(points, color, linewidth=0.1):
         
         print('Line plotted')
 
-def partition_plot(i_show, i_hide, ScAb, cut_value, act=None, stateLabels=False):
+def partition_plot(i_show, i_hide, Ab, cut_value, act=None, stateLabels=False):
     '''
 
     Returns
@@ -62,12 +62,12 @@ def partition_plot(i_show, i_hide, ScAb, cut_value, act=None, stateLabels=False)
     plt.xlabel('Var $1$', labelpad=0)
     plt.ylabel('Var $2$', labelpad=0)
 
-    width = ScAb.spec.partition['width']
-    number = ScAb.spec.partition['number']
-    origin = ScAb.spec.partition['origin']
+    width = Ab.spec.partition['width']
+    number = Ab.spec.partition['number']
+    origin = Ab.spec.partition['origin']
     
-    min_xy = ScAb.spec.partition['boundary'][:,0]
-    max_xy = ScAb.spec.partition['boundary'][:,1]
+    min_xy = Ab.spec.partition['boundary'][:,0]
+    max_xy = Ab.spec.partition['boundary'][:,1]
     
     # Compute where to show ticks on the axis
     ticks_x = np.round(np.linspace(min_xy[is1], max_xy[is1], number[is1]+1), 4)
@@ -108,22 +108,22 @@ def partition_plot(i_show, i_hide, ScAb, cut_value, act=None, stateLabels=False)
     ax.set_title("Partition plot", fontsize=10)
     
     # Draw goal states
-    for goal in ScAb.partition['goal']:
+    for goal in Ab.partition['goal']:
         
-        if all(ScAb.partition['R']['center'][goal, list(i_hide)] == cut_value):
+        if all(Ab.partition['R']['center'][goal, list(i_hide)] == cut_value):
         
-            goal_lower = ScAb.partition['R']['low'][goal, [is1, is2]]
+            goal_lower = Ab.partition['R']['low'][goal, [is1, is2]]
             goalState = patches.Rectangle(goal_lower, width=width[is1], 
                                   height=width[is2], color="green", 
                                   alpha=0.3, linewidth=None)
             ax.add_patch(goalState)
     
     # Draw critical states
-    for crit in ScAb.partition['critical']:
+    for crit in Ab.partition['critical']:
         
-        if all(ScAb.partition['R']['center'][crit, list(i_hide)] == cut_value):
+        if all(Ab.partition['R']['center'][crit, list(i_hide)] == cut_value):
         
-            critStateLow = ScAb.partition['R']['low'][crit, [is1, is2]]
+            critStateLow = Ab.partition['R']['low'][crit, [is1, is2]]
             criticalState = patches.Rectangle(critStateLow, width=width[is1], 
                                       height=width[is2], color="red", 
                                       alpha=0.3, linewidth=None)
@@ -133,12 +133,12 @@ def partition_plot(i_show, i_hide, ScAb, cut_value, act=None, stateLabels=False)
         # Draw every X-th label
         if stateLabels:
             skip = 1
-            for i in range(0, ScAb.partition['nr_regions'], skip):
+            for i in range(0, Ab.partition['nr_regions'], skip):
                 
-                if all(ScAb.partition['R']['center'][i, list(i_hide)] == cut_value):
+                if all(Ab.partition['R']['center'][i, list(i_hide)] == cut_value):
                                 
-                    ax.text(ScAb.partition['R']['center'][i,is1], 
-                            ScAb.partition['R']['center'][i,is2], i, \
+                    ax.text(Ab.partition['R']['center'][i,is1], 
+                            Ab.partition['R']['center'][i,is2], i, \
                             verticalalignment='center', 
                             horizontalalignment='center' ) 
     
@@ -153,15 +153,15 @@ def partition_plot(i_show, i_hide, ScAb, cut_value, act=None, stateLabels=False)
             draw_hull(act.backreach_infl, color='blue')
         
         for s in act.enabled_in:
-            center = ScAb.partition['R']['center'][s]
+            center = Ab.partition['R']['center'][s]
             plt.scatter(center[is1], center[is2], c='blue', s=8)
     
     # Set tight layout
     fig.tight_layout()
     
     # Save figure
-    filename = ScAb.setup.directories['outputF']+'partition_plot'
-    for form in ScAb.setup.plotting['exportFormats']:
+    filename = Ab.setup.directories['outputF']+'partition_plot'
+    for form in Ab.setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
     plt.show()
@@ -319,13 +319,13 @@ def createProbabilityPlots(setup, N, model, spec, results, partition, mc=None):
         
         
     
-def reachabilityHeatMap(ScAb, montecarlo = False, title = 'auto'):
+def reachabilityHeatMap(Ab, montecarlo = False, title = 'auto'):
     '''
     Create heat map for the reachability probability from any initial state.
 
     Parameters
     ----------
-    ScAb : abstraction instance
+    Ab : abstraction instance
         Full object of the abstraction being plotted for
 
     Returns
@@ -335,52 +335,52 @@ def reachabilityHeatMap(ScAb, montecarlo = False, title = 'auto'):
     '''
     
     import seaborn as sns
-    from ..define_partition import definePartitions
+    from ..define_partition import define_partition
 
-    if ScAb.model.n == 2:
+    if Ab.model.n == 2:
         
-        x_nr = ScAb.spec.partition['number'][0]
-        y_nr = ScAb.spec.partition['number'][1]
+        x_nr = Ab.spec.partition['number'][0]
+        y_nr = Ab.spec.partition['number'][1]
         
-        cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr], 
-               ScAb.spec.partition['width'], 
-               ScAb.spec.partition['origin'], onlyCenter=True)['center']
+        cut_centers = define_partition(Ab.model.n, [x_nr, y_nr], 
+               Ab.spec.partition['width'], 
+               Ab.spec.partition['origin'])['center']
 
-    if ScAb.model.name == 'building_2room':
+    if Ab.model.name == 'building_2room':
     
-        x_nr = ScAb.spec.partition['number'][0]
-        y_nr = ScAb.spec.partition['number'][1]
+        x_nr = Ab.spec.partition['number'][0]
+        y_nr = Ab.spec.partition['number'][1]
         
-        cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr, 1, 1], 
-               ScAb.spec.partition['width'], 
-               ScAb.spec.partition['origin'], onlyCenter=True)['center']
+        cut_centers = define_partition(Ab.model.n, [x_nr, y_nr, 1, 1], 
+               Ab.spec.partition['width'], 
+               Ab.spec.partition['origin'])['center']
         
-    if ScAb.model.name == 'anaesthesia_delivery':
+    if Ab.model.name == 'anaesthesia_delivery':
     
-        x_nr = ScAb.spec.partition['number'][0]
-        y_nr = ScAb.spec.partition['number'][1]
+        x_nr = Ab.spec.partition['number'][0]
+        y_nr = Ab.spec.partition['number'][1]
         
-        orig = np.concatenate((ScAb.spec.partition['origin'][0:2],
+        orig = np.concatenate((Ab.spec.partition['origin'][0:2],
                               [9.25]))
         
-        cut_centers = definePartitions(ScAb.model.n, [x_nr, y_nr, 1], 
-               ScAb.spec.partition['width'], 
-               orig, onlyCenter=True)['center']
+        cut_centers = define_partition(Ab.model.n, [x_nr, y_nr, 1], 
+               Ab.spec.partition['width'], 
+               orig)['center']
         
-    elif ScAb.model.n == 4:
+    elif Ab.model.n == 4:
         
-        x_nr = ScAb.spec.partition['number'][0]
-        y_nr = ScAb.spec.partition['number'][2]
+        x_nr = Ab.spec.partition['number'][0]
+        y_nr = Ab.spec.partition['number'][2]
         
-        cut_centers = definePartitions(ScAb.model.n, [x_nr, 1, y_nr, 1], 
-               ScAb.spec.partition['width'], 
-               ScAb.spec.partition['origin'], onlyCenter=True)['center']
+        cut_centers = define_partition(Ab.model.n, [x_nr, 1, y_nr, 1], 
+               Ab.spec.partition['width'], 
+               Ab.spec.partition['origin'])['center']
                           
     cut_values = np.zeros((x_nr, y_nr))
-    cut_coords = np.zeros((x_nr, y_nr, ScAb.model.n))
+    cut_coords = np.zeros((x_nr, y_nr, Ab.model.n))
     
-    cut_idxs = [ScAb.partition['R']['c_tuple'][tuple(c)] for c in cut_centers 
-                                   if tuple(c) in ScAb.partition['R']['c_tuple']]              
+    cut_idxs = [Ab.partition['R']['c_tuple'][tuple(c)] for c in cut_centers 
+                                   if tuple(c) in Ab.partition['R']['c_tuple']]              
     
     for i,(idx,center) in enumerate(zip(cut_idxs, cut_centers)):
         
@@ -388,9 +388,9 @@ def reachabilityHeatMap(ScAb, montecarlo = False, title = 'auto'):
         k = i // y_nr
         
         if montecarlo:
-            cut_values[k,j] = ScAb.mc['reachability'][idx] 
+            cut_values[k,j] = Ab.mc['reachability'][idx] 
         else:
-            cut_values[k,j] = ScAb.results['optimal_reward'][idx]
+            cut_values[k,j] = Ab.results['optimal_reward'][idx]
         cut_coords[k,j,:] = center
     
     cut_df = pd.DataFrame( cut_values, index=cut_coords[:,0,0], 
@@ -405,7 +405,7 @@ def reachabilityHeatMap(ScAb, montecarlo = False, title = 'auto'):
     ax.set_xlabel('Var 1', fontsize=15)
     ax.set_ylabel('Var 2', fontsize=15)
     if title == 'auto':
-        ax.set_title("N = "+str(ScAb.args.noise_samples), fontsize=20)
+        ax.set_title("N = "+str(Ab.args.noise_samples), fontsize=20)
     else:
         ax.set_title(str(title), fontsize=20)
     
@@ -413,9 +413,9 @@ def reachabilityHeatMap(ScAb, montecarlo = False, title = 'auto'):
     fig.tight_layout()
 
     # Save figure
-    filename = ScAb.setup.directories['outputFcase']+'2D_Heatmap_N=' + \
-                str(ScAb.args.noise_samples)
-    for form in ScAb.setup.plotting['exportFormats']:
+    filename = Ab.setup.directories['outputFcase']+'2D_Heatmap_N=' + \
+                str(Ab.args.noise_samples)
+    for form in Ab.setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
     plt.show()

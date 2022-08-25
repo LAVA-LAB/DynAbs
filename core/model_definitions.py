@@ -247,6 +247,7 @@ class building_temp(master.LTI_master):
         return spec
 
 
+
 class shuttle(master.LTI_master):
     
     def __init__(self, args):
@@ -269,7 +270,7 @@ class shuttle(master.LTI_master):
         self.lump = 2
         
         # Discretization step size
-        self.tau = 1 # NOTE: in minutes for BAS!
+        self.tau = 1
         
         self.modelDim = 2
         
@@ -303,7 +304,8 @@ class shuttle(master.LTI_master):
         spec.problem_type = 'reachavoid'
         
         return spec
-        
+
+
     
 class anaesthesia_delivery(master.LTI_master):
     

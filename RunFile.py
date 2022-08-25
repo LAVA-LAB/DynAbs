@@ -12,7 +12,7 @@ Contact e-mail address:     <anonymized>
 ______________________________________________________________________________
 """
 
-# %run "/home/thom/Documents/aaai23_2/RunFile.py"
+# %run "~/documents/sample-abstract/RunFile.py"
 
 # Load general packages
 from datetime import datetime   # Import Datetime to get current date/time
@@ -20,11 +20,12 @@ import pandas as pd             # Import Pandas to store data in frames
 import numpy as np              # Import Numpy for computations
 import matplotlib.pyplot as plt # Import Pyplot to generate plots
 import os
+import sys
 import matplotlib as mpl
 
 # Load main classes and methods
-from core.define_model import define_model
-from core.scenarioBasedAbstraction import scenarioBasedAbstraction
+from core.abstraction_default import abstraction_default
+from core.abstraction_epistemic import abstraction_epistemic
 from core.monte_carlo import monte_carlo
 from core.preprocessing.set_model_class import set_model_class
 from core.commons import createDirectory
@@ -45,6 +46,11 @@ print('Base directory:', base_dir)
 #-----------------------------------------------------------------------------
 
 args = parse_arguments()
+
+args.model = 'shuttle'
+args.sample_clustering = 1e-4
+args.noise_samples = 1600
+args.confidence = 0.01
 
 with open(os.path.join(base_dir, 'path_to_prism.txt')) as f:
     args.prism_folder = str(f.readlines()[0])
@@ -74,8 +80,16 @@ print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\
       '\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 
 # Create the main object for the current instance
-ScAb = scenarioBasedAbstraction(args, setup, define_model(setup, model, spec))
-ScAb.define_states()
+if args.abstraction_type == 'default':
+    method = abstraction_default
+elif args.abstraction_type == 'epistemic':
+    method = abstraction_epistemic
+else:
+    sys.exit('ERROR: Abstraction type `'+args.abstraction_type+'` not valid')
+Ab = method(args, setup, model, spec)
+
+# Define states of abstraction
+Ab.define_states()
 
 # %%
 
@@ -84,11 +98,11 @@ ScAb.define_states()
 #-----------------------------------------------------------------------------
 
 # Create directories
-createDirectory(ScAb.setup.directories['outputF']) 
+createDirectory(Ab.setup.directories['outputF']) 
         
 # Create actions and determine which ones are enabled
-ScAb.define_target_points()
-ScAb.define_actions()
+Ab.define_target_points()
+Ab.define_enabled_actions()
 
 # %%
 
@@ -106,7 +120,7 @@ case_id = 0
 # Create empty DataFrames to store iterative results
 exporter = result_exporter()
 
-if ScAb.model.name == 'drone':
+if Ab.model.name == 'drone':
     harm_osc = oscillator_experiment(f_min=0, f_max=2.01, 
                                      f_step=args.drone_mc_step,
                                      monte_carlo_iterations=args.drone_mc_iter)
@@ -114,33 +128,33 @@ else:
     harm_osc = False
 
 # For every iteration... (or once, if iterations are disabled)
-for case_id in range(0, ScAb.args.iterations):   
+for case_id in range(0, Ab.args.iterations):   
         
     print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
     print('START ITERATION ID:', case_id)
 
     # Set directories for this iteration
-    ScAb.setup.prepare_iteration(N, case_id)
+    Ab.setup.prepare_iteration(N, case_id)
 
     # Calculate transition probabilities
-    ScAb.define_probabilities()
+    Ab.define_probabilities()
     
     # Build and solve interval MDP
-    model_size = ScAb.build_iMDP()
-    ScAb.solve_iMDP()
+    model_size = Ab.build_iMDP()
+    Ab.solve_iMDP()
     
     # Export the results of the current iteration
-    writer = exporter.create_writer(ScAb, model_size, case_id, N)
+    writer = exporter.create_writer(Ab, model_size, case_id, N)
     
-    if ScAb.args.monte_carlo_iter > 0:
-        ScAb.mc = monte_carlo(ScAb, writer=writer)
+    if Ab.args.monte_carlo_iter > 0:
+        Ab.mc = monte_carlo(Ab, writer=writer)
     
     # Plot results
-    ScAb.generate_probability_plots()
-    ScAb.generate_heatmap()
+    Ab.generate_probability_plots()
+    Ab.generate_heatmap()
     
     # Store run times of current iterations        
-    time_df = pd.DataFrame( data=ScAb.time, index=[case_id] )
+    time_df = pd.DataFrame( data=Ab.time, index=[case_id] )
     time_df.to_excel(writer, sheet_name='Run time')
     writer.save()
     plt.close('all')
@@ -153,11 +167,11 @@ for case_id in range(0, ScAb.args.iterations):
     
     if harm_osc:
         print('-- Monte Carlo simulations to determine controller safety...')
-        harm_osc.add_iteration(ScAb, case_id)
+        harm_osc.add_iteration(Ab, case_id)
         
 # Save overall data in Excel (for all iterations combined)   
-exporter.save_to_excel(ScAb.setup.directories['outputF'] + \
-    ScAb.setup.time['datetime'] + '_iterative_results.xlsx')
+exporter.save_to_excel(Ab.setup.directories['outputF'] + \
+    Ab.setup.time['datetime'] + '_iterative_results.xlsx')
     
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
@@ -165,14 +179,14 @@ print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 if harm_osc:
     print('-- Export results for longitudinal drone dynamics as in paper...')
     
-    harm_osc.export(ScAb)
+    harm_osc.export(Ab)
 
-    harm_osc.plot_trace(ScAb, spring=ScAb.model.spring_nom, 
+    harm_osc.plot_trace(Ab, spring=Ab.model.spring_nom, 
                         state_center=(-6.5,-2.5))
     
-if ScAb.model.name == 'anaesthesia_delivery':
+if Ab.model.name == 'anaesthesia_delivery':
 
-    centers = ScAb.partition['R']['center']
-    values = ScAb.results['optimal_reward']
+    centers = Ab.partition['R']['center']
+    values = Ab.results['optimal_reward']
 
-    heatmap_3D(ScAb.setup, centers, values)
+    heatmap_3D(Ab.setup, centers, values)

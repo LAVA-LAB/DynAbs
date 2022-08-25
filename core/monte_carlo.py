@@ -20,7 +20,7 @@ from .define_partition import computeRegionCenters
 from .commons import tocDiff, table
 from .cvx_opt import Controller
 
-def monte_carlo(ScAb, iterations='auto', init_states='auto', 
+def monte_carlo(Ab, iterations='auto', init_states='auto', 
                init_times='auto', printDetails=False, writer=False,
                random_initial_state=False):
     '''
@@ -41,45 +41,45 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
 
     '''
     
-    if ScAb.flags['underactuated']:
-        controller = Controller(ScAb.model)
+    if Ab.flags['underactuated']:
+        controller = Controller(Ab.model)
     
     tocDiff(False)
-    if ScAb.args.verbose:
+    if Ab.args.verbose:
         print(' -- Starting Monte Carlo simulations...')
     
     mc = {'goal_reached': {}, 'traces': {}, 'action_traces': {}}
     
     if iterations != 'auto':
-        ScAb.setup.montecarlo['iterations'] = int(iterations)
+        Ab.setup.montecarlo['iterations'] = int(iterations)
         
     if init_states != 'auto':
-        ScAb.setup.montecarlo['init_states'] = list(init_states)
+        Ab.setup.montecarlo['init_states'] = list(init_states)
     else:
-        ScAb.setup.montecarlo['init_states'] = False
+        Ab.setup.montecarlo['init_states'] = False
         
     mc['reachability'] = \
-        np.zeros(ScAb.partition['nr_regions'])
+        np.zeros(Ab.partition['nr_regions'])
     
     # Column widths for tabular prints
-    if ScAb.args.verbose:
+    if Ab.args.verbose:
         col_width = [6,8,6,6,46]
         tab = table(col_width)
 
         print(' -- Computing required Gaussian random variables...')
     
-    if ScAb.setup.montecarlo['init_states'] == False:
-        init_state_idxs = np.arange(ScAb.partition['nr_regions'])
+    if Ab.setup.montecarlo['init_states'] == False:
+        init_state_idxs = np.arange(Ab.partition['nr_regions'])
         
     else:
-        init_state_idxs = ScAb.setup.montecarlo['init_states']
+        init_state_idxs = Ab.setup.montecarlo['init_states']
     
     # The gaussian random variables are precomputed to speed up the code
     w_array = np.random.multivariate_normal(
-        np.zeros(ScAb.model.n), 
-        ScAb.model.noise['w_cov'],
+        np.zeros(Ab.model.n), 
+        Ab.model.noise['w_cov'],
        ( len(init_state_idxs), 
-         ScAb.setup.montecarlo['iterations'], ScAb.N ))
+         Ab.setup.montecarlo['iterations'], Ab.N ))
 
     # For each of the monte carlo iterations
     if len(init_state_idxs) > 1:
@@ -93,30 +93,30 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
     for i_abs, i in enumerate(s_loop):
         
         # Check if we should perform Monte Carlo sims for this state
-        if ScAb.setup.montecarlo['init_states'] is not False and \
-                    i not in ScAb.setup.montecarlo['init_states']:
+        if Ab.setup.montecarlo['init_states'] is not False and \
+                    i not in Ab.setup.montecarlo['init_states']:
             print('Warning: this should not happen!')
             # If current state is not in the list of initial states,
             # continue to the next iteration
             continue
         # Otherwise, continue with the Monte Carlo simulation
         
-        if ScAb.args.verbose:
+        if Ab.args.verbose:
             tab.print_row(['STATE','ITER','K','STATUS'], 
                           head=True)
         
         # Create dictionaries for results related to partition i
         mc['goal_reached'][i] = np.full(
-            ScAb.setup.montecarlo['iterations'], False, dtype=bool)
+            Ab.setup.montecarlo['iterations'], False, dtype=bool)
         mc['traces'][i]  = dict()    
         mc['action_traces'][i] = dict()
         
         # For each of the monte carlo iterations
-        if ScAb.args.verbose or len(init_state_idxs) > 1:
-            loop = range(ScAb.setup.montecarlo['iterations'])
+        if Ab.args.verbose or len(init_state_idxs) > 1:
+            loop = range(Ab.setup.montecarlo['iterations'])
         else:
             loop = progressbar(
-                    range(ScAb.setup.montecarlo['iterations']), 
+                    range(Ab.setup.montecarlo['iterations']), 
                     redirect_stdout=True)
             
         for m in loop:
@@ -129,9 +129,9 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
             
             # Retreive the initial action time-grouping to be chosen
             # (given by the optimal policy to the MDP)
-            action = ScAb.results['optimal_policy'][k, i]
+            action = Ab.results['optimal_policy'][k, i]
             
-            if i in ScAb.partition['goal']:
+            if i in Ab.partition['goal']:
                 # If initial state is already the goal state, succes
                 # Then, abort the iteration, as we reached the goal
                 mc['goal_reached'][i][m] = True
@@ -142,103 +142,103 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
             
             elif action == -1:
                 # If action=-1, no policy known, and reachability is 0
-                if ScAb.args.verbose:
+                if Ab.args.verbose:
                     tab.print_row([i, m, k, 
                        'No initial policy known, so abort'], 
                        sort="Warning")
             
             else:
-                if ScAb.args.verbose:
+                if Ab.args.verbose:
                     tab.print_row([i, m, k, 
                        'Start Monte Carlo iteration'])
                                     
                 # Initialize the current simulation
-                x           = np.zeros((ScAb.N+1, ScAb.model.n))
-                x_goal      = np.zeros((ScAb.N+1, ScAb.model.n))
-                x_region    = np.zeros(ScAb.N).astype(int)
-                u           = np.zeros((ScAb.N, ScAb.model.p))
+                x           = np.zeros((Ab.N+1, Ab.model.n))
+                x_goal      = np.zeros((Ab.N+1, Ab.model.n))
+                x_region    = np.zeros(Ab.N).astype(int)
+                u           = np.zeros((Ab.N, Ab.model.p))
                 
-                act         = np.zeros(ScAb.N).astype(int)
+                act         = np.zeros(Ab.N).astype(int)
                 
                 # True state model dynamics
                 if random_initial_state:
                     x[k] = np.random.uniform(
-                            low  = ScAb.partition['R']['low'][i],
-                            high = ScAb.partition['R']['upp'][i])
+                            low  = Ab.partition['R']['low'][i],
+                            high = Ab.partition['R']['upp'][i])
                 else:
-                    x[k] = ScAb.partition['R']['center'][i]
+                    x[k] = Ab.partition['R']['center'][i]
                 
                 # Add current state to trace
                 mc['traces'][i][m] += [x[k]]
                 
                 # For each time step in the finite time horizon
-                while k < ScAb.N:
+                while k < Ab.N:
                     
-                    if ScAb.args.verbose:
+                    if Ab.args.verbose:
                         tab.print_row([i, m, k, 'New time step'])
                     
                     # Compute all centers of regions associated with points
                     center_coord = computeRegionCenters(x[k], 
-                        ScAb.spec.partition).flatten()
+                        Ab.spec.partition).flatten()
                     
-                    if tuple(center_coord) in ScAb.partition['R']['c_tuple']:
+                    if tuple(center_coord) in Ab.partition['R']['c_tuple']:
                         # Save that state is currently in region ii
-                        x_region[k] = ScAb.partition['R']['c_tuple'][tuple(center_coord)]
+                        x_region[k] = Ab.partition['R']['c_tuple'][tuple(center_coord)]
                         
                         # Retreive the action from the policy
-                        act[k] = ScAb.results['optimal_policy'][k, x_region[k]]
+                        act[k] = Ab.results['optimal_policy'][k, x_region[k]]
                     else:
                         x_region[k] = -1
                     
                     # If current region is the goal state ... 
-                    if x_region[k] in ScAb.partition['goal']:
+                    if x_region[k] in Ab.partition['goal']:
                         # Then abort the current iteration, as we have achieved the goal
                         mc['goal_reached'][i][m] = True
                         
-                        if ScAb.args.verbose:
+                        if Ab.args.verbose:
                             tab.print_row([i, m, k, 'Goal state reached'], sort="Success")
                         break
                     # If current region is in critical states...
-                    elif x_region[k] in ScAb.partition['critical']:
+                    elif x_region[k] in Ab.partition['critical']:
                         # Then abort current iteration
-                        if ScAb.args.verbose:
+                        if Ab.args.verbose:
                             tab.print_row([i, m, k, 'Critical state reached, so abort'], sort="Warning")
                         break
                     elif x_region[k] == -1:
-                        if ScAb.args.verbose:
+                        if Ab.args.verbose:
                             tab.print_row([i, m, k, 'Absorbing state reached, so abort'], sort="Warning")
                         break
                     elif act[k] == -1:
-                        if ScAb.args.verbose:
+                        if Ab.args.verbose:
                             tab.print_row([i, m, k, 'No policy known, so abort'], sort="Warning")
                         break
                     
                     # If loop was not aborted, we have a valid action
-                    if ScAb.args.verbose:
+                    if Ab.args.verbose:
                         tab.print_row([i, m, k, 'In state: '+str(x_region[k])+' ('+str(x[k])+'), take action: '+str(act[k])])
                 
                     # Move predicted mean to the future belief to the target point of the next state
-                    x_goal[k+1] = ScAb.actions['obj'][act[k]].center
+                    x_goal[k+1] = Ab.actions['obj'][act[k]].center
 
                     # Reconstruct the control input required to achieve this target point
                     # Note that we do not constrain the control input; we already know that a suitable control exists!
-                    if ScAb.flags['underactuated']:
+                    if Ab.flags['underactuated']:
                         success, x_hat, u[k] = controller.solve(x_goal[k+1], x[k], 
-                            ScAb.actions['obj'][act[k]].backreach_obj.max_control_error)
+                            Ab.actions['obj'][act[k]].backreach_obj.target_set_size)
                         
                         if not success:
                             print('>> Failed to compute control input <<')
                             assert False
                         
                         # Implement the control into the physical (unobservable) system
-                        x_plus = ScAb.model.A_true @ x[k] + ScAb.model.B_true @ u[k] + ScAb.model.Q_flat
+                        x_plus = Ab.model.A_true @ x[k] + Ab.model.B_true @ u[k] + Ab.model.Q_flat
                     else:
                         x_nom = x[k]
                     
-                        u[k] = np.array(ScAb.model.B_pinv @ ( x_goal[k+1] - ScAb.model.A @ x_nom.flatten() - ScAb.model.Q_flat ))
+                        u[k] = np.array(Ab.model.B_pinv @ ( x_goal[k+1] - Ab.model.A @ x_nom.flatten() - Ab.model.Q_flat ))
                     
                         # Implement the control into the physical (unobservable) system
-                        x_plus = ScAb.model.A @ x[k] + ScAb.model.B @ u[k] + ScAb.model.Q_flat
+                        x_plus = Ab.model.A @ x[k] + Ab.model.B @ u[k] + Ab.model.Q_flat
                     
                     # Use Gaussian process noise
                     x[k+1] = x_plus + w_array[i_abs, m, k]
@@ -255,16 +255,16 @@ def monte_carlo(ScAb, iterations='auto', init_states='auto',
         
         # Calculate the overall reachability probability for initial state i
         mc['reachability'][i] = \
-            np.sum(mc['goal_reached'][i]) / ScAb.setup.montecarlo['iterations']
+            np.sum(mc['goal_reached'][i]) / Ab.setup.montecarlo['iterations']
                 
-    ScAb.time['6_MonteCarlo'] = tocDiff(False)
-    print('Monte Carlo simulations finished:',ScAb.time['6_MonteCarlo'])
+    Ab.time['6_MonteCarlo'] = tocDiff(False)
+    print('Monte Carlo simulations finished:',Ab.time['6_MonteCarlo'])
     
     if writer:
     
         # Store Monte Carlo results as dataframe
         MCsims_df = pd.Series( 
-            mc['reachability'], index=range(ScAb.partition['nr_regions']) )
+            mc['reachability'], index=range(Ab.partition['nr_regions']) )
             
         # Write Monte Carlo results to Excel
         MCsims_df.to_excel(writer, sheet_name='Empirical reach.')
