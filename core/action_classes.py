@@ -141,23 +141,16 @@ def find_backward_inflated(A_hat, error, alpha, G):
 
 def partial_model(flags, model, spec, dim_n, dim_p):
     
-    #TODO: improve this function.
-    
-    n_start = min(dim_n)
-    n_end   = max(dim_n)+1
-    p_start = min(dim_p)
-    p_end   = max(dim_p)+1
-    
-    model.A         = model.A[n_start:n_end, n_start:n_end]
-    model.A_inv     = model.A_inv[n_start:n_end, n_start:n_end]
-    model.B         = model.B[n_start:n_end, p_start:p_end]
-    model.Q         = model.Q[n_start:n_end, :]
+    model.A         = model.A[dim_n][:, dim_n]
+    model.A_inv     = model.A_inv[dim_n][:, dim_n]
+    model.B         = model.B[dim_n][:, dim_p]
+    model.Q         = model.Q[dim_n]
     model.n         = len(dim_n)
     model.p         = len(dim_p)
     
     if flags['parametric']:
-        model.A_set     = [A[n_start:n_end, n_start:n_end] for A in model.A_set]
-        model.B_set     = [B[n_start:n_end, p_start:p_end] for B in model.B_set]
+        model.A_set     = [A[dim_n][:, dim_n] for A in model.A_set]
+        model.B_set     = [B[dim_n][:, dim_p] for B in model.B_set]
     
     spec.partition['number'] = spec.partition['number'][dim_n]
     spec.partition['width'] = spec.partition['width'][dim_n]

@@ -14,6 +14,14 @@ ______________________________________________________________________________
 
 import numpy as np              # Import Numpy for computations
 import itertools                # Import to crate iterators
+import matplotlib.pyplot as plt # Import Pyplot to generate plots
+import matplotlib.patches as patches
+
+from scipy.spatial import ConvexHull
+from matplotlib.patches import Rectangle
+import matplotlib.patches as patches
+
+from .commons import cm2inch
 
 def computeRegionCenters(points, partition):
     '''
@@ -243,3 +251,146 @@ def define_spec_region(allCenters, sets, partition, borderOutside=False):
         # Return the ID's of regions associated with the unique centers            
         return states, slices, index_tuples
         
+
+def partition_plot(i_show, i_hide, Ab, cut_value, act=None, stateLabels=False):
+    '''
+
+    Returns
+    -------
+    None.
+
+    '''
+    
+    is1, is2 = i_show
+    
+    fig, ax = plt.subplots(figsize=cm2inch(6.1, 5))
+    
+    plt.xlabel('Var $1$', labelpad=0)
+    plt.ylabel('Var $2$', labelpad=0)
+
+    width = Ab.spec.partition['width']
+    number = Ab.spec.partition['number']
+    origin = Ab.spec.partition['origin']
+    
+    min_xy = Ab.spec.partition['boundary'][:,0]
+    max_xy = Ab.spec.partition['boundary'][:,1]
+    
+    # Compute where to show ticks on the axis
+    ticks_x = np.round(np.linspace(min_xy[is1], max_xy[is1], number[is1]+1), 4)
+    ticks_y = np.round(np.linspace(min_xy[is2], max_xy[is2], number[is2]+1), 4)
+    
+    show_every = np.round(number / 5)
+    ticks_x_labels = [v if i % show_every[is1] == 0 else '' for i,v in enumerate(ticks_x)]
+    ticks_y_labels = [v if i % show_every[is2] == 0 else '' for i,v in enumerate(ticks_y)]
+    
+    # Set ticks and tick labels
+    ax.set_xticks(ticks_x)
+    ax.set_yticks(ticks_y)
+    ax.set_xticklabels(ticks_x_labels)
+    ax.set_yticklabels(ticks_y_labels)
+    
+    # x-axis
+    for i, tic in enumerate(ax.xaxis.get_major_ticks()):
+        if ticks_x_labels[i] == '':
+            tic.tick1line.set_visible(False)
+            tic.tick2line.set_visible(False)
+    
+    # y-axis
+    for i, tic in enumerate(ax.yaxis.get_major_ticks()):
+        if ticks_y_labels[i] == '':
+            tic.tick1line.set_visible(False)
+            tic.tick2line.set_visible(False)
+    
+    # Show gridding of the state space
+    plt.grid(which='major', color='#CCCCCC', linewidth=0.3)
+    
+    # Goal x-y limits
+    min_xy_scaled = 1.5 * (min_xy - origin) + origin
+    max_xy_scaled = 1.5 * (max_xy - origin) + origin
+    
+    ax.set_xlim(min_xy_scaled[is1], max_xy_scaled[is1])
+    ax.set_ylim(min_xy_scaled[is2], max_xy_scaled[is2])
+    
+    ax.set_title("Partition plot", fontsize=10)
+    
+    # Draw goal states
+    for goal in Ab.partition['goal']:
+        
+        if all(Ab.partition['R']['center'][goal, list(i_hide)] == cut_value):
+        
+            goal_lower = Ab.partition['R']['low'][goal, [is1, is2]]
+            goalState = patches.Rectangle(goal_lower, width=width[is1], 
+                                  height=width[is2], color="green", 
+                                  alpha=0.3, linewidth=None)
+            ax.add_patch(goalState)
+    
+    # Draw critical states
+    for crit in Ab.partition['critical']:
+        
+        if all(Ab.partition['R']['center'][crit, list(i_hide)] == cut_value):
+        
+            critStateLow = Ab.partition['R']['low'][crit, [is1, is2]]
+            criticalState = patches.Rectangle(critStateLow, width=width[is1], 
+                                      height=width[is2], color="red", 
+                                      alpha=0.3, linewidth=None)
+            ax.add_patch(criticalState)
+    
+    with plt.rc_context({"font.size": 5}):        
+        # Draw every X-th label
+        if stateLabels:
+            skip = 1
+            for i in range(0, Ab.partition['nr_regions'], skip):
+                
+                if all(Ab.partition['R']['center'][i, list(i_hide)] == cut_value):
+                                
+                    ax.text(Ab.partition['R']['center'][i,is1], 
+                            Ab.partition['R']['center'][i,is2], i, \
+                            verticalalignment='center', 
+                            horizontalalignment='center' ) 
+    
+    if not act is None:
+        
+        plt.scatter(act.center[is1], act.center[is2], c='red', s=20)
+        
+        print(' - Print backward reachable set of action', act.idx)
+        draw_hull(act.backreach, color='red')
+        
+        if hasattr(act, 'backreach_infl'):
+            draw_hull(act.backreach_infl, color='blue')
+        
+        for s in act.enabled_in:
+            center = Ab.partition['R']['center'][s]
+            plt.scatter(center[is1], center[is2], c='blue', s=8)
+    
+    # Set tight layout
+    fig.tight_layout()
+    
+    # Save figure
+    filename = Ab.setup.directories['outputF']+'partition_plot'
+    for form in Ab.setup.plotting['exportFormats']:
+        plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
+        
+    plt.show()
+
+
+def draw_hull(points, color, linewidth=0.1):
+
+    # Plot hull of the vertices        
+    try: 
+        hull = ConvexHull(points)
+        
+        # Get the indices of the hull points.
+        hull_indices = hull.vertices
+        
+        # These are the actual points.
+        hull_pts = points[hull_indices, :]
+        
+        plt.fill(hull_pts[:,0], hull_pts[:,1], fill=False, edgecolor=color, lw=linewidth)
+        
+        print('Convex hull plotted')
+        
+    except:
+        plt.plot(points[:,0], points[:,1],
+                 color=color, lw=linewidth)
+        
+        print('Line plotted')

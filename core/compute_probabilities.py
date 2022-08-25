@@ -279,12 +279,12 @@ def compute_intervals_default(args, partition_setup, partition, trans, samples):
     # Initialize counts array
     counts = dict()
     
-    print('First 10 samples):', samples[:10])
+    # print('First 10 samples):', samples[:10])
 
     #TODO: Make piece of code below faster
     centers = computeRegionCenters(samples, partition_setup)
     
-    print('First 10 centers:', centers[:10])
+    # print('First 10 centers:', centers[:10])
 
     for s in range(Nsamples):
         

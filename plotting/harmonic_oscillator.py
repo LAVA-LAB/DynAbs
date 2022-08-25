@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt # Import Pyplot to generate plots
 from matplotlib.patches import Rectangle
 import matplotlib.patches as patches
 
-from ..commons import printWarning, cm2inch
+from core.commons import printWarning, cm2inch
 from core.monte_carlo import monte_carlo
 
 def oscillator_heatmap(Ab, title = 'auto'):

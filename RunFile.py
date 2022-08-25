@@ -29,12 +29,13 @@ from core.abstraction_epistemic import abstraction_epistemic
 from core.monte_carlo import monte_carlo
 from core.preprocessing.set_model_class import set_model_class
 from core.commons import createDirectory
+from core.export import result_exporter, pickle_results
 
-from core.preprocessing.master_classes import settings, result_exporter
+from core.preprocessing.master_classes import settings
 from core.preprocessing.argument_parser import parse_arguments
 
-from core.postprocessing.harmonic_oscillator import oscillator_experiment
-from core.postprocessing.anaesthesia_delivery import heatmap_3D
+from plotting.harmonic_oscillator import oscillator_experiment
+from plotting.anaesthesia_delivery import heatmap_3D
 
 np.random.seed(1)
 mpl.rcParams['figure.dpi'] = 300
@@ -47,10 +48,12 @@ print('Base directory:', base_dir)
 
 args = parse_arguments()
 
-args.model = 'shuttle'
-args.sample_clustering = 1e-4
+args.model = 'UAV'
+args.UAV_dim = 3
+args.noise_factor = 1
 args.noise_samples = 1600
 args.confidence = 0.01
+args.prism_java_memory = 8
 
 with open(os.path.join(base_dir, 'path_to_prism.txt')) as f:
     args.prism_folder = str(f.readlines()[0])
@@ -149,10 +152,6 @@ for case_id in range(0, Ab.args.iterations):
     if Ab.args.monte_carlo_iter > 0:
         Ab.mc = monte_carlo(Ab, writer=writer)
     
-    # Plot results
-    Ab.generate_probability_plots()
-    Ab.generate_heatmap()
-    
     # Store run times of current iterations        
     time_df = pd.DataFrame( data=Ab.time, index=[case_id] )
     time_df.to_excel(writer, sheet_name='Run time')
@@ -164,6 +163,8 @@ for case_id in range(0, Ab.args.iterations):
     exporter.add_to_df(time_df, 'run_times')
     exporter.add_to_df(pd.DataFrame(data=model_size, index=[case_id]), 
                        'model_size')
+
+    pickle_results(Ab)
     
     if harm_osc:
         print('-- Monte Carlo simulations to determine controller safety...')
@@ -172,9 +173,11 @@ for case_id in range(0, Ab.args.iterations):
 # Save overall data in Excel (for all iterations combined)   
 exporter.save_to_excel(Ab.setup.directories['outputF'] + \
     Ab.setup.time['datetime'] + '_iterative_results.xlsx')
-    
+
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
+
+######################
 
 if harm_osc:
     print('-- Export results for longitudinal drone dynamics as in paper...')
@@ -190,3 +193,20 @@ if Ab.model.name == 'anaesthesia_delivery':
     values = Ab.results['optimal_reward']
 
     heatmap_3D(Ab.setup, centers, values)
+    
+# %%
+
+import pickle
+
+infile = open(Ab.setup.directories['outputF']+'data_dump.p','rb')
+data = pickle.load(infile)
+infile.close()
+
+from plotting.createPlots import reachability_plot
+reachability_plot(data['setup'], data['results'])
+
+from plotting.createPlots import heatmap_3D_view
+heatmap_3D_view(data['model'], data['setup'], data['spec'], data['regions']['center'], data['results'])
+
+from plotting.createPlots import heatmap_2D
+heatmap_2D(data['args'], data['model'], data['setup'], data['regions']['c_tuple'], data['spec'], data['results']['optimal_reward'])

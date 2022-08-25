@@ -22,18 +22,15 @@ import csv                      # Import to create/load CSV files
 import subprocess
 
 from .define_model import find_connected_components
-from .define_partition import define_partition, define_spec_region
+from .define_partition import define_partition, define_spec_region, \
+    partition_plot
 from .commons import tocDiff, printWarning
 from .create_iMDP import mdp
-from .postprocessing.createPlots import partition_plot
-
-from .cvx_opt import LP_vertices_contained
-
-from .action_classes import action, epistemic_error
+from .action_classes import action
 
 '''
 ------------------------------------------------------------------------------
-Main filter-based abstraction object definition
+Main abstraction object definition
 ------------------------------------------------------------------------------
 '''
 
@@ -240,6 +237,8 @@ class Abstraction(object):
         
             enabled[i], enabled_inv[i], error[i] = self.get_enabled_actions(self.model, self.spec, dn, dp)
         
+        print('\nCompose enabled actions in independent dimensions...')
+
         nr_act = self._composeEnabledActions(dim_n, enabled, 
                                              enabled_inv, error)
 
@@ -272,6 +271,11 @@ class Abstraction(object):
     def _composeEnabledActions(self, dim_n, enabled_sub, enabled_sub_inv, 
                                control_error_sub):
         
+        if None in control_error_sub:
+            no_error = True
+        else:
+            no_error = False
+
         # Initialize variables
         self.actions['enabled'] = [set() for i in range(self.partition['nr_regions'])]
             
@@ -292,15 +296,21 @@ class Abstraction(object):
         
         # Zipping over the product of the keys/values of the dictionaries
         for keys, vals_enab in zip(enabled_inv_keys, enabled_inv_vals):
-        # for keys, vals_enab in zip(enabled_inv_keys, enabled_inv_vals):
-            
-            vals_error = [control_error_sub[i][key] for i,key in enumerate(keys)]
+
+            # Check if we have to save an error term as well
+            if not no_error:
+                vals_error = [control_error_sub[i][key] for i,key in enumerate(keys)]
             
             # Add tuples to get the compositional state
             act_idx = self.actions['tup2idx'][tuple(np.sum(keys, axis=0))]
             act_obj = self.actions['obj'][act_idx]
             
             s_elems = list(itertools.product(*vals_enab))
+
+            # If action not enabled in one of the subcomponenets, then skip
+            if len(s_elems) == 0:
+                continue
+                
             s_enabledin  = np.sum(s_elems, axis=1)
             
             for s in s_enabledin:
@@ -318,24 +328,25 @@ class Abstraction(object):
             if len(act_obj.enabled_in) > 0:
                 nr_act += 1
             
-            # Compute control error for this action
-            if hasattr(self.model, 'Q_uncertain'):
-                # Also account for the uncertain disturbances
-                act_obj.error = {
-                    'pos': np.sum([mats[z] @ vals_error[z]['pos'] for z in 
-                                   range(len(dim_n))], axis=0) + self.model.Q_uncertain['max'],
-                    'neg': np.sum([mats[z] @ vals_error[z]['neg'] for z in 
-                                   range(len(dim_n))], axis=0) + self.model.Q_uncertain['min']
-                    }
-            
-            else:
-                # No uncertain disturbance to account for
-                act_obj.error = {
-                    'pos': np.sum([mats[z] @ vals_error[z]['pos'] for z in 
-                                   range(len(dim_n))], axis=0),
-                    'neg': np.sum([mats[z] @ vals_error[z]['neg'] for z in 
-                                   range(len(dim_n))], axis=0)
-                    }
+            if not no_error:
+                # Compute control error for this action
+                if hasattr(self.model, 'Q_uncertain'):
+                    # Also account for the uncertain disturbances
+                    act_obj.error = {
+                        'pos': np.sum([mats[z] @ vals_error[z]['pos'] for z in 
+                                    range(len(dim_n))], axis=0) + self.model.Q_uncertain['max'],
+                        'neg': np.sum([mats[z] @ vals_error[z]['neg'] for z in 
+                                    range(len(dim_n))], axis=0) + self.model.Q_uncertain['min']
+                        }
+                
+                else:
+                    # No uncertain disturbance to account for
+                    act_obj.error = {
+                        'pos': np.sum([mats[z] @ vals_error[z]['pos'] for z in 
+                                    range(len(dim_n))], axis=0),
+                        'neg': np.sum([mats[z] @ vals_error[z]['neg'] for z in 
+                                    range(len(dim_n))], axis=0)
+                        }
             
         return nr_act
         
@@ -465,39 +476,7 @@ class Abstraction(object):
                     self.results['optimal_policy'][i,j] = int(value_split[1])
                 else:
                     # If no policy is known, set to -1
-                    self.results['optimal_policy'][i,j] = int(value)
-        
-        
-        
-    def generate_probability_plots(self):
-        '''
-        Generate (optimal reachability probability) plots
-        '''
-        
-        print('\nGenerate plots')
-        
-        if self.partition['nr_regions'] <= 5000:
-        
-            from .postprocessing.createPlots import createProbabilityPlots
-        
-            if not hasattr(self, 'mc'):
-                self.mc = None    
-        
-            createProbabilityPlots(self.setup, self.N, self.model, self.spec,
-                                   self.results, self.partition, self.mc)
-                
-        else:
-            printWarning("Omit probability plots (nr. of regions too large)")
-            
-            
-            
-    def generate_heatmap(self):
-            
-            from core.postprocessing.createPlots import reachabilityHeatMap
-            
-            # Create heat map
-            reachabilityHeatMap(self)
-     
+                    self.results['optimal_policy'][i,j] = int(value)     
             
         
 ###############################

@@ -8,7 +8,7 @@ from progressbar import progressbar # Import to create progress bars
 from scipy.spatial import Delaunay # Import to create convex hulls
 from operator import itemgetter
 
-from .action_classes import backreachset, partial_model, epistemic_error, rotate_2D_vector
+from .action_classes import backreachset, partial_model
 from .compute_probabilities import compute_intervals_default
 
 from core.define_partition import computeRegionIdx
@@ -84,7 +84,6 @@ class abstraction_default(Abstraction):
         
         enabled = {}
         enabled_inv = {}   
-        error = {}
 
         #############################
 
@@ -96,16 +95,15 @@ class abstraction_default(Abstraction):
             return [x for x in seq if not (x in seen or seen_add(x))]
 
         # Compute inverse reachability area        
-        x_inv_area = self.actions['backreach_obj']['default'].verts
+        x_inv_area = self.actions['backreach_obj']['default'].verts[:, dim_n]
+        x_inv_area = np.unique(x_inv_area, axis=0)
 
-        total_actions_enabled = 0
-        
         enabled_polypoints = dict()
 
-        nr_corners = 2**self.model.n
+        nr_corners = 2**model.n
 
         # Check if dimension of control area equals that if the state vector
-        dimEqual = self.model.p == self.model.n
+        dimEqual = model.p == model.n
 
         # Determine the index tuples of all possible successor states
         upper = np.ones(self.model.n)
@@ -113,21 +111,22 @@ class abstraction_default(Abstraction):
         
         # Find list of tuples of the states that must be considered for this partial model
         state_tuples = list(itertools.product(*map(range, 
-                            np.zeros(len(dim_n), dtype=int), 
+                            np.zeros(self.model.n, dtype=int), 
                             upper.astype(int))))
 
         # Also find the corresponding absolute indices of these states
         state_idxs   = itemgetter(*state_tuples)(self.partition['R']['idx'])
         
         # Retrieve all corners corresponding to these regions
-        region_corners = np.concatenate(self.partition['allCorners'][state_idxs,:,:])
+        selected_regions = [np.unique(r[:, dim_n], axis=0) for r in self.partition['allCorners'][state_idxs,:,:]]
+        region_corners = np.concatenate(selected_regions)
 
         if dimEqual:
             
             print(' -- Computing inverse basis vectors...')
             # Use preferred method: map back the skewed image to squares
             
-            basis_vectors = self._defBasisVectors(verbose=verbose)   
+            basis_vectors = defBasisVectors(model, verbose=verbose)   
             
             if verbose:
                 for i,v1 in enumerate(basis_vectors):
@@ -178,23 +177,19 @@ class abstraction_default(Abstraction):
             # Get reference to current action object
             act   = self.actions['obj'][a_idx]
             
-            # Get backward reachable set
-            #BRS = np.unique(act.backreach_infl[:, dim_n], axis=0)
-            #brs_basis = act.backreach[0, dim_n]
-            
             if dimEqual:
-            
+
                 # Shift the origin points (instead of the target point)
-                A_inv_d = self.model.A_inv @ np.array(act.center)
+                A_inv_d = model.A_inv @ np.array(act.center[dim_n])
                 
                 # Python implementation
                 allVerticesNormalized = (A_inv_d @ parralelo2cube) - \
                                          allRegionVertices
-                                
+
                 # Reshape the whole matrix that we obtain
                 poly_reshape = np.reshape( allVerticesNormalized,
-                                (self.partition['nr_regions'], 
-                                 nr_corners*self.model.n))
+                                (len(state_idxs), 
+                                 nr_corners*model.n))
                 
                 # Enabled actions are ones that have all corner points within
                 # the origin-centered hypercube with unit length
@@ -204,7 +199,7 @@ class abstraction_default(Abstraction):
             else:
                 
                 # Shift the origin points (instead of the target point)
-                A_inv_d = self.model.A_inv @ np.array(act.center)
+                A_inv_d = model.A_inv @ np.array(act.center[dim_n])
             
                 # Subtract the shift from all corner points
                 allVertices = A_inv_d - allRegionVertices
@@ -214,7 +209,7 @@ class abstraction_default(Abstraction):
             
                 # Map enabled vertices of the partitions to actual partitions
                 enabled_polypoints = np.reshape(  polypoints_vec, 
-                              (self.partition['nr_regions'], nr_corners))
+                              (len(state_idxs), nr_corners))
             
                 # Polypoints contains the True/False results for all vertices
                 # of every partition. An action is enabled in a state if it 
@@ -234,63 +229,11 @@ class abstraction_default(Abstraction):
                 else:
                     enabled[s_tup] = {a_tup}
                 
-            if len(enabled_in_tups) > 0:
-                
-                # Store the control error for this action
-                error[a_tup] = {'neg': -np.zeros(self.model.n),
-                                'pos':  np.zeros(self.model.n) }    
-                
             if a_idx % print_every == 0:
-                print('Action to',act.center,'enabled in',len(enabled_in_tups),'states') 
+                print('Action to',act.center[dim_n],'enabled in',len(enabled_in_tups),'states') 
                 #print(self.partition['R']['center'][enabled_in_idxs])
                 
-        return enabled, enabled_inv, error
-
-
-
-    def _defBasisVectors(self, verbose=False):
-        '''
-        Compute the basis vectors of the predecessor set, computed from the
-        average control inputs to the maximum in every dimension of the
-        control space.
-        Note that the drift does not play a role here.  
-
-        Parameters
-        ----------
-        verbose : Bool
-            If True, provide verbose output.
-
-        Returns
-        -------
-        basis_vectors : 2D Numpy array
-            Numpy array of basis vectors (every row is a vector).
-
-        '''
-        
-        u_avg = np.array(self.model.uMax + self.model.uMin)/2    
-
-        # Compute basis vectors (with average of all controls as origin)
-        u = np.tile(u_avg, (self.model.n,1)) + \
-            np.diag(self.model.uMax - u_avg)
-        
-        origin = self.model.A_inv @ \
-                (self.model.B @ np.array(u_avg).T)   
-                
-        basis_vectors = np.zeros((self.model.n, self.model.n))
-        
-        for i,elem in enumerate(u):
-            
-            # Calculate inverse image of the current extreme control input
-            point = self.model.A_inv @ \
-                (self.model.B @ elem.T)    
-            
-            basis_vectors[i,:] = point - origin
-        
-            if verbose:
-                print(' ---- Length of basis',i,':',
-                  np.linalg.norm(basis_vectors[i,:]))
-        
-        return basis_vectors
+        return enabled, enabled_inv, None
 
 
 
@@ -384,7 +327,53 @@ class abstraction_default(Abstraction):
         print('Transition probabilities calculated - time:',
               self.time['3_probabilities'])
         
+
+
+def defBasisVectors(model, verbose=False):
+        '''
+        Compute the basis vectors of the predecessor set, computed from the
+        average control inputs to the maximum in every dimension of the
+        control space.
+        Note that the drift does not play a role here.  
+
+        Parameters
+        ----------
+        verbose : Bool
+            If True, provide verbose output.
+
+        Returns
+        -------
+        basis_vectors : 2D Numpy array
+            Numpy array of basis vectors (every row is a vector).
+
+        '''
         
+        u_avg = np.array(model.uMax + model.uMin)/2    
+
+        # Compute basis vectors (with average of all controls as origin)
+        u = np.tile(u_avg, (model.n,1)) + \
+            np.diag(model.uMax - u_avg)
+
+        origin = model.A_inv @ \
+                (model.B @ np.array(u_avg).T)   
+                
+        basis_vectors = np.zeros((model.n, model.n))
+        
+        for i,elem in enumerate(u):
+            
+            # Calculate inverse image of the current extreme control input
+            point = model.A_inv @ \
+                (model.B @ elem.T)    
+            
+            basis_vectors[i,:] = point - origin
+        
+            if verbose:
+                print(' ---- Length of basis',i,':',
+                  np.linalg.norm(basis_vectors[i,:]))
+        
+        return basis_vectors
+
+
         
 def exclude_samples(samples, width):
     

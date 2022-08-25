@@ -13,6 +13,7 @@ ______________________________________________________________________________
 """
 
 import numpy as np
+import sys
 import core.preprocessing.master_classes as master
 
 class drone_spec(master.spec_master):
@@ -177,3 +178,95 @@ class anaesthesia_delivery_spec(master.spec_master):
         self.error['target_set_size'] = {
             'default': np.vstack(([-1.4, -1.4, -1.4]*width, [1.4, 1.4, 1.4]*width)).T
             }
+
+
+
+class UAV_spec(master.spec_master):
+    
+    def __init__(self, args, modelDim):
+
+        # Initialize superclass
+        master.spec_master.__init__(self)        
+        
+        # Step-bound on spec
+        self.end_time = 64
+
+        # Authority limit for the control u, both positive and negative
+        if modelDim == 2:
+
+            # Authority limit for the control u, both positive and negative
+            self.control['uMin'] = [-4, -4]
+            self.control['uMax'] = [4, 4]
+        
+            self.partition['boundary']  = np.array([[-7, 7], [-3, 3], [-7, 7], [-3, 3]])
+            self.partition['number']    = [7, 4, 7, 4]
+        
+            # Actions per dimension (if 'auto', equal to nr of regions)
+            self.targets['boundary']    = 'auto'
+            self.targets['number']      = 'auto'
+            
+            self.goal = [
+                np.array([[5, 7], 'all', [5, 7], 'all'], dtype='object')
+                ]
+            
+            self.critical = np.vstack((
+                    np.array([[-7, -1], 'all', [1, 3], 'all'], dtype='object'),
+                    np.array([[3, 7], 'all', [-7, -3], 'all'], dtype='object')
+            ))
+
+        elif modelDim == 3:
+
+            # Let the user make a choice for the model dimension
+            self.noiseMultiplier = args.noise_factor
+            
+            # Authority limit for the control u, both positive and negative
+            self.control['uMin'] = [-4, -4, -4]
+            self.control['uMax'] = [4, 4, 4]
+        
+            self.partition['boundary']  = np.array([[-15, 15], [-2.25, 2.25], 
+                                                    [-9,   9], [-2.25, 2.25], 
+                                                    [-7,   7], [-2.25, 2.25]])
+            self.partition['number']    = [15, 3, 9, 3, 7, 3]
+        
+            # Actions per dimension (if 'auto', equal to nr of regions)
+            self.targets['boundary']    = 'auto'
+            self.targets['number']      = 'auto'
+        
+            self.goal = [
+                np.array([[11, 15], 'all', [1, 5], 'all', [-7,-3], 'all'], dtype='object')
+                ]
+
+            self.critical = [
+                # Hole 1
+                np.array([[-11, -5], 'all', [-1, 9], 'all', [-7, 3], 'all'], dtype='object'),
+                np.array([[-11, -5], 'all', [5, 9], 'all', [1, 5], 'all'], dtype='object'),
+                np.array([[-11, -5], 'all', [3, 5], 'all', [-7, -5], 'all'], dtype='object'),
+
+                # Hole 2
+                np.array([[-1, 3], 'all', [1, 9], 'all', [-7, 5], 'all'], dtype='object'),
+                np.array([[-1, 3], 'all', [1, 3], 'all', [-1, 3], 'all'], dtype='object'),
+                np.array([[-1, 3], 'all', [7, 9], 'all', [-1, 3], 'all'], dtype='object'),
+
+                # Tower
+                np.array([[-1, 3], 'all', [-3, 1], 'all', [-7, 7], 'all'], dtype='object'),
+
+                # Wall between routes
+                np.array([[3, 9], 'all', [-3, 1], 'all', [-7, -1], 'all'], dtype='object'),
+
+                # Long route obstacles
+                np.array([[-11, -7], 'all', [-5, -1], 'all', [-7, 1], 'all'], dtype='object'),
+                np.array([[-1, 3], 'all', [-9, -3], 'all', [-7, -5], 'all'], dtype='object'),
+
+                # Overhanging
+                np.array([[-1, 3], 'all', [-9, -3], 'all', [3, 7], 'all'], dtype='object'),
+
+                # Small last obstacle
+                np.array([[11, 15], 'all', [-9, -5], 'all', [-7, -5], 'all'], dtype='object'),
+
+                # Obstacle next to goal
+                np.array([[9, 15], 'all', [5, 9], 'all', [-7, 1], 'all'], dtype='object'),
+                ]
+
+        else:
+            print('No valid dimension for the drone model was provided')
+            sys.exit()

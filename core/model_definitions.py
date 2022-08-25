@@ -15,6 +15,7 @@ ______________________________________________________________________________
 import numpy as np              # Import Numpy for computations
 from .preprocessing.define_gears_order import discretizeGearsMethod        
 import core.preprocessing.master_classes as master
+import scipy
 
 class drone(master.LTI_master):
     
@@ -357,3 +358,92 @@ class anaesthesia_delivery(master.LTI_master):
         spec.problem_type = 'avoid'
             
         return spec
+
+
+
+class UAV(master.LTI_master):
+    
+    def __init__(self, args):
+        '''
+        Initialize the UAV model class, which can be 2D or 3D. The 3D case
+        corresponds to the UAV benchmark in the paper.
+
+        Returns
+        -------
+        None.
+
+        '''
+        
+        # Initialize superclass
+        master.LTI_master.__init__(self)
+        
+        self.args = args
+
+        # Set value of delta (how many time steps are grouped together)
+        # Used to make the model fully actuated
+        self.lump = 2
+        
+        # Let the user make a choice for the model dimension
+        self.modelDim = args.UAV_dim
+        
+        # Discretization step size
+        self.tau = 1.0
+
+        # State transition matrix
+        Ablock = np.array([[1, self.tau],
+                          [0, 1]])
+        
+        # Input matrix
+        Bblock = np.array([[self.tau**2/2],
+                           [self.tau]])
+        
+        if self.modelDim==3:
+            self.A  = scipy.linalg.block_diag(Ablock, Ablock, Ablock)
+            self.B  = scipy.linalg.block_diag(Bblock, Bblock, Bblock)
+            
+            # Disturbance matrix
+            self.Q  = np.array([[0],[0],[0],[0],[0],[0]])
+                
+        else:
+            self.A  = scipy.linalg.block_diag(Ablock, Ablock)
+            self.B  = scipy.linalg.block_diag(Bblock, Bblock)
+        
+            # Disturbance matrix
+            self.Q  = np.array([[0],[0],[0],[0]])
+            
+        # Determine system dimensions
+        self.n = np.size(self.A,1)
+        self.p = np.size(self.B,1)
+
+        # Covariance of the process noise
+        self.noise = dict()
+        self.noise['w_cov'] = np.eye(np.size(self.A,1))*0.15
+
+    def set_spec(self):
+        
+        from core.spec_definitions import UAV_spec
+        spec = UAV_spec(self.args, self.modelDim)     
+        
+        spec.problem_type = 'reachavoid'
+            
+        return spec
+           
+    def setTurbulenceNoise(self, N):
+        '''
+        Set the turbulence noise samples for N samples
+
+        Parameters
+        ----------
+        N : int
+            Number of samples used.
+
+        Returns
+        -------
+        None.
+
+        '''
+        
+        samples = np.genfromtxt('input/TurbulenceNoise_N=1000.csv', 
+                                delimiter=',')
+        
+        self.noise['samples'] = samples
