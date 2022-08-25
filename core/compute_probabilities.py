@@ -18,8 +18,7 @@ import matplotlib.pyplot as plt # Import Pyplot to generate plots
 import matplotlib.patches as patches
 
 from .commons import cm2inch, floor_decimal
-from ..plotting.createPlots import draw_hull
-from .define_partition import computeRegionIdx, computeRegionCenters
+from .define_partition import computeRegionIdx, computeRegionCenters, draw_hull
 
 def compute_intervals_error(args, partition_setup, partition, trans, 
                                 clusters, error, exclude=False, verbose=False):
