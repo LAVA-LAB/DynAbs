@@ -2,8 +2,8 @@ from core.abstraction import Abstraction
 from core.define_model import define_model
 
 import numpy as np              # Import Numpy for computations
-import itertools
-from copy import deepcopy
+import itertools                # Import to create iterators
+from copy import deepcopy       # Import to copy variables in Python
 from progressbar import progressbar # Import to create progress bars
 
 from .action_classes import backreachset, partial_model, epistemic_error, rotate_2D_vector
@@ -306,18 +306,15 @@ class abstraction_epistemic(Abstraction):
         prob = dict()
         printEvery = min(100, max(1, int(self.actions['nr_actions']/10)))
 
-        # Compute Gaussian noise samples
-        samples = np.random.multivariate_normal(
-                        np.zeros(self.model.n), self.model.noise['w_cov'], 
-                        size=self.args.noise_samples)
+        noise_samples = Abstraction.noise_sampler(self)
         
         # Cluster samples
         if self.args.sample_clustering > 0:
             
             max_radius = float(self.args.sample_clustering)
             
-            remaining_samples       = samples
-            remaining_samples_i     = np.arange(len(samples))
+            remaining_samples       = noise_samples
+            remaining_samples_i     = np.arange(len(noise_samples))
             
             clusters0 = {
                 'value': [],
@@ -349,7 +346,7 @@ class abstraction_epistemic(Abstraction):
             clusters0['lb']          = np.array(clusters0['lb'])
             clusters0['ub']          = np.array(clusters0['ub'])
             
-            print('--',len(samples),'samples clustered into',
+            print('--',len(noise_samples),'samples clustered into',
                   len(clusters0['value']),'clusters')
             
             assert sum(clusters0['value']) == self.args.noise_samples
@@ -357,9 +354,9 @@ class abstraction_epistemic(Abstraction):
         else:
             
             clusters0 = {
-                'value': np.ones(len(samples)),
-                'lb': samples,
-                'ub': samples
+                'value': np.ones(len(noise_samples)),
+                'lb': noise_samples,
+                'ub': noise_samples
                 }
         
         # For every action (i.e. target point)

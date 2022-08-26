@@ -264,10 +264,7 @@ class abstraction_default(Abstraction):
         prob = dict()
         printEvery = min(100, max(1, int(self.actions['nr_actions']/10)))
 
-        # Compute Gaussian noise samples
-        noise_samples = np.random.multivariate_normal(
-                        np.zeros(self.model.n), self.model.noise['w_cov'], 
-                        size=self.args.noise_samples)
+        noise_samples = Abstraction.noise_sampler(self)
 
         # For every action (i.e. target point)
         for a_idx, act in self.actions['obj'].items():

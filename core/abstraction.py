@@ -19,7 +19,8 @@ import pandas as pd             # Import Pandas to store data in frames
 import sys                      # Allows to terminate the code at some point
 import os                       # Import OS to allow creationg of folders
 import csv                      # Import to create/load CSV files
-import subprocess
+import random                   # Import to use random variables
+import subprocess               # Import to call prism via terminal command
 
 from .define_model import find_connected_components
 from .define_partition import define_partition, define_spec_region, \
@@ -350,6 +351,26 @@ class Abstraction(object):
             
         return nr_act
         
+
+
+    def noise_sampler(self):
+
+        if self.args.nongaussian_noise:
+
+            # Use non-Gaussian noise samples (loaded from external file)
+            noise_samples = np.array(
+                        random.choices(self.model.noise['samples'], 
+                        k=self.args.noise_samples) )
+
+        else:
+
+            # Compute Gaussian noise samples
+            noise_samples = np.random.multivariate_normal(
+                            np.zeros(self.model.n), self.model.noise['w_cov'], 
+                            size=self.args.noise_samples)
+
+        return noise_samples
+
         
         
     def build_iMDP(self):

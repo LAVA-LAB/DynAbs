@@ -13,7 +13,6 @@ ______________________________________________________________________________
 """
 
 import os                       # Import OS to allow creation of folders
-import pandas as pd             # Import Pandas to store data in frames
 import matplotlib.pyplot as plt # Import to generate plos using Pyplot
 import seaborn as sns           # Import Seaborn to plot heat maps
 from datetime import datetime   # Import Datetime to retreive current date/time
@@ -174,14 +173,8 @@ class settings(object):
         # TRUE/FALSE setup whether plots should be generated
         plot['exportFormats']           = ['pdf','png']
         
-        # Default Monte Carelo settings
-        # Set which Monte Carlo simulations to perform (False means inherent)
-        mc = dict()
-        mc['init_states']           = False
-        
         self.mdp = mdp
         self.plotting = plot
-        self.montecarlo = mc
         self.sampling = {}
         self.time = timing
         self.directories = directories

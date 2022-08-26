@@ -48,6 +48,10 @@ def parse_arguments():
     
     parser.add_argument('--iterations', type=int, action="store", dest='iterations', 
                         default=1, help="Number of repetitions of computing iMDP probability intervals")
+
+    parser.add_argument('--nongaussian_noise', dest='gaussian_noise', action='store_true',
+                        help="If enabled, non-Gaussian noise samples (if available) are used")
+    parser.set_defaults(nongaussian_noise=False)
     
     # Argument for model to load
     parser.add_argument('--model', type=str, action="store", dest='model', 

@@ -77,8 +77,10 @@ def reachability_plot(setup, results, mc=None):
     color = next(ax._get_lines.prop_cycler)['color']
     
     plt.plot(results['optimal_reward'], label='k=0', linewidth=1, color=color)
-    if mc != None and not setup.montecarlo['init_states']:
-        plt.plot(mc['reachability'], label='Monte carlo (k=0)', \
+    if mc != None and len(mc.init_states) == len(results['optimal_reward']):
+        print('-- Plot Monte Carlo results')
+
+        plt.plot(mc.results['reachability_probability'].values(), label='Monte carlo', \
                  linewidth=1, color=color, linestyle='dashed')
                 
     # Styling plot
@@ -184,7 +186,7 @@ def heatmap_2D(args, model, setup, c_tuple, spec, values, title = 'auto'):
                spec.partition['width'], 
                spec.partition['origin'])['center']
 
-    if model.name == 'building_2room':
+    elif model.name == 'building_2room':
     
         x_nr = spec.partition['number'][0]
         y_nr = spec.partition['number'][1]
@@ -193,7 +195,7 @@ def heatmap_2D(args, model, setup, c_tuple, spec, values, title = 'auto'):
                spec.partition['width'], 
                spec.partition['origin'])['center']
         
-    if model.name == 'anaesthesia_delivery':
+    elif model.name == 'anaesthesia_delivery':
     
         x_nr = spec.partition['number'][0]
         y_nr = spec.partition['number'][1]
@@ -205,15 +207,10 @@ def heatmap_2D(args, model, setup, c_tuple, spec, values, title = 'auto'):
                spec.partition['width'], 
                orig)['center']
         
-    elif model.n == 4:
-        
-        x_nr = spec.partition['number'][0]
-        y_nr = spec.partition['number'][2]
-        
-        cut_centers = define_partition(model.n, [x_nr, 1, y_nr, 1], 
-               spec.partition['width'], 
-               spec.partition['origin'])['center']
-                          
+    else:
+        print('ERROR: No suitable model type found for 2D heatmap')
+        return
+
     cut_values = np.zeros((x_nr, y_nr))
     cut_coords = np.zeros((x_nr, y_nr, model.n))
     

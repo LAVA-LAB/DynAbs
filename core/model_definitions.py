@@ -16,6 +16,7 @@ import numpy as np              # Import Numpy for computations
 from .preprocessing.define_gears_order import discretizeGearsMethod        
 import core.preprocessing.master_classes as master
 import scipy
+from pathlib import Path
 
 class drone(master.LTI_master):
     
@@ -419,6 +420,9 @@ class UAV(master.LTI_master):
         self.noise = dict()
         self.noise['w_cov'] = np.eye(np.size(self.A,1))*0.15
 
+        if args.nongaussian_noise:
+            self.setTurbulenceNoise(args)
+
     def set_spec(self):
         
         from core.spec_definitions import UAV_spec
@@ -428,7 +432,7 @@ class UAV(master.LTI_master):
             
         return spec
            
-    def setTurbulenceNoise(self, N):
+    def setTurbulenceNoise(self, args):
         '''
         Set the turbulence noise samples for N samples
 
@@ -443,7 +447,14 @@ class UAV(master.LTI_master):
 
         '''
         
-        samples = np.genfromtxt('input/TurbulenceNoise_N=1000.csv', 
-                                delimiter=',')
+        path = Path(args.base_dir, 'input/TurbulenceNoise_N=1000.csv')
+
+        samples = np.genfromtxt(path, delimiter=',')
         
-        self.noise['samples'] = samples
+        self.noise['samples'] = args.noise_factor * np.vstack(
+            (2*samples[:,0],
+                0.2*samples[:,0],
+                2*samples[:,1],
+                0.2*samples[:,1],
+                2*samples[:,2],
+                0.2*samples[:,2])).T

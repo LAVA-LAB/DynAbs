@@ -21,7 +21,7 @@ from matplotlib.patches import Rectangle
 import matplotlib.patches as patches
 
 from core.commons import printWarning, cm2inch
-from core.monte_carlo import monte_carlo
+from core.monte_carlo import MonteCarloSim
 
 def oscillator_heatmap(Ab, title = 'auto'):
     '''
@@ -310,8 +310,6 @@ class oscillator_experiment(object):
         None.
 
         '''
-        
-        Ab.setup.montecarlo['iterations'] = self.monte_carlo_iterations
 
         f_list = np.arange(self.f_min, self.f_max+0.01, self.f_step)
         frac_sr = pd.Series(index=np.round(f_list, 3), dtype=float, name=case_id)
@@ -322,7 +320,8 @@ class oscillator_experiment(object):
             mass   = np.round(Ab.model.mass_nom * (1-f) + Ab.model.mass_min * f, 3)
 
             Ab.model.set_true_model(mass=mass, spring=spring)
-            Ab.mc = monte_carlo(Ab, random_initial_state=True)
+            Ab.mc = MonteCarloSim(Ab, iterations=self.monte_carlo_iterations,
+                                  random_initial_state=True)
             
             # reachabilityHeatMap(Ab, montecarlo = True, title='Monte Carlo, mass='+str(mass)+'; spring='+str(spring))
             frac_sr[f] = oscillator_heatmap(Ab, title='Monte Carlo, mass='+str(mass)+'; spring='+str(spring))
@@ -361,8 +360,6 @@ class oscillator_experiment(object):
         None.
 
         '''
-        
-        Ab.setup.montecarlo['iterations'] = self.monte_carlo_iterations
 
         df = pd.DataFrame(columns=['guaranteed', 'simulated', 'ratio'], dtype=float)
         df.index.name = 'mass'
@@ -381,7 +378,8 @@ class oscillator_experiment(object):
             spring = np.round(spring, 3)
 
             Ab.model.set_true_model(mass=mass, spring=spring)
-            Ab.mc = monte_carlo(Ab, random_initial_state=True, init_states = [eval_state])
+            Ab.mc = MonteCarloSim(Ab, iterations=self.monte_carlo_iterations,
+                                  init_states =[eval_state], random_initial_state=True)
             
             df.loc[mass, 'guaranteed'] = np.round(Ab.results['optimal_reward'][eval_state], 4)
             df.loc[mass, 'simulated']  = np.round(Ab.mc['reachability'][eval_state], 4)
