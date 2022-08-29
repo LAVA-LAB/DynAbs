@@ -26,8 +26,7 @@ class MonteCarloSim():
     Class to run Monte Carlo simulations under a derived controller
     '''
     
-    def __init__(self, Ab, iterations=100, init_states=False,
-        writer=False, random_initial_state=False):
+    def __init__(self, Ab, iterations=100, writer=False, random_initial_state=False, **kwargs):
         '''
         Initialization function
 
@@ -70,11 +69,12 @@ class MonteCarloSim():
         if self.args.verbose:
             col_width = [8,6,6,46]
             self.tab = table(col_width)
-                                            
-        if not init_states:
+
+        if 'init_states' in kwargs:
+            self.init_states = kwargs['init_states']
+            print('-- Manual initial states:', self.init_states)
+        else:               
             self.init_states = np.arange(Ab.partition['nr_regions'])
-        else:
-            self.init_states = init_states
             
         self.results['reachability_probability'] = {}
             

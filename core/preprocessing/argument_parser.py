@@ -13,6 +13,7 @@ ______________________________________________________________________________
 """
 
 import argparse
+import numpy as np
 from ast import literal_eval
 
 def parse_arguments():
@@ -64,6 +65,10 @@ def parse_arguments():
     # Number of Monte Carlo simulation iterations
     parser.add_argument('--monte_carlo_iter', type=int, action="store", dest='monte_carlo_iter', 
                         default=0, help="Number of Monte Carlo simulations to perform")
+
+    # Initial state for Monte Carlo simulations
+    parser.add_argument('--x_init', type=str, action="store", dest='x_init', 
+                        default='[]', help="Initial state for Monte Carlo simulations")
     
     parser.add_argument('--partition_plot', dest='partition_plot', action='store_true',
                         help="If enabled, create plot of state space partition")
@@ -106,7 +111,18 @@ def parse_arguments():
     #### Anaesthesia delivery model arguments ####
     parser.add_argument('--drug_partition', type=str, action="store", dest='drug_partition', 
                         default='[20,20,20]', help="Size of the state space partition")
+
+    ####
+    ####
+    #### UAV model arguments ####
+    parser.add_argument('--UAV_dim', type=int, action="store", dest='UAV_dim', 
+                        default=2, help="Dimension of the UAV model to run")
+
+    parser.add_argument('--noise_factor', type=float, action="store", dest='noise_factor', 
+                        default=1, help="Multiplication factor for the process noise (covariance)")
     
+    ####
+    ####
     # Now, parse the command line arguments and store the
     # values in the `args` variable
     args, unknown = parser.parse_known_args()
@@ -118,6 +134,8 @@ def parse_arguments():
     
     args.bld_target_size = literal_eval(args.bld_target_size)
     
+    args.x_init = np.array(list(literal_eval(args.x_init)), dtype=float)    
+
     try:
         args.bld_partition = [int(args.bld_partition)]
     except:

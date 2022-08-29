@@ -168,8 +168,6 @@ def heatmap_2D(args, model, setup, c_tuple, spec, values, title = 'auto'):
 
     Parameters
     ----------
-    Ab : abstraction instance
-        Full object of the abstraction being plotted for
 
     Returns
     -------

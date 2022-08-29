@@ -24,7 +24,7 @@ import subprocess               # Import to call prism via terminal command
 
 from .define_model import find_connected_components
 from .define_partition import define_partition, define_spec_region, \
-    partition_plot
+    partition_plot, state2region
 from .commons import tocDiff, printWarning
 from .create_iMDP import mdp
 from .action_classes import action
@@ -50,7 +50,7 @@ class Abstraction(object):
 
         '''
         
-        print('Size of the ocntinuous model:')
+        print('Size of the continuous model:')
         print(' -- Dimension of the state:',self.model.n)
         print(' -- Dimension of the control input:',self.model.p)
         
@@ -100,6 +100,8 @@ class Abstraction(object):
         self.spec.partition['origin'] = 0.5 * np.ones(2) @ \
             self.spec.partition['boundary'].T
         
+        print(' -- Width of regions in each dimension:',self.spec.partition['width'])
+
         self.partition['R'] = define_partition(self.model.n,
                             self.spec.partition['number'],
                             self.spec.partition['width'],
@@ -237,7 +239,7 @@ class Abstraction(object):
             print(' --- In dimensions of state', dn,'and control', dp)    
         
             enabled[i], enabled_inv[i], error[i] = self.get_enabled_actions(self.model, self.spec, dn, dp)
-        
+
         print('\nCompose enabled actions in independent dimensions...')
 
         nr_act = self._composeEnabledActions(dim_n, enabled, 
@@ -263,7 +265,11 @@ class Abstraction(object):
         if nr_act == 0:
             printWarning('No actions enabled at all, so terminate')
             sys.exit()
-    
+
+        s_init = state2region(self.args.x_init, self.spec.partition, self.partition['R']['c_tuple'])[0]
+        print('In initial state '+str(s_init)+', the following actions are enabled:')
+        print([self.actions['obj'][a].center for a in self.actions['enabled'][s_init]])
+
         self.time['2_enabledActions'] = tocDiff(False)
         print('Enabled actions define - time:',self.time['2_enabledActions'])
         

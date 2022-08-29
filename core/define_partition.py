@@ -76,6 +76,17 @@ def computeRegionCenters(points, partition):
     # Add the origin again to obtain the absolute center coordinates
     return np.round(centers + originShift, decimals=5)
 
+def state2region(state, partition, c_tuple):
+
+    region_centers = computeRegionCenters(state, partition)
+
+    try:
+        region_idx = [c_tuple[tuple(c)] for c in region_centers]
+        return region_idx
+    except:
+        print('ERROR: state',state,'does not belong to any region')
+        return False
+
 def computeRegionIdx(points, partition, borderOutside=False):
     '''
     Function to compute the indices of the regions that a list of points belong

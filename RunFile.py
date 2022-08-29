@@ -26,10 +26,11 @@ import matplotlib as mpl
 # Load main classes and methods
 from core.abstraction_default import abstraction_default
 from core.abstraction_epistemic import abstraction_epistemic
-from core.monte_carlo import monte_carlo, MonteCarloSim
+from core.monte_carlo import MonteCarloSim
 from core.preprocessing.set_model_class import set_model_class
 from core.commons import createDirectory
 from core.export import result_exporter, pickle_results
+from core.define_partition import state2region
 
 from core.preprocessing.master_classes import settings
 from core.preprocessing.argument_parser import parse_arguments
@@ -49,14 +50,28 @@ args = parse_arguments()
 args.base_dir = os.path.dirname(os.path.abspath(__file__))
 print('Base directory:', args.base_dir)
 
-args.model = 'shuttle'
-#args.UAV_dim = 2
-#args.noise_factor = 1
-args.noise_samples = 1600
-args.confidence = 0.01
-args.prism_java_memory = 8
-# args.nongaussian_noise = False
-args.monte_carlo_iter = 100
+preset = 'spacecraft'
+
+if preset == 'uav':
+    args.model = 'UAV'
+    args.UAV_dim = 3
+    args.noise_factor = 0.1
+    args.noise_samples = 1600
+    args.confidence = 0.01
+    args.prism_java_memory = 8
+    args.nongaussian_noise = True
+    args.monte_carlo_iter = 100
+    args.x_init = [-14,0,6,0,-2,0]
+    
+elif preset == 'spacecraft':
+    args.model = 'spacecraft'
+    args.noise_samples = 1600
+    args.confidence = 0.01
+    args.prism_java_memory = 8
+    args.monte_carlo_iter = 100
+    args.x_init = np.array([0.1, 19.9, 0, 0, 0, 0])
+    
+print(vars(args))
 
 with open(os.path.join(args.base_dir, 'path_to_prism.txt')) as f:
     args.prism_folder = str(f.readlines()[0])
@@ -108,9 +123,10 @@ createDirectory(Ab.setup.directories['outputF'])
         
 # Create actions and determine which ones are enabled
 Ab.define_target_points()
+# %%
+
 Ab.define_enabled_actions()
 
-# %%
 #-----------------------------------------------------------------------------
 # Code below is repeated every iteration of the iterative scheme
 #-----------------------------------------------------------------------------
@@ -151,8 +167,15 @@ for case_id in range(0, Ab.args.iterations):
     writer = exporter.create_writer(Ab, model_size, case_id, N)
     
     if Ab.args.monte_carlo_iter > 0:
-        Ab.mc = MonteCarloSim(Ab, iterations=Ab.args.monte_carlo_iter,
-                              writer=writer)
+
+        if len(args.x_init) == Ab.model.n:
+            s_init = state2region(args.x_init, Ab.spec.partition, Ab.partition['R']['c_tuple'])
+
+            Ab.mc = MonteCarloSim(Ab, iterations=Ab.args.monte_carlo_iter,
+                                writer=writer, init_states = s_init)
+        else:
+            Ab.mc = MonteCarloSim(Ab, iterations=Ab.args.monte_carlo_iter,
+                                writer=writer)
     
     # Store run times of current iterations        
     time_df = pd.DataFrame( data=Ab.time, index=[case_id] )
@@ -196,11 +219,13 @@ if Ab.model.name == 'anaesthesia_delivery':
 
     heatmap_3D(Ab.setup, centers, values)
     
+assert False
 # %%
 
 import pickle
 
 infile = open(Ab.setup.directories['outputF']+'data_dump.p','rb')
+# infile = open('/home/thom/documents/sample-abstract/output/Ab_spacecraft_2D_08-29-2022_15-08-09/data_dump.p', 'rb')
 data = pickle.load(infile)
 infile.close()
 
@@ -216,3 +241,31 @@ heatmap_3D_view(data['model'], data['setup'], data['spec'], data['regions']['cen
 
 from plotting.createPlots import heatmap_2D
 heatmap_2D(data['args'], data['model'], data['setup'], data['regions']['c_tuple'], data['spec'], data['results']['optimal_reward'])
+
+from plotting.uav_plots import UAV_plot_2D, UAV_3D_plotLayout
+from core.define_partition import state2region
+
+if data['model'].name == 'shuttle' or data['model'].name == 'spacecraft_2D':
+
+    if len(data['args'].x_init) == Ab.model.n:
+        s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
+        traces = data['mc'].traces[s_init]
+
+        UAV_plot_2D((0,1), (2,3), data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'], 
+                    data['spec'], traces, cut_idx = [0,0], traces_to_plot=25, line=True)
+        
+        UAV_plot_2D((2,3), (0,1), data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'], 
+                    data['spec'], traces, cut_idx = [0,0], traces_to_plot=25, line=True)
+    else:
+        print('-- No initial state provided')
+
+if data['model'].name == 'UAV' and data['model'].modelDim == 3:
+
+    if len(data['args'].x_init) == Ab.model.n:
+        s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
+        traces = data['mc'].traces[s_init]
+
+        UAV_3D_plotLayout(data['setup'], data['args'], data['model'], data['regions'], 
+                          data['goal_regions'], data['critical_regions'], data['spec'])
+    else:
+        print('-- No initial state provided')

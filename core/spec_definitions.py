@@ -115,15 +115,24 @@ class shuttle_spec(master.spec_master):
             ]
         
         self.critical = np.vstack((
-                np.array([[-1, -0.05], [-0.2, 0], 'all', 'all'], dtype='object'),
-                np.array([[-1, -0.15], [-0.3, -0.2], 'all', 'all'], dtype='object'),
-                np.array([[-1, -0.25], [-0.4, -0.3], 'all', 'all'], dtype='object'),
-                np.array([[-1, -0.35], [-0.5, -0.4], 'all', 'all'], dtype='object'),
-                np.array([[-1, -0.45], [-0.6, -0.5], 'all', 'all'], dtype='object'),
-                np.array([[-1, -0.55], [-0.7, -0.6], 'all', 'all'], dtype='object'),
-                np.array([[-1, -0.65], [-0.8, -0.7], 'all', 'all'], dtype='object'),
-                np.array([[-1, -0.75], [-0.9, -0.8], 'all', 'all'], dtype='object'),
-                np.array([[-1, -0.85], [-1.0, -0.9], 'all', 'all'], dtype='object')
+                np.array([[-1, -0.1], [-0.2, 0], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.2], [-0.3, -0.2], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.3], [-0.4, -0.3], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.4], [-0.5, -0.4], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.5], [-0.6, -0.5], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.6], [-0.7, -0.6], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.7], [-0.8, -0.7], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.8], [-0.9, -0.8], 'all', 'all'], dtype='object'),
+                np.array([[-1, -0.9], [-1.0, -0.9], 'all', 'all'], dtype='object'),
+                np.array([[0.1, 1], [-0.2, 0], 'all', 'all'], dtype='object'),
+                np.array([[0.2, 1], [-0.3, -0.2], 'all', 'all'], dtype='object'),
+                np.array([[0.3, 1], [-0.4, -0.3], 'all', 'all'], dtype='object'),
+                np.array([[0.4, 1], [-0.5, -0.4], 'all', 'all'], dtype='object'),
+                np.array([[0.5, 1], [-0.6, -0.5], 'all', 'all'], dtype='object'),
+                np.array([[0.6, 1], [-0.7, -0.6], 'all', 'all'], dtype='object'),
+                np.array([[0.7, 1], [-0.8, -0.7], 'all', 'all'], dtype='object'),
+                np.array([[0.8, 1], [-0.9, -0.8], 'all', 'all'], dtype='object'),
+                np.array([[0.9, 1], [-1.0, -0.9], 'all', 'all'], dtype='object')
         ))
 
                 # setStateBlock(self.partition, a=np.array([[i, -i] for i in np.arange(-.95, -.05, .1)]).flatten(), b=[-.05], c='all', d='all'),
@@ -238,12 +247,13 @@ class UAV_spec(master.spec_master):
 
             self.critical = [
                 # Hole 1
-                np.array([[-11, -5], 'all', [-1, 9], 'all', [-7, 3], 'all'], dtype='object'),
-                np.array([[-11, -5], 'all', [5, 9], 'all', [1, 5], 'all'], dtype='object'),
-                np.array([[-11, -5], 'all', [3, 5], 'all', [-7, -5], 'all'], dtype='object'),
+                np.array([[-11, -5], 'all', [-1, 9], 'all', [-7, -5], 'all'], dtype='object'),
+                np.array([[-11, -5], 'all', [5, 9], 'all', [-5, 5], 'all'], dtype='object'),
+                np.array([[-11, -5], 'all', [-1, 3], 'all', [-5, 3], 'all'], dtype='object'),
 
                 # Hole 2
-                np.array([[-1, 3], 'all', [1, 9], 'all', [-7, 5], 'all'], dtype='object'),
+                np.array([[-1, 3], 'all', [1, 9], 'all', [-7, -1], 'all'], dtype='object'),
+                np.array([[-1, 3], 'all', [1, 9], 'all', [3, 5], 'all'], dtype='object'),
                 np.array([[-1, 3], 'all', [1, 3], 'all', [-1, 3], 'all'], dtype='object'),
                 np.array([[-1, 3], 'all', [7, 9], 'all', [-1, 3], 'all'], dtype='object'),
 
@@ -270,3 +280,70 @@ class UAV_spec(master.spec_master):
         else:
             print('No valid dimension for the drone model was provided')
             sys.exit()
+
+
+
+class spacecraft_spec(master.spec_master):
+    
+    def __init__(self, args):
+
+        # Initialize superclass
+        master.spec_master.__init__(self)        
+        
+        # Step-bound on spec
+        self.end_time = 32
+    
+        # Authority limit for the control u, both positive and negative
+        self.control['uMin'] = [-2, -2, -2]
+        self.control['uMax'] = [2, 2, 2]
+    
+        self.partition['boundary']  = np.array([[-5.2+0.8, 1.2], 
+                                                [-5.2+.8*4, 10.8+10.4], 
+                                                [-1, 1],
+                                                [-4, 4], 
+                                                [-4, 4],
+                                                [-1, 1]])
+        self.partition['number']    = [16-2, 20+13-4, 5, 5, 5, 5]
+    
+        # Actions per dimension (if 'auto', equal to nr of regions)
+        self.targets['boundary']    = 'auto'
+        self.targets['number']      = 'auto'
+    
+        self.goal = [
+            np.array([[-0.4, 0.4], [-0.4, 0.4], 'all', 'all', 'all', 'all'], dtype='object')
+            ]
+
+        self.critical = [
+            np.array([[-1, 1], [8, 12], 'all', 'all', 'all', 'all'], dtype='object')
+        ]
+
+        self.critical = None
+
+class spacecraft_2D_spec(master.spec_master):
+    
+    def __init__(self, args):
+
+        # Initialize superclass
+        master.spec_master.__init__(self)        
+        
+        # Step-bound on spec
+        self.end_time = 32
+    
+        # Authority limit for the control u, both positive and negative
+        self.control['uMin'] = [-2, -2]
+        self.control['uMax'] = [2, 2]
+
+        self.partition['boundary']  = np.array([[-5.2+0.8, 1.2], [-5.2+.8*4, 10.8+10.4], [-4, 4], [-4, 4]])
+        self.partition['number']    = [16-2, 20+13-4, 5, 5]
+    
+        # Actions per dimension (if 'auto', equal to nr of regions)
+        self.targets['boundary']    = 'auto'
+        self.targets['number']      = 'auto'
+    
+        self.goal = [
+            np.array([[-0.4, 0.4], [-0.4, 0.4], 'all', 'all'], dtype='object')
+            ]
+
+        self.critical = [
+            np.array([[-1, 1], [8, 12], 'all', 'all'], dtype='object')
+        ]

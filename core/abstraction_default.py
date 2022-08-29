@@ -262,7 +262,7 @@ class abstraction_default(Abstraction):
         '''
         
         prob = dict()
-        printEvery = min(100, max(1, int(self.actions['nr_actions']/10)))
+        printEvery = 1 # min(100, max(1, int(self.actions['nr_actions']/10)))
 
         noise_samples = Abstraction.noise_sampler(self)
 

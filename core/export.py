@@ -73,6 +73,8 @@ def pickle_results(Ab):
         'spec': Ab.spec,
         'results': Ab.results,
         'regions': Ab.partition['R'],
+        'goal_regions': Ab.partition['goal'],
+        'critical_regions': Ab.partition['critical'],
         'args': Ab.args
     }
 
