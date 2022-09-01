@@ -72,7 +72,7 @@ class Abstraction(object):
         else:
             print(' --- Model is fully actuated')
             self.flags['underactuated'] = False
-        
+
         self.time['0_init'] = tocDiff(False)
         print('Abstraction object initialized - time:',self.time['0_init'])
     
@@ -99,6 +99,8 @@ class Abstraction(object):
             self.spec.partition['boundary'].T / self.spec.partition['number']
         self.spec.partition['origin'] = 0.5 * np.ones(2) @ \
             self.spec.partition['boundary'].T
+        self.spec.partition['origin_centered'] = \
+            [True if nr % 2 != 0 else False for nr in self.spec.partition['number']]
         
         print(' -- Width of regions in each dimension:',self.spec.partition['width'])
 
@@ -108,7 +110,7 @@ class Abstraction(object):
                             self.spec.partition['origin'])
         
         self.partition['nr_regions'] = len(self.partition['R']['center'])
-        
+
         print(' -- Number of regions:',self.partition['nr_regions'])
 
         # Determine goal regions
@@ -149,6 +151,14 @@ class Abstraction(object):
             ] for bitList in bitCombinations 
             ] for i in range(self.partition['nr_regions'])
             ] )
+
+
+
+    def initialize_results(self):
+        
+        # Initialize results dictionaries
+        self.results = dict()
+        self.results['optimal_policy'] = np.zeros((self.N, self.partition['nr_regions']), dtype=int)
 
 
 
@@ -266,9 +276,10 @@ class Abstraction(object):
             printWarning('No actions enabled at all, so terminate')
             sys.exit()
 
-        s_init = state2region(self.args.x_init, self.spec.partition, self.partition['R']['c_tuple'])[0]
-        print('In initial state '+str(s_init)+', the following actions are enabled:')
-        print([self.actions['obj'][a].center for a in self.actions['enabled'][s_init]])
+        if len(self.args.x_init) == self.model.n:
+            s_init = state2region(self.args.x_init, self.spec.partition, self.partition['R']['c_tuple'])[0]
+            print('In initial state '+str(s_init)+', the following actions are enabled:')
+            print([self.actions['obj'][a].center for a in self.actions['enabled'][s_init]])
 
         self.time['2_enabledActions'] = tocDiff(False)
         print('Enabled actions define - time:',self.time['2_enabledActions'])
@@ -394,11 +405,14 @@ class Abstraction(object):
         problem_type = self.spec.problem_type
         
         # Initialize MDP object
-        self.mdp = mdp(self.setup, self.N, self.partition, self.actions)
-        
+        if self.args.block_refinement:
+            self.mdp = mdp(self.setup, 2, self.partition, self.actions, self.blref)
+        else:
+            self.mdp = mdp(self.setup, self.N, self.partition, self.actions)
+                    
         # Create PRISM file (explicit way)
         model_size, self.mdp.prism_file, self.mdp.spec_file, \
-        self.mdp.specification = \
+        self.mdp.specification, self.mdp.head = \
             self.mdp.writePRISM_explicit(self.actions, self.partition, 
                                  self.trans, problem_type, self.args.mdp_mode)   
 
@@ -473,37 +487,47 @@ class Abstraction(object):
         None.
 
         '''
-        
-        self.results = dict()
-        
+
         # Read policy CSV file
-        policy_all = pd.read_csv(policy_file, header=None).iloc[:, 3:].\
+        policy_all = pd.read_csv(policy_file, header=None).iloc[:, self.mdp.head:].\
             fillna(-1).to_numpy()
             
         # Flip policy upside down (PRISM generates last time step at top!)
-        policy_all = np.flipud(policy_all)
+        # policy_all = np.flipud(policy_all)
         
-        self.results['optimal_policy'] = np.zeros(np.shape(policy_all), dtype=int)
-        
-        rewards_k0 = pd.read_csv(vector_file, header=None).iloc[3:].to_numpy()
+        rewards_k0 = pd.read_csv(vector_file, header=None).iloc[self.mdp.head:].to_numpy()
         self.results['optimal_reward'] = rewards_k0.flatten()
         
         # Convert avoid probability to the safety probability
         if self.spec.problem_type == 'avoid':
             self.results['optimal_reward'] = 1 - self.results['optimal_reward']
-        
-        for i,row in enumerate(policy_all):    
+
+        if self.args.block_refinement:
+            policy_all = policy_all[[-1], :]
+
+        for i,row in enumerate(policy_all):
+            
+            # Determine if we are in block refinement mode
+            if self.args.block_refinement:
+                k = self.blref.k - i
+            else:
+                k = self.N - i - 1
+
+            # Terminate if not a valid time step
+            if k < 0:
+                continue
+
             for j,value in enumerate(row):
-                
+
                 # If value is not -1 (means no action defined)
                 if value != -1:
                     # Split string
                     value_split = value.split('_')
                     # Store action ID
-                    self.results['optimal_policy'][i,j] = int(value_split[1])
+                    self.results['optimal_policy'][k,j] = int(value_split[1])
                 else:
                     # If no policy is known, set to -1
-                    self.results['optimal_policy'][i,j] = int(value)     
+                    self.results['optimal_policy'][k,j] = int(value)    
             
         
 ###############################

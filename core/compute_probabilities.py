@@ -16,8 +16,10 @@ import numpy as np
 import itertools
 import matplotlib.pyplot as plt # Import Pyplot to generate plots
 import matplotlib.patches as patches
+from operator import itemgetter
+import collections
 
-from .commons import cm2inch, floor_decimal
+from .commons import cm2inch, floor_decimal, tocDiff
 from .define_partition import computeRegionIdx, computeRegionCenters, draw_hull
 
 def compute_intervals_error(args, partition_setup, partition, trans, 
@@ -247,7 +249,8 @@ def compute_intervals_error(args, partition_setup, partition, trans,
 
 
 
-def compute_intervals_default(args, partition_setup, partition, trans, samples):
+def compute_intervals_default(args, partition_setup, partition, trans, samples, 
+                              successor_indices, regions_list = False, nr_decimals = 5,):
     '''
     Compute the transition probability intervals
 
@@ -271,68 +274,34 @@ def compute_intervals_default(args, partition_setup, partition, trans, samples):
 
     '''
     
-    # Number of decision variables always equal to one
-    d = 1
+
     Nsamples = args.noise_samples
 
-    # Initialize counts array
-    counts = dict()
-    
-    # print('First 10 samples):', samples[:10])
+    if not regions_list:
+        # Only keep those samples that are within the partitioned portion of the state space
+        samples = samples[np.all(samples >= partition_setup['boundary'][:,0], axis=1) * 
+                        np.all(samples <= partition_setup['boundary'][:,1], axis=1)]
 
-    #TODO: Make piece of code below faster
-    centers = computeRegionCenters(samples, partition_setup)
-    
-    # print('First 10 centers:', centers[:10])
+        # Relative value to lower boundary
+        samples_rel = samples - partition_setup['boundary'][:,0]
 
-    for s in range(Nsamples):
-        
-        key = tuple(centers[s])
-        
-        if key in partition['R']['c_tuple']:
-            idx = partition['R']['c_tuple'][ key ]
-            if idx in counts:
-                counts[idx] += 1
-            else:
-                counts[idx] = 1
-    
-    # Count number of samples not in any region (i.e. in absorbing state)
-    k = int( Nsamples - sum(counts.values()) )
-    
-    deadlock_low = 1 - trans['memory'][k][1]
-    if k > Nsamples:
-        deadlock_upp = 1
-    else:
-        deadlock_upp = 1 - trans['memory'][k][0]
+        # Determine the indices of the respective samples
+        index = (samples_rel // partition_setup['width']).astype(int)
+        index_tuples = map(tuple, index)
 
-    # Initialize vectors for probability bounds
-    probability_low = np.zeros(len(counts))
-    probability_upp = np.zeros(len(counts))
-    probability_approx = np.zeros(len(counts))
-    
-    successor_idxs = np.zeros(len(counts), dtype=int)
+        regions_list = list(itemgetter(*index_tuples)(partition['R']['idx']))
 
-    # Enumerate over all the non-zero bins
-    for i, (region,count) in enumerate(counts.items()):
-        
-        k = Nsamples - count
-        
-        if k > Nsamples:
-            probability_low[i] = 0                
-        else:
-            probability_low[i] = trans['memory'][k][0]
-        probability_upp[i] = trans['memory'][k][1]
-        
-        successor_idxs[i] = int(region)
-        
-        # Point estimate transition probability (count / total)
-        probability_approx[i] = count / Nsamples
-    
-    nr_decimals = 5
-    
+    #### CONVERT FROM REGION COUNT TO VALUE PARTITION COUNT
+    states_list = successor_indices[regions_list]
+    count_dict = collections.Counter(states_list)
+
+    # Determine probability intervals
+    successor_idxs = np.fromiter(count_dict.keys(), dtype=int)
+    counts_value = np.fromiter(count_dict.values(), dtype=int)
+
     #### PROBABILITY INTERVALS
-    probs_lb = floor_decimal(probability_low, nr_decimals)
-    probs_ub = floor_decimal(probability_upp, nr_decimals)
+    probs_lb = floor_decimal(trans['memory'][Nsamples - counts_value, 0], nr_decimals)
+    probs_ub = floor_decimal(trans['memory'][Nsamples - counts_value, 1], nr_decimals)
     
     # Create interval strings (only entries for prob > 0)
     interval_strings = ["["+
@@ -340,16 +309,19 @@ def compute_intervals_default(args, partition_setup, partition, trans, samples):
                       str(floor_decimal(min(1,    ub),5))+"]"
                       for (lb, ub) in zip(probs_lb, probs_ub)]
     
+    # Count number of samples not in any region (i.e. in absorbing state)
+    k_deadlock = int( Nsamples - sum(counts_value) )
+
     # Compute deadlock probability intervals
-    deadlock_lb = floor_decimal(deadlock_low, nr_decimals)
-    deadlock_ub = floor_decimal(deadlock_upp, nr_decimals)
+    deadlock_lb = floor_decimal(1 - trans['memory'][k_deadlock][1], nr_decimals)
+    deadlock_ub = floor_decimal(1 - trans['memory'][k_deadlock][0], nr_decimals)
     
     deadlock_string = '['+ \
                        str(floor_decimal(max(1e-4, deadlock_lb),5))+','+ \
                        str(floor_decimal(min(1,    deadlock_ub),5))+']'
     
     #### POINT ESTIMATE PROBABILITIES
-    probability_approx = np.round(probability_approx, nr_decimals)
+    probability_approx = np.round(counts_value / Nsamples, nr_decimals)
     
     # Create approximate prob. strings (only entries for prob > 0)
     approx_strings = [str(p) for p in probability_approx]
@@ -365,7 +337,7 @@ def compute_intervals_default(args, partition_setup, partition, trans, samples):
         'deadlock_approx': deadlock_approx,
     }
     
-    return returnDict
+    return returnDict, regions_list
 
 
 

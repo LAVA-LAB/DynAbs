@@ -182,7 +182,7 @@ class MonteCarloSim():
         ######
 
         # For each time step in the finite time horizon
-        while k < self.horizon:
+        while k <= self.horizon:
             
             # Determine to which region the state belongs
             region_center = computeRegionCenters(x[k], 
@@ -192,8 +192,6 @@ class MonteCarloSim():
                 # Save that state is currently in region ii
                 x_region[k] = self.partition['R']['c_tuple'][tuple(region_center)]
                 
-                # Retreive the action from the policy
-                action[k] = self.policy[k, x_region[k]]
             else:
                 # Absorbing region reached
                 x_region[k] = -1
@@ -217,11 +215,18 @@ class MonteCarloSim():
                     self.tab.print_row([s_init, m, k, 'Critical state reached, so abort'], sort="Warning")
                 return trace, success
 
-            elif action[k] == -1:
+            # Check if we can still perform another action within the horizon
+            elif k >= self.horizon:
+                return trace, success
+
+            # Retreive the action from the policy
+            action[k] = self.policy[k, x_region[k]]
+
+            if action[k] == -1:
                 if self.args.verbose:
                     self.tab.print_row([s_init, m, k, 'No policy known, so abort'], sort="Warning")
                 return trace, success
-            
+
             ###
             
             # If loop was not aborted, we have a valid action            

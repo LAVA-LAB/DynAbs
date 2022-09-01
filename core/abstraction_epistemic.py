@@ -285,7 +285,7 @@ class abstraction_epistemic(Abstraction):
         LP = LP_vertices_contained(self.model, BRS_0.shape, 
                                    solver=self.setup.cvx['solver'])
 
-    def _computeProbabilityBounds(self, tab, k):
+    def _computeProbabilityBounds(self, tab):
         '''
         Compute transition probability intervals (bounds)
 
@@ -360,7 +360,7 @@ class abstraction_epistemic(Abstraction):
                 }
         
         # For every action (i.e. target point)
-        for a_idx, act in self.actions['obj'].items():
+        for a_idx, act in progressbar(self.actions['obj'].items(), redirect_stdout=True):
             
             # Shift samples by the center of the target set of this action
             clusters = {
@@ -388,7 +388,7 @@ class abstraction_epistemic(Abstraction):
                 # Print normal row in table
                 if a_idx % printEvery == 0:
                     nr_transitions = len(prob[a_idx]['successor_idxs'])
-                    tab.print_row([k, a_idx, 
+                    tab.print_row([a_idx, 
                        'Probabilities computed (transitions: '+
                        str(nr_transitions)+')'])
                 
@@ -406,9 +406,11 @@ class abstraction_epistemic(Abstraction):
         None.
 
         '''
+        
+        tocDiff(False)
            
         # Column widths for tabular prints
-        col_width = [8,8,8,46]
+        col_width = [8,8,46]
         tab = table(col_width)
         
         self.trans = {'prob': {}}
@@ -425,7 +427,7 @@ class abstraction_epistemic(Abstraction):
         
         print('Computing transition probabilities...')
         
-        self.trans['prob'] = {0: self._computeProbabilityBounds(tab, 0)}
+        self.trans['prob'] = self._computeProbabilityBounds(tab)
         
         self.time['3_probabilities'] = tocDiff(False)
         print('Transition probabilities calculated - time:',

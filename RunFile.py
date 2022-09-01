@@ -50,9 +50,17 @@ args = parse_arguments()
 args.base_dir = os.path.dirname(os.path.abspath(__file__))
 print('Base directory:', args.base_dir)
 
-preset = 'spacecraft'
+preset = 'spacecraft_3D'
 
-if preset == 'uav':
+if preset == 'uav_2D':
+    args.model = 'UAV'
+    args.UAV_dim = 2
+    args.noise_samples = 3200
+    args.confidence = 0.01
+    args.prism_java_memory = 8
+    args.monte_carlo_iter = 1000
+
+elif preset == 'uav_3D':
     args.model = 'UAV'
     args.UAV_dim = 3
     args.noise_factor = 0.1
@@ -64,13 +72,23 @@ if preset == 'uav':
     args.x_init = [-14,0,6,0,-2,0]
     
 elif preset == 'spacecraft':
-    args.model = 'spacecraft'
-    args.noise_samples = 1600
+    args.model = 'spacecraft_2D'
+    args.noise_samples = 3200
     args.confidence = 0.01
     args.prism_java_memory = 8
-    args.monte_carlo_iter = 100
+    args.monte_carlo_iter = 1000
+    args.x_init = np.array([0.1, 19.9, 0, 0]) #, 0, 0])
+    
+elif preset == 'spacecraft_3D':
+    args.model = 'spacecraft'
+    args.noise_samples = 3200
+    args.confidence = 0.01
+    args.prism_java_memory = 8
+    args.monte_carlo_iter = 1000
     args.x_init = np.array([0.1, 19.9, 0, 0, 0, 0])
     
+args.block_refinement = True
+
 print(vars(args))
 
 with open(os.path.join(args.base_dir, 'path_to_prism.txt')) as f:
@@ -112,6 +130,9 @@ Ab = method(args, setup, model, spec)
 # Define states of abstraction
 Ab.define_states()
 
+# Initialize results dictionaries
+Ab.initialize_results()
+
 # %%
 
 #-----------------------------------------------------------------------------
@@ -121,11 +142,18 @@ Ab.define_states()
 # Create directories
 createDirectory(Ab.setup.directories['outputF']) 
         
-# Create actions and determine which ones are enabled
+# Create target points associated with actions
 Ab.define_target_points()
+
+# Determine enabled state-action paris
+Ab.define_enabled_actions()
+
 # %%
 
-Ab.define_enabled_actions()
+from core.block_refinement import block_refinement
+if args.block_refinement:
+    Ab.blref = block_refinement(100, Ab.partition['goal'], 
+                                Ab.partition['nr_regions'], Ab.N)
 
 #-----------------------------------------------------------------------------
 # Code below is repeated every iteration of the iterative scheme
@@ -147,25 +175,37 @@ if Ab.model.name == 'drone':
 else:
     harm_osc = False
 
+done = False
+
 # For every iteration... (or once, if iterations are disabled)
 for case_id in range(0, Ab.args.iterations):   
+    while not done:
+
+        print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
+        print('START ITERATION ID:', case_id)
+
+        if args.block_refinement:
+            print('\nBLOCK REFINEMENT - TIME STEP k =',Ab.blref.k)
+            print('-- Number of value states used:',Ab.blref.num_lb_used,'\n')
+
+        # Set directories for this iteration
+        Ab.setup.prepare_iteration(N, case_id)
+
+        # Calculate transition probabilities
+        Ab.define_probabilities()
         
-    print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
-    print('START ITERATION ID:', case_id)
+        # Build and solve interval MDP
+        model_size = Ab.build_iMDP()
+        Ab.solve_iMDP()
 
-    # Set directories for this iteration
-    Ab.setup.prepare_iteration(N, case_id)
-
-    # Calculate transition probabilities
-    Ab.define_probabilities()
-    
-    # Build and solve interval MDP
-    model_size = Ab.build_iMDP()
-    Ab.solve_iMDP()
+        if not args.block_refinement or Ab.blref.decrease_time():
+            done = True
+        else:
+            Ab.blref.set_values(Ab.results['optimal_reward'])
     
     # Export the results of the current iteration
     writer = exporter.create_writer(Ab, model_size, case_id, N)
-    
+
     if Ab.args.monte_carlo_iter > 0:
 
         if len(args.x_init) == Ab.model.n:
@@ -176,21 +216,21 @@ for case_id in range(0, Ab.args.iterations):
         else:
             Ab.mc = MonteCarloSim(Ab, iterations=Ab.args.monte_carlo_iter,
                                 writer=writer)
-    
+
     # Store run times of current iterations        
     time_df = pd.DataFrame( data=Ab.time, index=[case_id] )
     time_df.to_excel(writer, sheet_name='Run time')
     writer.save()
     plt.close('all')
-    
+
     exporter.add_to_df(pd.DataFrame(data=N, index=[case_id], columns=['N']), 
-                       'general')
+                        'general')
     exporter.add_to_df(time_df, 'run_times')
     exporter.add_to_df(pd.DataFrame(data=model_size, index=[case_id]), 
-                       'model_size')
+                        'model_size')
 
     pickle_results(Ab)
-    
+
     if harm_osc:
         print('-- Monte Carlo simulations to determine controller safety...')
         harm_osc.add_iteration(Ab, case_id)

@@ -243,7 +243,7 @@ class abstraction_default(Abstraction):
 
 
 
-    def _computeProbabilityBounds(self, tab, k):
+    def _computeProbabilityBounds(self, tab):
         '''
         Compute transition probability intervals (bounds)
 
@@ -261,29 +261,46 @@ class abstraction_default(Abstraction):
 
         '''
         
-        prob = dict()
+        prob = {}
+        regions_list = {}
         printEvery = 1 # min(100, max(1, int(self.actions['nr_actions']/10)))
 
         noise_samples = Abstraction.noise_sampler(self)
 
+        # If block refinement is true, use actual values of successor states,
+        # computed in the abstraction on the previous time step
+        if self.args.block_refinement:
+            successor_states = self.blref.state_relation
+
+        else:
+            successor_states = np.arange(self.partition['nr_regions'])
+
         # For every action (i.e. target point)
-        for a_idx, act in self.actions['obj'].items():
+        for a_idx, act in progressbar(self.actions['obj'].items(), redirect_stdout=True):
             
             # Check if action a is available in any state at all
             if len(act.enabled_in) > 0:
                     
                 successor_samples = act.center + noise_samples
-                    
-                prob[a_idx] = compute_intervals_default(self.args,
-                      self.spec.partition, self.partition, self.trans,
-                      successor_samples)
+                
+                if hasattr(self, 'regions_list_cache'):
+                    cache = self.regions_list_cache[a_idx]
+                else:
+                    cache = False
+
+                prob[a_idx], regions_list[a_idx] = compute_intervals_default(self.args,
+                    self.spec.partition, self.partition, self.trans,
+                    successor_samples, successor_states, regions_list = cache)
                 
                 # Print normal row in table
-                if a_idx % printEvery == 0:
-                    nr_transitions = len(prob[a_idx]['successor_idxs'])
-                    tab.print_row([k, a_idx, 
-                       'Probabilities computed (transitions: '+
-                       str(nr_transitions)+')'])
+                # if a_idx % printEvery == 0:
+                #     nr_transitions = len(prob[a_idx]['successor_idxs'])
+                #     tab.print_row([a_idx, 
+                #        'Probabilities computed (transitions: '+
+                #        str(nr_transitions)+')'])
+
+        if self.args.block_refinement and self.blref.initial:
+            self.regions_list_cache = regions_list
                 
         return prob
 
@@ -300,8 +317,10 @@ class abstraction_default(Abstraction):
 
         '''
            
+        tocDiff(False)
+        
         # Column widths for tabular prints
-        col_width = [8,8,8,46]
+        col_width = [8,8,46]
         tab = table(col_width)
         
         self.trans = {'prob': {}}
@@ -318,7 +337,7 @@ class abstraction_default(Abstraction):
         
         print('Computing transition probabilities...')
         
-        self.trans['prob'] = {0: self._computeProbabilityBounds(tab, 0)}
+        self.trans['prob'] = self._computeProbabilityBounds(tab)
         
         self.time['3_probabilities'] = tocDiff(False)
         print('Transition probabilities calculated - time:',

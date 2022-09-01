@@ -17,7 +17,7 @@ from .commons import writeFile
 from progressbar import progressbar # Import to create progress bars
 
 class mdp(object):
-    def __init__(self, setup, N, partition, actions):
+    def __init__(self, setup, N, partition, actions, blref=False):
         '''
         Create the MDP model in Python for the current instance.
     
@@ -37,6 +37,8 @@ class mdp(object):
     
         '''
         
+        self.block_refinement = blref
+
         self.setup = setup
         self.N = N
         
@@ -125,13 +127,20 @@ class mdp(object):
         print(' --- Writing PRISM states file')
         
         head = 3
+
+        if self.block_refinement:
+            blref_states = self.block_refinement.num_states
+        else:
+            blref_states = 0
+
+        self.head_size = head + blref_states
         
         ### Write states file
         PRISM_statefile = self.setup.directories['outputFcase']+ \
             self.setup.mdp['filename']+"_"+mode+".sta"
         
         state_file_string = '\n'.join(['(x)\n0:(-3)\n1:(-2)\n2:(-1)'] + 
-              [str(i+head)+':('+str(i)+')' for i in range(self.nr_regions)])
+              [str(i+head)+':('+str(i)+')' for i in range(self.nr_regions + blref_states)])
         
         # Write content to file
         writeFile(PRISM_statefile, 'w', state_file_string)
@@ -141,13 +150,16 @@ class mdp(object):
         ### Write label file
         PRISM_labelfile = self.setup.directories['outputFcase']+ \
             self.setup.mdp['filename']+"_"+mode+".lab"
-            
-        label_file_list = ['0="init" 1="deadlock" 2="reached" 3="failed"'] + \
-                          ['0: 1 3'] + ['1: 1 3'] + ['2: 2'] + \
-                          ['' for i in range(self.nr_regions)]
+
+        label_head = ['0="init" 1="deadlock" 2="reached" 3="failed"'] + \
+                     ['0: 1 3'] + ['1: 1 3'] + ['2: 2'] + \
+                     [str(i+head)+': 0' for i in range(blref_states)]
+
+        label_body = ['' for i in range(self.nr_regions)]
         
         for i in range(self.nr_regions):
-            substring = str(i+head)+': 0'
+
+            substring = str(i+head+blref_states)+': 0'
             
             # Check if region is a deadlock state
             if len(actions['enabled'][i]) == 0:
@@ -159,12 +171,12 @@ class mdp(object):
             elif i in self.badStates: # or len(actions['enabled'][i]) == 0:
                 substring += ' 3'
             
-            label_file_list[i+head+1] = substring
+            label_body[i] = substring
             
-        label_file_string = '\n'.join(label_file_list)
+        label_full = '\n'.join(label_head) + '\n' + '\n'.join(label_body)
            
         # Write content to file
-        writeFile(PRISM_labelfile, 'w', label_file_string)
+        writeFile(PRISM_labelfile, 'w', label_full)
         
         print(' --- Writing PRISM transition file')
         
@@ -206,9 +218,9 @@ class mdp(object):
                     # Define name of action
                     actionLabel = "a_"+str(a)
                     
-                    substring_start = str(s+head) +' '+ str(choice)
+                    substring_start = str(s+head+blref_states) +' '+ str(choice)
                     
-                    P = trans['prob'][0][a]
+                    P = trans['prob'][a]
                     
                     if mode == 'interval':
                     
@@ -271,7 +283,7 @@ class mdp(object):
                     else:
                         selfloop_prob = '1.0'
                         
-                    substring = [str(s+head) +' 0 '+str(s+head)+' '+
+                    substring = [str(s+head+blref_states) +' 0 '+str(s+head+blref_states)+' '+
                                     selfloop_prob]
         
                     selfloop = True
@@ -290,12 +302,26 @@ class mdp(object):
                                   for item in sublist]
         transition_file_list = '\n'.join(flatten(transition_file_list))
         
+        ### Add block refinement states
+        blref_transitions = ''
+        if self.block_refinement:
+            val = self.block_refinement.lb_values
+
+            blref_trans=0
+            for i,val in enumerate(self.block_refinement.lb_values):
+                if val < 1:
+                    blref_transitions += str(i + head) + ' 0 1 ['+str(1-val)+','+str(1-val)+']\n'
+                    blref_trans += 1
+                if val > 0:
+                    blref_transitions += str(i + head) + ' 0 2 ['+str(val)+','+str(val)+']\n'
+                    blref_trans += 1
+
         print(' ---- String ready; write to file...')
         
         # Header contains nr of states, choices, and transitions
-        size_states = self.nr_regions+head
-        size_choices = nr_choices_absolute+head
-        size_transitions = nr_transitions_absolute+head
+        size_states = self.nr_regions + head + blref_states
+        size_choices = nr_choices_absolute + head + blref_states
+        size_transitions = nr_transitions_absolute + head + blref_trans
         model_size = {'States': size_states, 
                       'Choices': size_choices, 
                       'Transitions':size_transitions}
@@ -306,12 +332,15 @@ class mdp(object):
             firstrow = '0 0 0 [1.0,1.0]\n1 0 1 [1.0,1.0]\n2 0 2 [1.0,1.0]\n'
         else:
             firstrow = '0 0 0 1.0\n1 0 1 1.0\n1 0 1 1.0\n'
-        
+
+        ###
+
         # Write content to file
-        writeFile(PRISM_transitionfile, 'w', header+firstrow+
+        writeFile(PRISM_transitionfile, 'w', header + firstrow + 
+                                             blref_transitions + 
                                              transition_file_list)
             
         ### Write specification file
         specfile, specification = self.writePRISM_specification(mode, problem_type)
         
-        return model_size, PRISM_allfiles, specfile, specification
+        return model_size, PRISM_allfiles, specfile, specification, self.head_size

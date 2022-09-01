@@ -198,7 +198,7 @@ class UAV_spec(master.spec_master):
         master.spec_master.__init__(self)        
         
         # Step-bound on spec
-        self.end_time = 64
+        self.end_time = 16
 
         # Authority limit for the control u, both positive and negative
         if modelDim == 2:
