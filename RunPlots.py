@@ -2,10 +2,11 @@
 # %run "~/documents/sample-abstract/RunPlots.py"
 
 import pickle
+import numpy as np
 
 #infile = open(Ab.setup.directories['outputF']+'data_dump.p','rb')
-# path = '/home/thom/documents/sample-abstract/output/Ab_UAV_08-26-2022_17-14-46/data_dump.p'
-path = 'C:\\Users\\Thom Badings\\Documents\\data_dump.p'
+path = '/home/thom/documents/sample-abstract/output/Ab_spacecraft_2D_09-02-2022_16-27-19/data_dump.p'
+# path = 'C:\\Users\\Thom Badings\\Documents\\data_dump.p'
 infile = open(path, 'rb')
 data = pickle.load(infile)
 infile.close()
@@ -26,7 +27,7 @@ heatmap_2D(data['args'], data['model'], data['setup'], data['regions']['c_tuple'
 from plotting.uav_plots import UAV_plot_2D, UAV_3D_plotLayout
 from core.define_partition import state2region
 
-if data['model'].name == 'shuttle':
+if data['model'].name in ['shuttle', 'spacecraft_2D'] :
 
     if len(data['args'].x_init) == data['model'].n:
         s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
@@ -47,3 +48,14 @@ if data['model'].name == 'UAV' and data['model'].modelDim == 3:
                           data['goal_regions'], data['critical_regions'], traces, data['spec'])
     else:
         print('-- No initial state provided')
+        
+if data['model'].name == 'spacecraft_2D':
+    
+    from plotting.spacecraft import spacecraft
+    
+    key = list(data['mc'].traces.keys())[0]
+    trace = np.array(data['mc'].traces[key][0]['x'])
+    
+    trace = trace[:,[1,0]] / 10
+    
+    spacecraft(data['setup'], trace)

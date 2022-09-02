@@ -262,6 +262,7 @@ class abstraction_default(Abstraction):
         '''
         
         prob = {}
+        ignore = {}
         regions_list = {}
         printEvery = 1 # min(100, max(1, int(self.actions['nr_actions']/10)))
 
@@ -288,7 +289,7 @@ class abstraction_default(Abstraction):
                 else:
                     cache = False
 
-                prob[a_idx], regions_list[a_idx] = compute_intervals_default(self.args,
+                prob[a_idx], regions_list[a_idx], ignore[a_idx] = compute_intervals_default(self.args,
                     self.spec.partition, self.partition, self.trans,
                     successor_samples, successor_states, regions_list = cache)
                 
@@ -302,7 +303,7 @@ class abstraction_default(Abstraction):
         if self.args.block_refinement and self.blref.initial:
             self.regions_list_cache = regions_list
                 
-        return prob
+        return prob, ignore
 
     
     
@@ -337,7 +338,7 @@ class abstraction_default(Abstraction):
         
         print('Computing transition probabilities...')
         
-        self.trans['prob'] = self._computeProbabilityBounds(tab)
+        self.trans['prob'], self.trans['ignore'] = self._computeProbabilityBounds(tab)
         
         self.time['3_probabilities'] = tocDiff(False)
         print('Transition probabilities calculated - time:',

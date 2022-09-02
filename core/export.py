@@ -18,18 +18,21 @@ class result_exporter(object):
         
         return iterative_results
     
-    def create_writer(self, Ab, model_size, case_id, N):
+    def create_writer(self, Ab, N):
         
         # Save case-specific data in Excel
         output_file = Ab.setup.directories['outputFcase'] + \
             Ab.setup.time['datetime'] + '_N='+str(N)+'_data_export.xlsx'
         
         # Create a Pandas Excel writer using XlsxWriter as the engine
-        writer = pd.ExcelWriter(output_file, engine='xlsxwriter')
+        self.writer = pd.ExcelWriter(output_file, engine='xlsxwriter')
+
+        return self.writer
         
+    def add_results(self, Ab, model_size, case_id):
         # Write model size results to Excel
         model_size_df = pd.DataFrame(model_size, index=[case_id])
-        model_size_df.to_excel(writer, sheet_name='Model size')
+        model_size_df.to_excel(self.writer, sheet_name='Model size')
         
         # Load data into dataframes
         policy_df   = pd.DataFrame( Ab.results['optimal_policy'], 
@@ -38,10 +41,8 @@ class result_exporter(object):
          index=range(Ab.partition['nr_regions'])).T
         
         # Write dataframes to a different worksheet
-        policy_df.to_excel(writer, sheet_name='Optimal policy')
-        reward_df.to_excel(writer, sheet_name='Optimal reward')
-        
-        return writer
+        policy_df.to_excel(self.writer, sheet_name='Optimal policy')
+        reward_df.to_excel(self.writer, sheet_name='Optimal reward')
     
     def add_to_df(self, df, key):
         

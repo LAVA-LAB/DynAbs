@@ -299,6 +299,11 @@ def compute_intervals_default(args, partition_setup, partition, trans, samples,
     successor_idxs = np.fromiter(count_dict.keys(), dtype=int)
     counts_value = np.fromiter(count_dict.values(), dtype=int)
 
+    if args.block_refinement and all(successor_idxs == 0):
+        ignore = True
+    else:
+        ignore = False
+
     #### PROBABILITY INTERVALS
     probs_lb = floor_decimal(trans['memory'][Nsamples - counts_value, 0], nr_decimals)
     probs_ub = floor_decimal(trans['memory'][Nsamples - counts_value, 1], nr_decimals)
@@ -337,7 +342,7 @@ def compute_intervals_default(args, partition_setup, partition, trans, samples,
         'deadlock_approx': deadlock_approx,
     }
     
-    return returnDict, regions_list
+    return returnDict, regions_list, ignore
 
 
 

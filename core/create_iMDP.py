@@ -192,7 +192,7 @@ class mdp(object):
         printEvery = min(100, max(1, int(self.nr_regions/10)))
         
         # For every state
-        for s in progressbar(range(self.nr_regions), redirect_stdout=True):
+        for s in range(self.nr_regions): # progressbar(range(self.nr_regions), redirect_stdout=True):
             
             if s in partition['goal']:
                 # print(' ---- Skip',s,'because it is a goal region')
@@ -215,6 +215,9 @@ class mdp(object):
                 # For every enabled action                
                 for a_idx,a in enumerate(actions['enabled'][s]):
                     
+                    if self.block_refinement and trans['ignore'][a]:
+                        continue
+
                     # Define name of action
                     actionLabel = "a_"+str(a)
                     
@@ -304,10 +307,10 @@ class mdp(object):
         
         ### Add block refinement states
         blref_transitions = ''
+        blref_trans=0
         if self.block_refinement:
             val = self.block_refinement.lb_values
 
-            blref_trans=0
             for i,val in enumerate(self.block_refinement.lb_values):
                 if val < 1:
                     blref_transitions += str(i + head) + ' 0 1 ['+str(1-val)+','+str(1-val)+']\n'
