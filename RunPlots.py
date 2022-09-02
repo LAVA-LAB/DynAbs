@@ -49,13 +49,16 @@ if data['model'].name == 'UAV' and data['model'].modelDim == 3:
     else:
         print('-- No initial state provided')
         
+# %%
+        
 if data['model'].name == 'spacecraft_2D':
     
-    from plotting.spacecraft import spacecraft
+    from plotting.spacecraft import spacecraft, spacecraft_3D
     
     key = list(data['mc'].traces.keys())[0]
     trace = np.array(data['mc'].traces[key][0]['x'])
     
     trace = trace[:,[1,0]] / 10
+    trace_3D = np.hstack((trace, np.linspace(1, 0, len(trace))))
     
-    spacecraft(data['setup'], trace)
+    spacecraft_3D(data['setup'], trace_3D)

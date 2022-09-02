@@ -141,3 +141,121 @@ def spacecraft(setup, trace):
     plt.show()
     
     plt.show()
+
+
+
+def spacecraft_3D(setup, trace):
+    
+    from scipy.interpolate import interp1d
+    
+    N = len(trace)
+
+    # Determine path of target
+    tg_omega0 = .6*np.pi # Initial angle of target
+    tg_dist   = 10 # Initial distance of target from earth
+    tg_omega  = -.3 # Angular velocity of target
+
+    tg_angle  = np.array([tg_omega0 + k*tg_omega for k in range(N)])
+
+    # Compute target trajectory
+    tg_traj_plane = pol2cart( tg_dist, tg_angle )
+    
+    # Compute chaser trajectory
+    ch_traj_plane = hill2cart(trace[:, 0:2], tg_traj_plane[0], tg_traj_plane[1], tg_angle)
+
+    # Planar trajectories
+    tg_traj_plane = np.array(tg_traj_plane)
+    ch_traj_plane = np.array(ch_traj_plane)
+
+    # Add off-direction
+    tg_trajectory = np.vstack((tg_traj_plane, np.zeros(tg_traj_plane.shape[1]))).T
+    ch_trajectory = np.vstack((ch_traj_plane, trace[:,2])).T
+
+    print(tg_trajectory)
+    print(ch_trajectory)
+    
+    
+    
+    
+    
+    fig, ax = plt.subplots(figsize=cm2inch(6, 6))
+    
+    # Add figure of earth and satellite
+    cwd = os.path.dirname(os.path.abspath(__file__))
+    
+    earth = plt.imread(Path(cwd, 'earth.png'))
+    add_image(ax, earth, pos=(0.0,0.0), zoom=0.04)
+    
+    satellite = plt.imread(Path(cwd, 'satellite.png'))
+    
+    add_image(ax, satellite, pos=tuple(ch_trajectory[0]), zoom=0.006)
+    
+    ###
+    
+    plt.xlabel('$x$', labelpad=0)
+    plt.ylabel('$y$', labelpad=0)
+    
+    ### PLOT TARGET
+    # Linear length along the line:
+    distance = np.cumsum( np.sqrt(np.sum( np.diff(tg_trajectory, axis=0)**2, 
+                                          axis=1 )) )
+    distance = np.insert(distance, 0, 0)/distance[-1]
+    
+    # Interpolation for different methods:
+    alpha = np.linspace(0, 1, 75)
+    
+    if len(tg_trajectory) == 2:
+        kind = 'linear'
+    else:
+        kind = 'quadratic'
+
+    interpolator =  interp1d(distance, tg_trajectory, kind=kind, 
+                             axis=0)
+    interpolated_points = interpolator(alpha)
+    
+    # Plot trace
+    plt.plot(*interpolated_points.T, ls='dotted', color="red", linewidth=1);
+    
+    ### PLOT CHASER
+    
+    # Plot precise points
+    plt.plot(*ch_trajectory.T, 'o', markersize=1, color="black");
+    
+    # Linear length along the line:
+    distance = np.cumsum( np.sqrt(np.sum( np.diff(ch_trajectory, axis=0)**2, 
+                                          axis=1 )) )
+    distance = np.insert(distance, 0, 0)/distance[-1]
+    
+    # Interpolation for different methods:
+    alpha = np.linspace(0, 1, 75)
+    
+    if len(ch_trajectory) == 2:
+        kind = 'linear'
+    else:
+        kind = 'quadratic'
+
+    interpolator =  interp1d(distance, ch_trajectory, kind=kind, 
+                             axis=0)
+    interpolated_points = interpolator(alpha)
+    
+    # Plot trace
+    plt.plot(*interpolated_points.T, color="blue", linewidth=1);
+
+    ###########
+
+    plt.xlim(-1.5*tg_dist, 1.5*tg_dist)
+    plt.ylim(-1.5*tg_dist, 1.5*tg_dist)
+
+    plt.gca().set_aspect('equal', adjustable='box')
+    
+    # Set tight layout
+    fig.tight_layout()
+    
+    # Save figure
+    filename = setup.directories['outputFcase']+'spacecraft_orbit'
+    for form in setup.plotting['exportFormats']:
+        plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
+        
+    plt.show()
+    
+    plt.show()

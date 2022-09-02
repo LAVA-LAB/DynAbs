@@ -51,7 +51,7 @@ args = parse_arguments()
 args.base_dir = os.path.dirname(os.path.abspath(__file__))
 print('Base directory:', args.base_dir)
 
-preset = 'spacecraft_2D'
+preset = 'spacecraft_1D'
 models_file = 'JAIR22_models'
 
 if preset == 'uav_2D':
@@ -88,6 +88,16 @@ elif preset == 'spacecraft_3D':
     args.prism_java_memory = 32
     args.monte_carlo_iter = 1000
     args.x_init = np.array([0.8, 16, 0, 0, 0, 0])
+
+elif preset == 'spacecraft_1D':
+    args.model = 'spacecraft_1D'
+    args.noise_samples = 3200
+    args.confidence = 0.01
+    args.prism_java_memory = 8
+    args.monte_carlo_iter = 1000
+    args.x_init = np.array([-1.6, -1]) #, 0, 0])
+    
+    args.partition_plot = True
     
 args.block_refinement = False
 
@@ -273,13 +283,14 @@ if Ab.model.name == 'anaesthesia_delivery':
 
     heatmap_3D(Ab.setup, centers, values)
     
-assert False
 # %%
 
+# %run "~/documents/sample-abstract/RunPlots.py"
+
 import pickle
+import numpy as np
 
 infile = open(Ab.setup.directories['outputF']+'data_dump.p','rb')
-# infile = open('/home/thom/documents/sample-abstract/output/Ab_spacecraft_2D_08-29-2022_15-08-09/data_dump.p', 'rb')
 data = pickle.load(infile)
 infile.close()
 
@@ -299,7 +310,7 @@ heatmap_2D(data['args'], data['model'], data['setup'], data['regions']['c_tuple'
 from plotting.uav_plots import UAV_plot_2D, UAV_3D_plotLayout
 from core.define_partition import state2region
 
-if data['model'].name == 'shuttle':
+if data['model'].name in ['shuttle', 'spacecraft_2D'] :
 
     if len(data['args'].x_init) == data['model'].n:
         s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
@@ -318,5 +329,27 @@ if data['model'].name == 'UAV' and data['model'].modelDim == 3:
         
         UAV_3D_plotLayout(data['setup'], data['args'], data['model'], data['regions'], 
                           data['goal_regions'], data['critical_regions'], traces, data['spec'])
+    else:
+        print('-- No initial state provided')
+        
+if data['model'].name == 'spacecraft_2D':
+    
+    from plotting.spacecraft import spacecraft
+    
+    key = list(data['mc'].traces.keys())[0]
+    trace = np.array(data['mc'].traces[key][0]['x'])
+    
+    trace = trace[:,[1,0]] / 10
+    
+    spacecraft(data['setup'], trace)
+    
+if data['model'].name in ['spacecraft_1D'] :
+
+    if len(data['args'].x_init) == data['model'].n:
+        s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
+        traces = data['mc'].traces[s_init]
+
+        UAV_plot_2D((0,1), (False,False), data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'], 
+                    data['spec'], traces, cut_idx = [0,0], traces_to_plot=10, line=True)
     else:
         print('-- No initial state provided')

@@ -161,10 +161,10 @@ class spacecraft_spec(master.spec_master):
     
         self.partition['boundary']  = np.array([[-4.6+0.4*3, 2.2-0.4*3], 
                                                 [-2, 21.2-6*0.8], 
-                                                [-1, 1],
+                                                [-2, 2],
                                                 [-4, 4], 
                                                 [-4, 4],
-                                                [-1, 1]])
+                                                [-2, 2]])
         self.partition['number']    = [17-6, 29-6, 5, 5, 5, 5]
     
         # Actions per dimension (if 'auto', equal to nr of regions)
@@ -211,3 +211,33 @@ class spacecraft_2D_spec(master.spec_master):
         self.critical = [
             np.array([[-1, 1], [8, 12], 'all', 'all'], dtype='object')
         ]
+
+
+
+class spacecraft_1D_spec(master.spec_master):
+    
+    def __init__(self, args):
+
+        # Initialize superclass
+        master.spec_master.__init__(self)        
+        
+        # Step-bound on spec
+        self.end_time = 32
+    
+        # Authority limit for the control u, both positive and negative
+        self.control['uMin'] = [-2]
+        self.control['uMax'] = [2]
+    
+        self.partition['boundary']  = np.array([[-2, 2],
+                                                [-2, 2]])
+        self.partition['number']    = [5, 5]
+    
+        # Actions per dimension (if 'auto', equal to nr of regions)
+        self.targets['boundary']    = 'auto'
+        self.targets['number']      = 'auto'
+    
+        self.goal = [
+            np.array([[-0.2, 0.2], [-0.2, 0.2]], dtype='object')
+            ]
+
+        self.critical = None

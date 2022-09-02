@@ -192,7 +192,7 @@ class mdp(object):
         printEvery = min(100, max(1, int(self.nr_regions/10)))
         
         # For every state
-        for s in range(self.nr_regions): # progressbar(range(self.nr_regions), redirect_stdout=True):
+        for s in progressbar(range(self.nr_regions), redirect_stdout=True):
             
             if s in partition['goal']:
                 # print(' ---- Skip',s,'because it is a goal region')

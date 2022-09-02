@@ -69,8 +69,9 @@ def UAV_plot_2D(i_show, i_hide, setup, args, regions, goal_regions, critical_reg
         
         goalIdx   = keys[goal]
 
-        if goalIdx[ih1] == cut_idx[0] and \
-           goalIdx[ih2] == cut_idx[1]:
+        if (not ih1 and not ih2) or \
+           (goalIdx[ih1] == cut_idx[0] and \
+           goalIdx[ih2] == cut_idx[1]):
 
             goal_lower = [regions['low'][goal][is1], regions['low'][goal][is2]]
             goalState = Rectangle(goal_lower, width=width[is1], 
@@ -83,8 +84,9 @@ def UAV_plot_2D(i_show, i_hide, setup, args, regions, goal_regions, critical_reg
     for crit in critical_regions:
         
         critIdx   = keys[crit]
-        if critIdx[ih1] == cut_idx[0] and \
-           critIdx[ih2] == cut_idx[1]:
+        if (not ih1 and not ih2) or \
+           (critIdx[ih1] == cut_idx[0] and \
+           critIdx[ih2] == cut_idx[1]):
         
             critStateLow = [regions['low'][crit][is1], regions['low'][crit][is2]]
             criticalState = Rectangle(critStateLow, width=width[is1], 

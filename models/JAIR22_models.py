@@ -297,3 +297,63 @@ class spacecraft_2D(master.LTI_master):
         spec.problem_type = 'reachavoid'
             
         return spec
+
+
+
+class spacecraft_1D(master.LTI_master):
+    
+    def __init__(self, args):
+        '''
+        Initialize the spacecraft model class.
+
+        Returns
+        -------
+        None.
+
+        '''
+        
+        # Initialize superclass
+        master.LTI_master.__init__(self)
+        
+        self.args = args
+
+        # Set value of delta (how many time steps are grouped together)
+        # Used to make the model fully actuated
+        self.lump = 2
+        
+        # Discretization step size
+        self.tau = 1.0
+        T = self.tau
+
+        mu = 3.986e14 / 1e9
+        r0 = 42164
+        n = np.sqrt(mu / r0**3)
+
+        self.A = np.array([
+            [np.cos(n*T),    1/n*np.sin(n*T)],
+            [-n*np.sin(n*T), np.cos(n*T)]
+        ])
+
+        self.B = np.array([
+            [1/n*np.sin(n*T)],
+            [np.cos(n*T)]
+        ])
+
+        self.Q  = np.array([[0],[0]])
+            
+        # Determine system dimensions
+        self.n = np.size(self.A,1)
+        self.p = np.size(self.B,1)
+
+        # Covariance of the process noise
+        self.noise = dict()
+        self.noise['w_cov'] = np.diag([.001, .001])
+
+    def set_spec(self):
+        
+        from models.JAIR22_specifications import spacecraft_1D_spec
+        spec = spacecraft_1D_spec(self.args)     
+        
+        spec.problem_type = 'reachavoid'
+            
+        return spec
