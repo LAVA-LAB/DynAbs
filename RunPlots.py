@@ -4,9 +4,9 @@
 import pickle
 import numpy as np
 
-#infile = open(Ab.setup.directories['outputF']+'data_dump.p','rb')
-path = '/home/thom/documents/sample-abstract/output/Ab_spacecraft_2D_09-02-2022_16-27-19/data_dump.p'
-# path = 'C:\\Users\\Thom Badings\\Documents\\data_dump.p'
+# infile = open(Ab.setup.directories['outputF']+'data_dump.p','rb')
+# path = '/home/thom/documents/sample-abstract/output/Ab_spacecraft_2D_09-02-2022_16-27-19/data_dump.p'
+path = 'C:\\Users\\Thom Badings\\Documents\\data_dump.p'
 infile = open(path, 'rb')
 data = pickle.load(infile)
 infile.close()
@@ -53,12 +53,23 @@ if data['model'].name == 'UAV' and data['model'].modelDim == 3:
         
 if data['model'].name == 'spacecraft_2D':
     
-    from plotting.spacecraft import spacecraft, spacecraft_3D
+    from plotting.spacecraft import spacecraft
     
     key = list(data['mc'].traces.keys())[0]
     trace = np.array(data['mc'].traces[key][0]['x'])
     
     trace = trace[:,[1,0]] / 10
-    trace_3D = np.hstack((trace, np.linspace(1, 0, len(trace))))
+    trace_3D = np.vstack((trace.T, np.linspace(1, 0, len(trace)))).T
     
-    spacecraft_3D(data['setup'], trace_3D)
+    spacecraft(data['setup'], trace_3D)
+    
+if data['model'].name == 'spacecraft':
+    
+    from plotting.spacecraft import spacecraft_3D
+    
+    key = list(data['mc'].traces.keys())[0]
+    trace = np.array(data['mc'].traces[key][0]['x'])
+    
+    trace = trace[:,0:3] * np.array([0.1, 0.1, 1])
+    
+    spacecraft_3D(data['setup'], trace)

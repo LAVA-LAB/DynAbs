@@ -172,7 +172,7 @@ class spacecraft_spec(master.spec_master):
         self.targets['number']      = 'auto'
     
         self.goal = [
-            np.array([[-0.2, 0.2], [-0.4, 0.4], 'all', 'all', 'all', 'all'], dtype='object')
+            np.array([[-0.2, 0.2], [-0.4, 0.4], [-0.4, 0.4], 'all', 'all', 'all'], dtype='object')
             ]
 
         self.critical = [
