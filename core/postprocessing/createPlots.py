@@ -763,6 +763,9 @@ def UAVplot3d_visvis(setup, model, abstr, traces, cut_value, view='3D'):
     iy = 2
     iz = 4
     
+    x_init = vv.solidSphere((-14,6,-2),(0.25,0.25,0.25))
+    x_init.faceColor = 'b'
+    
     regionWidth_xyz = np.array([model.setup['partition']['width'][0], 
                                 model.setup['partition']['width'][2], 
                                 model.setup['partition']['width'][4]])    
@@ -841,6 +844,9 @@ def UAVplot3d_visvis(setup, model, abstr, traces, cut_value, view='3D'):
     ax.axis.yLabel = 'Y'
     ax.axis.zLabel = 'Z'
     
+    ax.axis.xLabel = ax.axis.yLabel = ax.axis.zLabel = ''    
+    ax.axis.xTicks = ax.axis.yTicks = ax.axis.zTicks = []
+    
     app = vv.use()
     
     f.relativeFontSize = 1.6
@@ -848,13 +854,14 @@ def UAVplot3d_visvis(setup, model, abstr, traces, cut_value, view='3D'):
     
     vv.axis('tight', axes=ax)
     
-    fig.position.w = 1400
-    fig.position.h = 2000
+    fig.position.w = 1500
+    fig.position.h = 1000
     
     im = vv.getframe(vv.gcf())
     
     if view == '3D':
-        ax.SetView({'zoom':0.042, 'elevation':25, 'azimuth':-35})
+        ax.SetView({'zoom':0.035, 'elevation':25, 'azimuth':-35})
+        ax.SetView({'zoom':0.03, 'elevation':70, 'azimuth':20})
     elif view == 'topdown':
         ax.SetView({'zoom':0.042, 'elevation':90, 'azimuth':0})
     
