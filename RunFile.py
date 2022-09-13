@@ -349,7 +349,7 @@ if data['model'].name in ['spacecraft_1D'] :
         s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
         traces = data['mc'].traces[s_init]
 
-        UAV_plot_2D((0,1), (False,False), data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'], 
-                    data['spec'], traces, cut_idx = [0,0], traces_to_plot=10, line=True)
+        UAV_plot_2D((0,1), data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'], 
+                    data['spec'], traces, cut_idx = [], traces_to_plot=10, line=True)
     else:
         print('-- No initial state provided')

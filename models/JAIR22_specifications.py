@@ -176,10 +176,8 @@ class spacecraft_spec(master.spec_master):
             ]
 
         self.critical = [
-            np.array([[-1, 1], [8-24, 12-2.4], 'all', 'all', 'all', 'all'], dtype='object')
+            np.array([[-1, 1], [12.4-8*0.8, 12.4], 'all', 'all', 'all', 'all'], dtype='object')
         ]
-
-        self.critical = None
 
 
 

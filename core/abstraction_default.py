@@ -3,6 +3,7 @@ from core.define_model import define_model
 
 import numpy as np              # Import Numpy for computations
 import itertools                # Import to create iterators
+import os
 from copy import deepcopy       # Import to copy variables in Python
 from progressbar import progressbar # Import to create progress bars
 from scipy.spatial import Delaunay # Import to create convex hulls
@@ -326,15 +327,26 @@ class abstraction_default(Abstraction):
         
         self.trans = {'prob': {}}
                 
-        print(' -- Loading scenario approach table...')
-        
         tableFile = self.setup.directories['base'] + '/input/SaD_probabilityTable_N='+ \
                         str(self.args.noise_samples)+'_beta='+ \
                         str(self.args.confidence)+'.csv'
         
-        # Load scenario approach table
-        self.trans['memory'] = load_scenario_table(tableFile = tableFile,
-                                                   k = self.args.noise_samples)
+        if not os.path.isfile(tableFile):
+            from createIntervalTable import create_table
+
+            print('\nThe following table file does not exist:'+str(tableFile))
+            print('Create table now instead...')
+
+            P_low, P_upp = create_table(N=self.args.noise_samples, beta=self.args.confidence, kstep=1, trials=0, export=True)
+
+            self.trans['memory'] = np.column_stack((P_low, P_upp))
+
+        else:
+            print(' -- Loading scenario approach table...')
+
+            # Load scenario approach table
+            self.trans['memory'] = load_scenario_table(tableFile = tableFile,
+                                                    k = self.args.noise_samples)
         
         print('Computing transition probabilities...')
         

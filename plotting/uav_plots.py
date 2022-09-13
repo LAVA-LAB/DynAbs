@@ -9,7 +9,7 @@ import matplotlib.patches as patches
 
 from core.commons import printWarning, cm2inch
 
-def UAV_plot_2D(i_show, i_hide, setup, args, regions, goal_regions, critical_regions, 
+def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions, 
                 spec, traces, cut_idx, traces_to_plot = 10, line=False):
     '''
     Create 2D trajectory plots for the 2D UAV benchmark
@@ -26,7 +26,10 @@ def UAV_plot_2D(i_show, i_hide, setup, args, regions, goal_regions, critical_reg
     from scipy.interpolate import interp1d
     
     is1, is2 = i_show
-    ih1, ih2 = i_hide
+    i_hide = np.array([i for i in range(len(spec.partition['width'])) 
+                       if i not in i_show], dtype=int)
+    
+    print('Show state variables',i_show,'and hide',i_hide)
     
     fig, ax = plt.subplots(figsize=cm2inch(6.1, 5))
     
@@ -67,11 +70,8 @@ def UAV_plot_2D(i_show, i_hide, setup, args, regions, goal_regions, critical_reg
     # Draw goal states
     for goal in goal_regions:
         
-        goalIdx   = keys[goal]
-
-        if (not ih1 and not ih2) or \
-           (goalIdx[ih1] == cut_idx[0] and \
-           goalIdx[ih2] == cut_idx[1]):
+        goalIdx   = np.array(keys[goal])
+        if all(goalIdx[i_hide] == cut_idx):
 
             goal_lower = [regions['low'][goal][is1], regions['low'][goal][is2]]
             goalState = Rectangle(goal_lower, width=width[is1], 
@@ -83,10 +83,11 @@ def UAV_plot_2D(i_show, i_hide, setup, args, regions, goal_regions, critical_reg
     # Draw critical states
     for crit in critical_regions:
         
-        critIdx   = keys[crit]
-        if (not ih1 and not ih2) or \
-           (critIdx[ih1] == cut_idx[0] and \
-           critIdx[ih2] == cut_idx[1]):
+        critIdx   = np.array(keys[crit])
+        
+        print(critIdx,'--',critIdx[i_hide])
+        
+        if all(critIdx[i_hide] == cut_idx):
         
             critStateLow = [regions['low'][crit][is1], regions['low'][crit][is2]]
             criticalState = Rectangle(critStateLow, width=width[is1], 

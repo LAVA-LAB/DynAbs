@@ -218,10 +218,7 @@ class spacecraft(master.LTI_master):
         # Covariance of the process noise
         self.noise = dict()
         self.noise['w_cov'] = np.diag([.01, .01, 0.001, .001, .001, .001])
-
-        if args.nongaussian_noise:
-            self.setTurbulenceNoise(args)
-
+        
     def set_spec(self):
         
         from models.JAIR22_specifications import spacecraft_spec
