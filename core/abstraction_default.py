@@ -68,7 +68,7 @@ class abstraction_default(Abstraction):
 
     def get_enabled_actions(self, model, spec, 
                             dim_n=False, dim_p=False, verbose=False,
-                            print_every=39):
+                            print_every=1000):
         
         # Compute the backward reachable set (not accounting for target point yet)    
         if dim_n is False or dim_p is False or len(dim_n) == model.n:
@@ -298,13 +298,6 @@ class abstraction_default(Abstraction):
                 prob[a_idx], regions_list[a_idx], ignore[a_idx] = compute_intervals_default(self.args,
                     self.spec.partition, self.partition, self.trans,
                     successor_samples, successor_states, regions_list = cache)
-                
-                # Print normal row in table
-                # if a_idx % printEvery == 0:
-                #     nr_transitions = len(prob[a_idx]['successor_idxs'])
-                #     tab.print_row([a_idx, 
-                #        'Probabilities computed (transitions: '+
-                #        str(nr_transitions)+')'])
 
         if self.args.block_refinement and self.blref.initial:
             self.regions_list_cache = regions_list

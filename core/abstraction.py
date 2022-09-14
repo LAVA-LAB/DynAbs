@@ -21,6 +21,7 @@ import os                       # Import OS to allow creationg of folders
 import csv                      # Import to create/load CSV files
 import random                   # Import to use random variables
 import subprocess               # Import to call prism via terminal command
+from progressbar import progressbar # Import to create progress bars
 
 from .define_model import find_connected_components
 from .define_partition import define_partition, define_spec_region, \
@@ -313,7 +314,9 @@ class Abstraction(object):
         nr_act = 0
         
         # Zipping over the product of the keys/values of the dictionaries
-        for keys, vals_enab in zip(enabled_inv_keys, enabled_inv_vals):
+
+        #:
+        for keys, vals_enab in progressbar(zip(enabled_inv_keys, enabled_inv_vals), redirect_stdout=True):
 
             # Check if we have to save an error term as well
             if not no_error:

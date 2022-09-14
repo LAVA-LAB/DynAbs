@@ -141,7 +141,7 @@ class building_2room(master.LTI_master):
         self.lump = 1
 
         # Shortcut to boiler temperature        
-        self.T_boiler = self.self.BAS.Boiler['Tswbss']
+        self.T_boiler = self.BAS.Boiler['Tswbss']
         
         # Discretization step size
         self.tau = 15 # NOTE: in minutes for BAS!

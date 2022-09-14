@@ -51,51 +51,51 @@ args = parse_arguments()
 args.base_dir = os.path.dirname(os.path.abspath(__file__))
 print('Base directory:', args.base_dir)
 
-preset = 'spacecraft_3D'
+#preset = 'spacecraft_3D'
 models_file = 'JAIR22_models'
 
-if preset == 'uav_2D':
-    args.model = 'UAV'
-    args.UAV_dim = 2
-    args.noise_samples = 3200
-    args.confidence = 0.01
-    args.prism_java_memory = 8
-    args.monte_carlo_iter = 10
+# if preset == 'uav_2D':
+#     args.model = 'UAV'
+#     args.UAV_dim = 2
+#     args.noise_samples = 3200
+#     args.confidence = 0.01
+#     args.prism_java_memory = 8
+#     args.monte_carlo_iter = 10
 
-elif preset == 'uav_3D':
-    args.model = 'UAV'
-    args.UAV_dim = 3
-    args.noise_factor = 1
-    args.noise_samples = 1600
-    args.confidence = 0.01
-    args.prism_java_memory = 8
-    args.nongaussian_noise = True
-    args.monte_carlo_iter = 100
-    args.x_init = [-14,0,6,0,-2,0]
+# elif preset == 'uav_3D':
+#     args.model = 'UAV'
+#     args.UAV_dim = 3
+#     args.noise_factor = 1
+#     args.noise_samples = 1600
+#     args.confidence = 0.01
+#     args.prism_java_memory = 8
+#     args.nongaussian_noise = True
+#     args.monte_carlo_iter = 100
+#     args.x_init = [-14,0,6,0,-2,0]
     
-elif preset == 'spacecraft_2D':
-    args.model = 'spacecraft_2D'
-    args.noise_samples = 3200
-    args.confidence = 0.01
-    args.prism_java_memory = 8
-    args.monte_carlo_iter = 1000
-    args.x_init = np.array([1.2, 19.9, 0, 0]) #, 0, 0])
+# elif preset == 'spacecraft_2D':
+#     args.model = 'spacecraft_2D'
+#     args.noise_samples = 3200
+#     args.confidence = 0.01
+#     args.prism_java_memory = 8
+#     args.monte_carlo_iter = 1000
+#     args.x_init = np.array([1.2, 19.9, 0, 0])
     
-elif preset == 'spacecraft_3D':
-    args.model = 'spacecraft'
-    args.noise_samples = 20000
-    args.confidence = 7.86e-9
-    args.prism_java_memory = 32
-    args.monte_carlo_iter = 1000
-    args.x_init = np.array([0.8, 16, 0, 0, 0, 0])
+# elif preset == 'spacecraft_3D':
+#     args.model = 'spacecraft'
+#     args.noise_samples = 20000
+#     args.confidence = 7.86e-9
+#     args.prism_java_memory = 64
+#     args.monte_carlo_iter = 1000
+#     args.x_init = np.array([0.8, 16, 0, 0, 0, 0])
 
-elif preset == 'spacecraft_1D':
-    args.model = 'spacecraft_1D'
-    args.noise_samples = 3200
-    args.confidence = 0.01
-    args.prism_java_memory = 8
-    args.monte_carlo_iter = 1000
-    args.x_init = np.array([-1.6, -1]) #, 0, 0])
+# elif preset == 'spacecraft_1D':
+#     args.model = 'spacecraft_1D'
+#     args.noise_samples = 3200
+#     args.confidence = 0.01
+#     args.prism_java_memory = 8
+#     args.monte_carlo_iter = 1000
+#     args.x_init = np.array([-1.6, -1]) #, 0, 0])
     
 args.partition_plot = False
     

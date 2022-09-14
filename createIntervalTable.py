@@ -173,9 +173,6 @@ def create_table(N, beta, kstep, trials, export=False):
         root_dir = Path(cwd)
 
         filepath = Path(root_dir, filename)
-        
-        print(P_low)
-        print(P_upp)
 
         df = pd.DataFrame(np.column_stack((P_low, P_upp)),
                         index=np.arange(N+1),
