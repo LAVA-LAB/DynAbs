@@ -51,7 +51,7 @@ args = parse_arguments()
 args.base_dir = os.path.dirname(os.path.abspath(__file__))
 print('Base directory:', args.base_dir)
 
-preset = 'spacecraft_1D'
+preset = 'spacecraft_3D'
 models_file = 'JAIR22_models'
 
 if preset == 'uav_2D':
@@ -83,8 +83,8 @@ elif preset == 'spacecraft_2D':
     
 elif preset == 'spacecraft_3D':
     args.model = 'spacecraft'
-    args.noise_samples = 3200
-    args.confidence = 0.01
+    args.noise_samples = 20000
+    args.confidence = 7.86e-9
     args.prism_java_memory = 32
     args.monte_carlo_iter = 1000
     args.x_init = np.array([0.8, 16, 0, 0, 0, 0])
@@ -97,7 +97,7 @@ elif preset == 'spacecraft_1D':
     args.monte_carlo_iter = 1000
     args.x_init = np.array([-1.6, -1]) #, 0, 0])
     
-    args.partition_plot = True
+args.partition_plot = False
     
 args.block_refinement = False
 
@@ -154,6 +154,9 @@ Ab.define_states()
 
 # Initialize results dictionaries
 Ab.initialize_results()
+
+print(Ab.model.A)
+print(Ab.model.B)
 
 # %%
 

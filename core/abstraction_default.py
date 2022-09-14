@@ -128,7 +128,7 @@ class abstraction_default(Abstraction):
             # Use preferred method: map back the skewed image to squares
             
             basis_vectors = defBasisVectors(model, verbose=verbose)   
-            
+
             if verbose:
                 for i,v1 in enumerate(basis_vectors):
                     for j,v2 in enumerate(basis_vectors):
@@ -142,6 +142,8 @@ class abstraction_default(Abstraction):
             
             predSet_originShift = -np.average(x_inv_area_normalized, axis=0)
             if verbose:
+                print('Basis vectors:', basis_vectors)
+
                 print('Transformation:',parralelo2cube)            
                 print('Normal inverse area:',x_inv_area)
                 
@@ -153,7 +155,7 @@ class abstraction_default(Abstraction):
                         + predSet_originShift)
                 
             allRegionVertices = region_corners @ parralelo2cube \
-                    - predSet_originShift
+                    + predSet_originShift
 
         else:
             
@@ -177,7 +179,7 @@ class abstraction_default(Abstraction):
             
             # Get reference to current action object
             act   = self.actions['obj'][a_idx]
-            
+
             if dimEqual:
 
                 # Shift the origin points (instead of the target point)
@@ -201,7 +203,10 @@ class abstraction_default(Abstraction):
                 
                 # Shift the origin points (instead of the target point)
                 A_inv_d = model.A_inv @ np.array(act.center[dim_n])
-            
+
+                if a_idx == 190:
+                    print(x_inv_area)
+
                 # Subtract the shift from all corner points
                 allVertices = A_inv_d - allRegionVertices
             

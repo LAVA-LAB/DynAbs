@@ -6,6 +6,7 @@ __pycache__/
 
 # Ignore options file
 options.txt
+path_to_prism.txt
 
 output/*
 !output/.keep

@@ -2,7 +2,9 @@ import numpy as np
 import sys
 import core.preprocessing.master_classes as master
 
-class shuttle_spec(master.spec_master):
+
+
+class robot_spec(master.spec_master):
     
     def __init__(self):
 
@@ -11,6 +13,90 @@ class shuttle_spec(master.spec_master):
         
         # Step-bound on spec
         self.end_time = 64
+
+        # Authority limit for the control u, both positive and negative
+        self.control['uMin'] = [-5]
+        self.control['uMax'] = [5]
+        
+        self.partition['boundary']  = np.array([[-21, 21], [-21, 21]])
+        self.partition['number']    = [21, 21]
+        
+        # Actions per dimension (if 'auto', equal to nr of regions)
+        self.targets['boundary']    = 'auto'
+        self.targets['number']      = 'auto'
+            
+        self.goal = [
+            np.array([[-1, 1], [-1 ,1]], dtype='object')
+            ]
+        
+        self.critical = None
+
+
+
+class building_2room_spec(master.spec_master):
+    
+    def __init__(self, T_boiler):
+
+        # Initialize superclass
+        master.spec_master.__init__(self)        
+        
+        # Step-bound on spec
+        self.end_time = 32
+
+        # Authority limit for the control u, both positive and negative
+        self.control['uMin'] = [14, 14, T_boiler-10, T_boiler-10]
+        self.control['uMax'] = [26, 26, T_boiler+10, T_boiler+10]
+        
+        self.partition['boundary']  = np.array([[17.9, 22.1], [17.9, 22.1], [37.4, 39.2], [37.4, 39.2]])
+        self.partition['number']    = [21,21,9,9]
+        
+        # Actions per dimension (if 'auto', equal to nr of regions)
+        self.targets['boundary']    = 'auto'
+        self.targets['number']      = 'auto'
+            
+        self.goal = [
+            np.array([[19.9, 20.1], [19.9, 20.1], 'all', 'all'], dtype='object')
+            ]
+        
+        self.critical = None
+
+
+
+class building_1room_spec(master.spec_master):
+    
+    def __init__(self):
+
+        # Initialize superclass
+        master.spec_master.__init__(self)        
+        
+        # Step-bound on spec
+        self.end_time = 64
+
+        # Authority limit for the control u, both positive and negative
+        self.control['uMin'] = [14, -10]
+        self.control['uMax'] = [28, 10]
+        
+        self.partition['boundary']  = np.array([[19.1, 22.9], [36, 40]])
+        self.partition['number']    = [19, 20]
+        
+        # Actions per dimension (if 'auto', equal to nr of regions)
+        self.targets['boundary']    = 'auto'
+        self.targets['number']      = 'auto'
+            
+        self.goal = [
+            np.array([[20.9, 21.1], 'all'], dtype='object')
+            ]
+        
+        self.critical = None
+
+
+
+class shuttle_spec(master.spec_master):
+    
+    def __init__(self):
+
+        # Initialize superclass
+        master.spec_master.__init__(self)
 
         # Authority limit for the control u, both positive and negative
         self.control['uMin'] = [-0.1, -0.1]
@@ -159,13 +245,13 @@ class spacecraft_spec(master.spec_master):
         self.control['uMin'] = [-2, -2, -2]
         self.control['uMax'] = [2, 2, 2]
     
-        self.partition['boundary']  = np.array([[-4.6+0.4*3, 2.2-0.4*3], 
-                                                [-2, 21.2-6*0.8], 
+        self.partition['boundary']  = np.array([[-3.4, 1], 
+                                                [-2, 16.4], 
                                                 [-2, 2],
                                                 [-4, 4], 
                                                 [-4, 4],
                                                 [-2, 2]])
-        self.partition['number']    = [17-6, 29-6, 5, 5, 5, 5]
+        self.partition['number']    = [11, 23, 5, 5, 5, 5]
     
         # Actions per dimension (if 'auto', equal to nr of regions)
         self.targets['boundary']    = 'auto'

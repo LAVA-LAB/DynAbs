@@ -4,6 +4,59 @@ import core.preprocessing.master_classes as master
 import scipy
 from pathlib import Path
 
+
+
+class robot(master.LTI_master):
+    
+    def __init__(self, args):
+        '''
+        Initialize robot model class, which is a 1-dimensional dummy problem,
+        modelled as a double integrator.
+
+        Returns
+        -------
+        None.
+
+        '''
+        
+        # Initialize superclass
+        master.LTI_master.__init__(self)
+        
+        # Number of time steps to lump together (can be used to make the model
+        # fully actuated)
+        self.lump = 2
+        
+        # Discretization step size
+        self.tau = 1
+        
+        # State transition matrix
+        self.A  = np.array([[1, self.tau],
+                                [0, 1]])
+        
+        # Input matrix
+        self.B  = np.array([[self.tau**2/2],
+                                [self.tau]])
+        
+        self.Q = np.array([[0],[0]]) #np.zeros((2,1))
+        
+        # Determine system dimensions
+        self.n = np.size(self.A,1)
+        self.p = np.size(self.B,1)
+
+        self.noise = dict()
+        self.noise['w_cov'] = np.eye(np.size(self.A,1))*0.15
+        
+    def set_spec(self):
+        
+        from models.JAIR22_specifications import robot_spec
+        spec = robot_spec()        
+            
+        spec.problem_type = 'reachavoid'
+        
+        return spec
+
+
+
 class shuttle(master.LTI_master):
     
     def __init__(self, args):
@@ -56,6 +109,207 @@ class shuttle(master.LTI_master):
         
         from models.JAIR22_specifications import shuttle_spec
         spec = shuttle_spec()        
+            
+        spec.problem_type = 'reachavoid'
+        
+        return spec
+
+
+
+class building_2room(master.LTI_master):
+    
+    def __init__(self, args):
+        '''
+        Initialize the 2-zone building automation system (BAS) model class,
+        which corresponds to the BAS benchmark in the paper.
+
+        Returns
+        -------
+        None.
+
+        '''
+        
+        # Initialize superclass
+        master.LTI_master.__init__(self)
+        
+        # Load building automation system (BAS) parameters
+        import core.BAS.parameters as BAS_class
+        self.BAS = BAS_class.parameters()
+
+        # Number of time steps to lump together (can be used to make the model
+        # fully actuated)
+        self.lump = 1
+
+        # Shortcut to boiler temperature        
+        self.T_boiler = self.self.BAS.Boiler['Tswbss']
+        
+        # Discretization step size
+        self.tau = 15 # NOTE: in minutes for BAS!
+        
+        # Steady state values
+        Twss        = self.BAS.Zone1['Twss'] + 5
+        Pout1       = self.BAS.Radiator['Zone1']['Prad'] * 1.5
+        Pout2       = self.BAS.Radiator['Zone2']['Prad'] * 1.5
+        
+        w1          = self.BAS.Radiator['w_r'] * 1.5
+        w2          = self.BAS.Radiator['w_r'] * 1.5
+        
+        self.BAS.Zone1['Cz'] = self.BAS.Zone1['Cz']
+        self.BAS.Zone1['Rn'] = self.BAS.Zone1['Rn']
+        
+        self.BAS.Zone2['Cz'] = self.BAS.Zone2['Cz']
+        self.BAS.Zone2['Rn'] = self.BAS.Zone2['Rn']
+        
+        m1          = self.BAS.Zone1['m']
+        m2          = self.BAS.Zone2['m']
+        
+        Rad_k1_z1   = self.BAS.Radiator['k1'] * 5
+        Rad_k1_z2   = self.BAS.Radiator['k1'] * 5
+        
+        Rad_k0_z1   = self.BAS.Radiator['k0']
+        Rad_k0_z2   = self.BAS.Radiator['k0']
+        
+        alpha1_z1   = self.BAS.Radiator['alpha1']
+        alpha1_z2   = self.BAS.Radiator['alpha1']
+        
+        alpha2_z1   = self.BAS.Radiator['alpha1']
+        alpha2_z2   = self.BAS.Radiator['alpha1']
+        
+        # Defining Deterministic Model corresponding matrices
+        A_cont      = np.zeros((4,4));
+        
+        # Room 1
+        A_cont[0,0] = ( -(1/(self.BAS.Zone1['Rn']*self.BAS.Zone1['Cz']))-((Pout1*alpha2_z1 )/(self.BAS.Zone1['Cz'])) - ((m1*self.BAS.Materials['air']['Cpa'])/(self.BAS.Zone1['Cz'])) - (1/(self.BAS.Zone1['Rn']*self.BAS.Zone1['Cz'])) )
+        A_cont[0,2] = (Pout1*alpha2_z1 )/(self.BAS.Zone1['Cz'])
+        
+        # Room 2
+        A_cont[1,1] = ( -(1/(self.BAS.Zone2['Rn']*self.BAS.Zone2['Cz']))-((Pout2*alpha2_z2 )/(self.BAS.Zone2['Cz'])) - ((m2*self.BAS.Materials['air']['Cpa'])/(self.BAS.Zone2['Cz'])) - (1/(self.BAS.Zone2['Rn']*self.BAS.Zone2['Cz'])) )
+        A_cont[1,3] = (Pout2*alpha2_z2 )/(self.BAS.Zone2['Cz'])
+        
+        # Heat transfer room 1 <-> room 2
+        A_cont[0,1] = ( (1/(self.BAS.Zone1['Rn']*self.BAS.Zone1['Cz'])) )
+        A_cont[1,0] = ( (1/(self.BAS.Zone2['Rn']*self.BAS.Zone2['Cz'])) )
+        
+        # Radiator 1
+        A_cont[2,0] = (Rad_k1_z1)
+        A_cont[2,2] = ( -(Rad_k0_z1*w1) - Rad_k1_z1 )
+        
+        # Radiator 2
+        A_cont[3,1] = (Rad_k1_z2)
+        A_cont[3,3] = ( -(Rad_k0_z2*w2) - Rad_k1_z2 )
+
+        B_cont      = np.zeros((4,4))
+        B_cont[0,0] = (m1*self.BAS.Materials['air']['Cpa'])/(self.BAS.Zone1['Cz'])
+        B_cont[1,1] = (m2*self.BAS.Materials['air']['Cpa'])/(self.BAS.Zone2['Cz'])
+        B_cont[2,2] = (Rad_k0_z1*w1) # < Allows to change the boiler temperature
+        B_cont[3,3] = (Rad_k0_z2*w2) # < Allows to change the boiler temperature
+
+        W_cont  = np.array([
+                [ ((Twss)/(self.BAS.Zone1['Rn']*self.BAS.Zone1['Cz'])) + (alpha1_z1)/(self.BAS.Zone1['Cz']) ],
+                [ ((Twss-2)/(self.BAS.Zone2['Rn']*self.BAS.Zone2['Cz'])) + (alpha1_z2)/(self.BAS.Zone1['Cz']) ],
+                [ 0 ],
+                [ 0 ]
+                ])
+        
+        self.A = np.eye(4) + self.tau*A_cont
+        self.B = B_cont*self.tau
+        self.Q = W_cont*self.tau
+        
+        # Determine system dimensions
+        self.n = np.size(self.A,1)
+        self.p = np.size(self.B,1)
+
+        self.noise = dict()
+        self.noise['w_cov'] = 0.05*np.diag([0.2, 0.2, 0.2, 0.2])
+                
+        self.A_cont = A_cont
+        self.B_cont = B_cont
+        self.Q_cont = W_cont
+        
+    def set_spec(self):
+        
+        from models.JAIR22_specifications import building_2room_spec
+        spec = building_2room_spec(self.T_boiler)        
+            
+        spec.problem_type = 'reachavoid'
+        
+        return spec
+
+
+
+class building_1room(master.LTI_master):
+    
+    def __init__(self, args):
+        '''
+        Initialize the 1-zone building automation system (BAS) model class.
+        Note that this is a downscaled version of the 2-zone model above.
+
+        Returns
+        -------
+        None.
+
+        '''
+        
+        # Initialize superclass
+        master.LTI_master.__init__(self)
+        
+        # Load building automation system (BAS) parameters
+        import core.BAS.parameters as BAS_class
+        self.BAS = BAS_class.parameters()
+
+        # Number of time steps to lump together (can be used to make the model
+        # fully actuated)
+        self.lump = 1
+        
+        # Discretization step size
+        self.tau = 15 # NOTE: in minutes for BAS!
+        
+        # Steady state values
+        Tswb    = self.BAS.Boiler['Tswbss'] - 20
+        Twss    = self.BAS.Zone1['Twss']
+        Pout1   = self.BAS.Radiator['Zone1']['Prad']      
+        
+        w       = self.BAS.Radiator['w_r']
+        
+        self.BAS.Zone1['Cz'] = self.BAS.Zone1['Cz']
+        
+        m1      = self.BAS.Zone1['m'] # Proportional factor for the air conditioning
+        
+        k1_a    = self.BAS.Radiator['k1']
+        k0_a    = self.BAS.Radiator['k0'] #Proportional factor for the boiler temp. on radiator temp.
+        
+        # Defining Deterministic Model corresponding matrices
+        A_cont      = np.zeros((2,2));
+        A_cont[0,0] = -(1/(self.BAS.Zone1['Rn']*self.BAS.Zone1['Cz']))-((Pout1*self.BAS.Radiator['alpha2'] )/(self.BAS.Zone1['Cz'])) - ((m1*self.BAS.Materials['air']['Cpa'])/(self.BAS.Zone1['Cz']))
+        A_cont[0,1] = (Pout1*self.BAS.Radiator['alpha2'] )/(self.BAS.Zone1['Cz'])
+        A_cont[1,0] = (k1_a)
+        A_cont[1,1] = -(k0_a*w) - k1_a
+        
+        B_cont      = np.zeros((2,2))
+        B_cont[0,0] = (m1*self.BAS.Materials['air']['Cpa'])/(self.BAS.Zone1['Cz'])
+        B_cont[1,1] = (k0_a*w) # < Allows to change the boiler temperature
+
+        
+        W_cont  = np.array([
+                [ (Twss/(self.BAS.Zone1['Rn']*self.BAS.Zone1['Cz']))+ (self.BAS.Radiator['alpha1'])/(self.BAS.Zone1['Cz']) ],
+                [ (k0_a*w*Tswb) ],
+                ])
+        
+        self.A = np.eye(2) + self.tau*A_cont
+        self.B = B_cont*self.tau
+        self.Q = W_cont*self.tau
+        
+        # Determine system dimensions
+        self.n = np.size(self.A,1)
+        self.p = np.size(self.B,1)
+
+        self.noise = dict()
+        self.noise['w_cov'] = np.diag([ self.BAS.Zone1['Tz']['sigma'], self.BAS.Radiator['rw']['sigma'] ])
+        
+    def set_spec(self):
+        
+        from models.JAIR22_specifications import building_1room_spec
+        spec = building_1room_spec()        
             
         spec.problem_type = 'reachavoid'
         
@@ -217,7 +471,7 @@ class spacecraft(master.LTI_master):
 
         # Covariance of the process noise
         self.noise = dict()
-        self.noise['w_cov'] = np.diag([.01, .01, 0.001, .001, .001, .001])
+        self.noise['w_cov'] = np.diag([.1, .1, .01, .01, .01, .01])
         
     def set_spec(self):
         
