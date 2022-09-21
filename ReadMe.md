@@ -1,8 +1,9 @@
 # Introduction of this ReadMe file
 
-This artefact contains the source code for the AAAI 2023 submission with the title:
+This artefact contains an implementation of the formal abstraction methods proposed in the following papers:
 
-- "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic Dynamical Models with Epistemic Uncertainty"
+- [Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & Marielle Stoelinga (2022). Sampling-based Robust Control of Autonomous Systems with Non-Gaussian Noise. AAAI 2022](https://ojs.aaai.org/index.php/AAAI/article/view/21201)
+- Thom Badings, Licio Romao, Alessandro Abate, David Parker, Hasan Poonawala, Marielle Stoelinga & Nils Jansen (2022). Robust Control for Dynamical Systems with Non-Gaussian Noise via Formal Abstractions (submitted).
 
 This repository contains all code and instructions that are needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM.
 
@@ -91,15 +92,15 @@ To ensure that PRISM can be found by the script, **you need to modify the path t
 
 # How to run for a single model?
 
-A minimal example of running the program is as follows:
+An example of running the program is as follows:
 
 ```bash
-$ python3 RunFile.py --model 'drone'
+$ python3 RunFile.py --model UAV --UAV_dim 3 --noise_samples 6400 --noise_factor 1 --nongaussian_noise --monte_carlo_iter 1000 --x_init '[-14,0,6,0,-2,0]' --plot
 ```
 
-This runs the longitudinal drone dynamics benchmark (see the paper for details), with the default options.
+This runs the 3D UAV benchmark from the paper, with `N=6400` (non-Gaussian) noise samples, and Monte Carlo simulations enabled.
 
-All results are stored in the `output/` folder. When running `SBA-RunFile.py` for a new abstraction, a new folder is created that contains the application name and the current datetime, such as `Ab_drone_08-19-2022_07-46-44/`. For every iteration, a subfolder is created, inwhich all results specific to that single iteration are saved. This includes:
+All results are stored in the `output/` folder. When running `RunFile.py` for a new abstraction, a new folder is created that contains the application name and the current datetime, such as `Ab_UAV_09-21-2022_17-31-20/`. For every iteration, a subfolder is created, inwhich all results specific to that single iteration are saved. This includes:
 
 - The PRISM model files (namely a `.lab`, `.sta`, and `.tra` file).
 - An Excel file that describes all results, such as the optimal policy, model size, run times, etc., of the current iteration.
@@ -115,8 +116,6 @@ The figures and tables in the experimental section of the paper can be reproduce
 bash run_experiments.sh
 ```
 
-This shell script contains one variable that controls the number of iterations to perform for some experiments. To reduce the computation time, you may lower the number of iterations.
-
 ------
 
 # What arguments can be passed?
@@ -125,16 +124,22 @@ Below, we list all arguments that can be passed to the command for running the p
 
 | Argument           | Required? | Default            | Type                     | Description |
 | ---                | ---       | ---                | ---                      | ---         |
-| model              | Yes       | N/A                | str                      | Name of the model to load (options are: `drone`, `building_temp`, or `anaesthesia_delivery`) |
+| model              | Yes       | N/A                | str                      | Name of the model to load |
+| mdp_mode           | No        | interval            | str                      | If `estimate`, a point estimate MDP abstraction is created; if `interval`, a robust interval MDP abstraction is created |
+| abstraction_type   | No        | default            | str                      | If `default`, no epistemic uncertainty is considered; if `epistemic`, epistemic uncertainty is considered next to stochastic noise |
 | noise_samples      | No        | 20000              | int                      | Number of noise samples to use for computing transition probability intervals |
 | confidence         | No        | 1e-8               | float                    | Confidence level on individual transitions |
 | sample_clustering  | No        | 1e-2               | float                    | Distance at which to cluster (merge) similar noise samples |
 | prism_java_memory  | No        | 1                  | int                      | Max. memory usage by JAVA / PRISM |
 | iterations         | No        | 1                  | int                      | Number of repetitions of computing iMDP probability intervals |
+| nongaussian_noise  | No        | False              | Boolean (no value)       | If argument `--nongaussian_noise` is passed, use non-Gaussian noise samples (used for UAV benchmark) |
 | monte_carlo_iter   | No        | 0                  | int                      | Number of Monte Carlo simulations to perform |
-| partition_plot     | No        | False              | Boolean (no value!)      | If argument `--partition_plot` is passed, create partition plot |
-| verbose            | No        | False              | Boolean (no value!)      | If argument `--verbose` is passed, more verbose output is provided by the script |
+| plot               | No        | False              | Boolean (no value)       | If argument `--plot` is passed, plots are created in general |
+| partition_plot     | No        | False              | Boolean (no value)       | If argument `--partition_plot` is passed, create partition plot |
+| x_init             | No        | []                 | List                     | Initial state for Monte Carlo simulations |
+| verbose            | No        | False              | Boolean (no value)       | If argument `--verbose` is passed, more verbose output is provided by the script |
 
+<!---
 Moreover, the following arguments can specifically be passed for running one of the benchmarks from the paper.
 | Benchmark            | Argument              | Required? | Default            | Type                      | Description |
 | ---                  | ---                   | ---       | ---                | ---                       | ---         |
@@ -146,6 +151,7 @@ Moreover, the following arguments can specifically be passed for running one of 
 | building_temp        | bld_target_size       | No        | '[[-0.1,0.1],[-0.3,0.3]]' | str (interpreted as list) | Size of the target sets used |
 | building_temp        | bld_par_uncertainty   | No        | False              | Boolean (no value)        | If `--bld_par_uncertainty` is passed, enable parameter uncertainty |
 | anaesthesia_delivery | drug_partition        | No        | '[20,20,20]'       | str (interpreted as list) | Size of the state space partition |
+-->
 
 ------
 
