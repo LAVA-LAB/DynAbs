@@ -4,11 +4,12 @@
 """
 
 Implementation of the method proposed in the paper:
- "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
-  Dynamical Models with Epistemic Uncertainty"
+ "Robust Control for Dynamical Systems with Non-Gaussian Noise via
+  Formal Abstractions"
 
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
+Originally coded by:        Thom Badings
+Contact e-mail address:     thom.badings@ru.nl
+Git repository: https://gitlab.science.ru.nl/tbadings/sample-abstract
 ______________________________________________________________________________
 """
 
@@ -18,7 +19,6 @@ ______________________________________________________________________________
 from datetime import datetime   # Import Datetime to get current date/time
 import pandas as pd             # Import Pandas to store data in frames
 import numpy as np              # Import Numpy for computations
-import matplotlib.pyplot as plt # Import Pyplot to generate plots
 import os
 import sys
 import matplotlib as mpl
@@ -51,57 +51,14 @@ args = parse_arguments()
 args.base_dir = os.path.dirname(os.path.abspath(__file__))
 print('Base directory:', args.base_dir)
 
-#preset = 'spacecraft_3D'
+# Specify the file from which we load models
 models_file = 'JAIR22_models'
-
-# if preset == 'uav_2D':
-#     args.model = 'UAV'
-#     args.UAV_dim = 2
-#     args.noise_samples = 3200
-#     args.confidence = 0.01
-#     args.prism_java_memory = 8
-#     args.monte_carlo_iter = 10
-
-# elif preset == 'uav_3D':
-#     args.model = 'UAV'
-#     args.UAV_dim = 3
-#     args.noise_factor = 1
-#     args.noise_samples = 1600
-#     args.confidence = 0.01
-#     args.prism_java_memory = 8
-#     args.nongaussian_noise = True
-#     args.monte_carlo_iter = 100
-#     args.x_init = [-14,0,6,0,-2,0]
-    
-# elif preset == 'spacecraft_2D':
-#     args.model = 'spacecraft_2D'
-#     args.noise_samples = 3200
-#     args.confidence = 0.01
-#     args.prism_java_memory = 8
-#     args.monte_carlo_iter = 1000
-#     args.x_init = np.array([1.2, 19.9, 0, 0])
-    
-# elif preset == 'spacecraft_3D':
-#     args.model = 'spacecraft'
-#     args.noise_samples = 20000
-#     args.confidence = 7.86e-9
-#     args.prism_java_memory = 64
-#     args.monte_carlo_iter = 1000
-#     args.x_init = np.array([0.8, 16, 0, 0, 0, 0])
-
-# elif preset == 'spacecraft_1D':
-#     args.model = 'spacecraft_1D'
-#     args.noise_samples = 3200
-#     args.confidence = 0.01
-#     args.prism_java_memory = 8
-#     args.monte_carlo_iter = 1000
-#     args.x_init = np.array([-1.6, -1]) #, 0, 0])
     
 args.partition_plot = False
-    
-args.block_refinement = False
 
-print(vars(args))
+print('Run using arguments:')
+for key,val in vars(args).items():
+    print(' - `'+str(key)+'`: '+str(val))
 
 with open(os.path.join(args.base_dir, 'path_to_prism.txt')) as f:
     args.prism_folder = str(f.readlines()[0])
@@ -155,11 +112,6 @@ Ab.define_states()
 # Initialize results dictionaries
 Ab.initialize_results()
 
-print(Ab.model.A)
-print(Ab.model.B)
-
-# %%
-
 #-----------------------------------------------------------------------------
 # Define actions (only required once outside iterative scheme)
 #-----------------------------------------------------------------------------
@@ -173,12 +125,11 @@ Ab.define_target_points()
 # Determine enabled state-action paris
 Ab.define_enabled_actions()
 
-# %%
-
-from core.block_refinement import block_refinement
-if args.block_refinement:
-    Ab.blref = block_refinement(100, Ab.partition['goal'], 
-                                Ab.partition['nr_regions'], Ab.N)
+# Define object for improved synthesis scheme, if this scheme is enabled
+from core.improved_synthesis import improved_synthesis
+if args.improved_synthesis:
+    Ab.blref = improved_synthesis(100, Ab.partition['goal'], 
+                                  Ab.partition['nr_regions'], Ab.N)
 
 #-----------------------------------------------------------------------------
 # Code below is repeated every iteration of the iterative scheme
@@ -200,8 +151,6 @@ if Ab.model.name == 'drone':
 else:
     harm_osc = False
 
-done = False
-
 # For every iteration... (or once, if iterations are disabled)
 for case_id in range(0, Ab.args.iterations):
 
@@ -211,9 +160,10 @@ for case_id in range(0, Ab.args.iterations):
     # Export the results of the current iteration
     writer = exporter.create_writer(Ab, N)
 
-    while not done:
+    done = False
 
-        if args.block_refinement:
+    while not done:
+        if args.improved_synthesis:
             print('\nBLOCK REFINEMENT - TIME STEP k =',Ab.blref.k)
             case_string = str(case_id) + 'k=' + str(Ab.blref.k)
             print('-- Number of value states used:',Ab.blref.num_lb_used,'\n')
@@ -239,7 +189,8 @@ for case_id in range(0, Ab.args.iterations):
         exporter.add_to_df(pd.DataFrame(data=model_size, index=[case_string]), 
                             'model_size')
 
-        if not args.block_refinement or Ab.blref.decrease_time():
+        # Check if we are done yet
+        if not args.improved_synthesis or Ab.blref.decrease_time():
             done = True
 
             if Ab.args.monte_carlo_iter > 0:
@@ -269,8 +220,6 @@ exporter.save_to_excel(Ab.setup.directories['outputF'] + \
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
-######################
-
 if harm_osc:
     print('-- Export results for longitudinal drone dynamics as in paper...')
     
@@ -285,74 +234,7 @@ if Ab.model.name == 'anaesthesia_delivery':
     values = Ab.results['optimal_reward']
 
     heatmap_3D(Ab.setup, centers, values)
-    
-# %%
 
-# %run "~/documents/sample-abstract/RunPlots.py"
-
-import pickle
-import numpy as np
-
-infile = open(Ab.setup.directories['outputF']+'data_dump.p','rb')
-data = pickle.load(infile)
-infile.close()
-
-from plotting.createPlots import reachability_plot
-if 'mc' in data:
-    print('Create plot with Monte Carlo results')
-    reachability_plot(data['setup'], data['results'], data['mc'])
-else:
-    reachability_plot(data['setup'], data['results'])
-
-from plotting.createPlots import heatmap_3D_view
-heatmap_3D_view(data['model'], data['setup'], data['spec'], data['regions']['center'], data['results'])
-
-from plotting.createPlots import heatmap_2D
-heatmap_2D(data['args'], data['model'], data['setup'], data['regions']['c_tuple'], data['spec'], data['results']['optimal_reward'])
-
-from plotting.uav_plots import UAV_plot_2D, UAV_3D_plotLayout
-from core.define_partition import state2region
-
-if data['model'].name in ['shuttle', 'spacecraft_2D'] :
-
-    if len(data['args'].x_init) == data['model'].n:
-        s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
-        traces = data['mc'].traces[s_init]
-
-        UAV_plot_2D((0,1), (2,3), data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'], 
-                    data['spec'], traces, cut_idx = [0,0], traces_to_plot=10, line=True)
-    else:
-        print('-- No initial state provided')
-
-if data['model'].name == 'UAV' and data['model'].modelDim == 3:
-
-    if len(data['args'].x_init) == data['model'].n:
-        s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
-        traces = data['mc'].traces[s_init]
-        
-        UAV_3D_plotLayout(data['setup'], data['args'], data['model'], data['regions'], 
-                          data['goal_regions'], data['critical_regions'], traces, data['spec'])
-    else:
-        print('-- No initial state provided')
-        
-if data['model'].name == 'spacecraft_2D':
-    
-    from plotting.spacecraft import spacecraft
-    
-    key = list(data['mc'].traces.keys())[0]
-    trace = np.array(data['mc'].traces[key][0]['x'])
-    
-    trace = trace[:,[1,0]] / 10
-    
-    spacecraft(data['setup'], trace)
-    
-if data['model'].name in ['spacecraft_1D'] :
-
-    if len(data['args'].x_init) == data['model'].n:
-        s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
-        traces = data['mc'].traces[s_init]
-
-        UAV_plot_2D((0,1), data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'], 
-                    data['spec'], traces, cut_idx = [], traces_to_plot=10, line=True)
-    else:
-        print('-- No initial state provided')
+if args.plot:
+    from RunPlots import plot
+    plot(path = Ab.setup.directories['outputF']+'data_dump.p')

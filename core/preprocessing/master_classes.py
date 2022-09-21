@@ -1,17 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-
-Implementation of the method proposed in the paper:
- "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
-  Dynamical Models with Epistemic Uncertainty"
-
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
-______________________________________________________________________________
-"""
-
 import os                       # Import OS to allow creation of folders
 import matplotlib.pyplot as plt # Import to generate plos using Pyplot
 import seaborn as sns           # Import Seaborn to plot heat maps
@@ -26,7 +15,7 @@ def loadOptions(file, setup):
 
     Parameters
     ----------
-    file : stri
+    file : str
         Filename to load options from.
     setup : object
         Object containing all setup data.
@@ -117,6 +106,8 @@ class settings(object):
         ----------
         application : str
             Name of the application / benchmark to initialize for.
+        base_dir : str
+            Root directory
 
         Returns
         -------

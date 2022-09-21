@@ -3,7 +3,10 @@ import pickle
 import pathlib
 
 class result_exporter(object):
-    
+    '''
+    Class to export results
+    '''
+
     def __init__(self):
         
         self.it_results = self.init_dataframes()
@@ -58,6 +61,8 @@ class result_exporter(object):
         
         # Close the Pandas Excel writer and output the Excel file.
         writer.save()
+
+
 
 def pickle_results(Ab):
     '''

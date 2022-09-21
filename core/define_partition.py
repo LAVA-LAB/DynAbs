@@ -1,17 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-
-Implementation of the method proposed in the paper:
- "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
-  Dynamical Models with Epistemic Uncertainty"
-
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
-______________________________________________________________________________
-"""
-
 import numpy as np              # Import Numpy for computations
 import itertools                # Import to crate iterators
 import matplotlib.pyplot as plt # Import Pyplot to generate plots
@@ -76,6 +65,8 @@ def computeRegionCenters(points, partition):
     # Add the origin again to obtain the absolute center coordinates
     return np.round(centers + originShift, decimals=5)
 
+
+
 def state2region(state, partition, c_tuple):
 
     region_centers = computeRegionCenters(state, partition)
@@ -86,6 +77,8 @@ def state2region(state, partition, c_tuple):
     except:
         print('ERROR: state',state,'does not belong to any region')
         return False
+
+
 
 def computeRegionIdx(points, partition, borderOutside=False):
     '''
@@ -118,6 +111,8 @@ def computeRegionIdx(points, partition, borderOutside=False):
                                 np.array(partition['number'])-1).astype(int)
     
     return indices, indices_nonneg
+
+
 
 def define_partition(dim, nrPerDim, regionWidth, origin):
     '''
@@ -182,6 +177,8 @@ def define_partition(dim, nrPerDim, regionWidth, origin):
         partition['idx'][tuple(idx)] = i
     
     return partition
+
+
 
 def define_spec_region(allCenters, sets, partition, borderOutside=False):
     '''
@@ -263,13 +260,10 @@ def define_spec_region(allCenters, sets, partition, borderOutside=False):
         return states, slices, index_tuples
         
 
+
 def partition_plot(i_show, i_hide, Ab, cut_value, act=None, stateLabels=False):
     '''
-
-    Returns
-    -------
-    None.
-
+    Create partition plot
     '''
     
     is1, is2 = i_show
@@ -382,6 +376,7 @@ def partition_plot(i_show, i_hide, Ab, cut_value, act=None, stateLabels=False):
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
     plt.show()
+
 
 
 def draw_hull(points, color, linewidth=0.1):

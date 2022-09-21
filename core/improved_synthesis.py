@@ -12,14 +12,12 @@ Contact e-mail address:     <anonymized>
 ______________________________________________________________________________
 """
 
-import itertools
 import numpy as np
-import cvxpy as cp
-from time import sleep
 
-class block_refinement(object):
+class improved_synthesis(object):
     '''
-    Action object
+    Improved policy synthesis scheme, which aggregates state based on their
+    reach-avoid probability, creating multiple smaller iMDPs.
     ''' 
     
     def __init__(self, num_states, goal, num_regions, N):

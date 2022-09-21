@@ -1,17 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-
-Implementation of the method proposed in the paper:
- "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
-  Dynamical Models with Epistemic Uncertainty"
-
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
-______________________________________________________________________________
-"""
-
 import numpy as np              # Import Numpy for computations
 import pandas as pd             # Import Pandas to store data in frames
 import matplotlib.pyplot as plt # Import Pyplot to generate plots
@@ -102,6 +91,8 @@ def oscillator_heatmap(Ab, title = 'auto'):
     plt.show()
     
     return average_value
+
+
 
 def oscillator_traces(Ab, traces, action_traces, plot_trace_ids=None,
               line=True, stateLabels=False, title = 'auto', case=0):
@@ -274,6 +265,8 @@ def oscillator_traces(Ab, traces, action_traces, plot_trace_ids=None,
         
     plt.show()
     
+
+
 class oscillator_experiment(object):
     
     def __init__(self, f_min, f_max, f_step, monte_carlo_iterations):

@@ -3,7 +3,7 @@
 
 """
 
-Implementation of the method proposed in the paper:
+Reach-avoid specifications used for the models in the paper:
  "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
   Dynamical Models with Epistemic Uncertainty"
 
@@ -13,7 +13,6 @@ ______________________________________________________________________________
 """
 
 import numpy as np
-import sys
 import core.preprocessing.master_classes as master
 
 class drone_spec(master.spec_master):
@@ -82,7 +81,6 @@ class building_temp_spec(master.spec_master):
         self.targets['boundary']    = np.array([[18.5+width[0]*0.5, 23.5-width[0]*0.5], 
                                                 [39+width[1]*0.5, 46-width[1]*0.5]])
         self.targets['number']      = self.partition['number']
-        
         
         self.goal = None
         self.critical = None

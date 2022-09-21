@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from core.abstraction import Abstraction
 from core.define_model import define_model
 

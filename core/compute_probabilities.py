@@ -1,17 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-
-Implementation of the method proposed in the paper:
- "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
-  Dynamical Models with Epistemic Uncertainty"
-
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
-______________________________________________________________________________
-"""
-
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt # Import Pyplot to generate plots
@@ -32,13 +21,15 @@ def compute_intervals_error(args, partition_setup, partition, trans,
     args : obj
         Object with arguments passed to the program
     partition_setup : dict
-        Setup dictionary.
-    partition_setup : dict
         Dictionary of the partition.
     partition : dict
         Dictionay containing all information of the partitioning.
     trans : dict
         Dictionary with all data for the transition probabilities
+    clusters : dict
+        Dictionary of cluster information
+    error : dict
+        Control/epistemic error dictionary
     samples : 2D Numpy array
         Numpy array, with every row being a sample of the process noise.
 
@@ -266,6 +257,8 @@ def compute_intervals_default(args, partition_setup, partition, trans, samples,
         Dictionary with all data for the transition probabilities
     samples : 2D Numpy array
         Numpy array, with every row being a sample of the process noise.
+    successor_indices : list
+        List of successor state indices (used for improved synthesis scheme)
 
     Returns
     -------
@@ -299,7 +292,7 @@ def compute_intervals_default(args, partition_setup, partition, trans, samples,
     successor_idxs = np.fromiter(count_dict.keys(), dtype=int)
     counts_value = np.fromiter(count_dict.values(), dtype=int)
 
-    if args.block_refinement and all(successor_idxs == 0):
+    if args.improved_synthesis and all(successor_idxs == 0):
         ignore = True
     else:
         ignore = False
@@ -350,11 +343,7 @@ def transition_plot(samples, error, i_show, i_hide, args, setup, model, spec, pa
                     cut_value, backreach=False, backreach_inflated=False,
                     stateLabels=False):
     '''
-
-    Returns
-    -------
-    None.
-
+    Create transition plot
     '''
     
     is1, is2 = i_show

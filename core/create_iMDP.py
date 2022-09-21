@@ -1,19 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-
-Implementation of the method proposed in the paper:
- "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
-  Dynamical Models with Epistemic Uncertainty"
-
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
-______________________________________________________________________________
-"""
-
 from .commons import writeFile
-
 from progressbar import progressbar # Import to create progress bars
 
 class mdp(object):
@@ -37,7 +25,7 @@ class mdp(object):
     
         '''
         
-        self.block_refinement = blref
+        self.improved_synthesis = blref
 
         self.setup = setup
         self.N = N
@@ -105,10 +93,14 @@ class mdp(object):
     
         Parameters
         ----------
-        abstr : dict
-            Abstraction dictionary
+        actions : dict
+            All action objectives
+        partition : dict
+            Partition object
         trans : dict
-            Dictionary of transition probabilities        
+            Contains transition probability intervals
+        problem_type : str
+            Is either 'avoid' or 'reachavoid'
         mode : str, optional
             Is either 'estimate' or 'interval'.
     
@@ -128,8 +120,8 @@ class mdp(object):
         
         head = 3
 
-        if self.block_refinement:
-            blref_states = self.block_refinement.num_states
+        if self.improved_synthesis:
+            blref_states = self.improved_synthesis.num_states
         else:
             blref_states = 0
 
@@ -168,7 +160,7 @@ class mdp(object):
             # Check if region is in goal set
             if i in self.goodStates:
                 substring += ' 2' 
-            elif i in self.badStates: # or len(actions['enabled'][i]) == 0:
+            elif i in self.badStates:
                 substring += ' 3'
             
             label_body[i] = substring
@@ -215,7 +207,7 @@ class mdp(object):
                 # For every enabled action                
                 for a_idx,a in enumerate(actions['enabled'][s]):
                     
-                    if self.block_refinement and trans['ignore'][a]:
+                    if self.improved_synthesis and trans['ignore'][a]:
                         continue
 
                     # Define name of action
@@ -308,10 +300,10 @@ class mdp(object):
         ### Add block refinement states
         blref_transitions = ''
         blref_trans=0
-        if self.block_refinement:
-            val = self.block_refinement.lb_values
+        if self.improved_synthesis:
+            val = self.improved_synthesis.lb_values
 
-            for i,val in enumerate(self.block_refinement.lb_values):
+            for i,val in enumerate(self.improved_synthesis.lb_values):
                 if val < 1:
                     blref_transitions += str(i + head) + ' 0 1 ['+str(1-val)+','+str(1-val)+']\n'
                     blref_trans += 1
@@ -331,6 +323,11 @@ class mdp(object):
         header = str(size_states)+' '+str(size_choices)+' '+ \
                  str(size_transitions)+'\n'
         
+        print('iMDP size:')
+        print('-- States:', size_states)
+        print('-- Choices:', size_choices)
+        print('-- Transitions:', size_transitions)
+
         if mode == 'interval':
             firstrow = '0 0 0 [1.0,1.0]\n1 0 1 [1.0,1.0]\n2 0 2 [1.0,1.0]\n'
         else:

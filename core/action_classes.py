@@ -1,17 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-
-Implementation of the method proposed in the paper:
- "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
-  Dynamical Models with Epistemic Uncertainty"
-
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
-______________________________________________________________________________
-"""
-
 import itertools
 import numpy as np
 import cvxpy as cp
@@ -123,6 +112,9 @@ def def_backward_reach(model):
 
 
 def find_backward_inflated(A_hat, error, alpha, G):
+    '''
+    Find the inflated backward reachable set
+    '''
 
     x = cp.Variable(len(A_hat))
     y = cp.Variable(len(A_hat))
@@ -140,6 +132,9 @@ def find_backward_inflated(A_hat, error, alpha, G):
 
 
 def partial_model(flags, model, spec, dim_n, dim_p):
+    '''
+    Define partial model for compositional definition of actions
+    '''
     
     model.A         = model.A[dim_n][:, dim_n]
     model.A_inv     = model.A_inv[dim_n][:, dim_n]

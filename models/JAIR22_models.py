@@ -1,10 +1,22 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+
+Models used in the paper:
+ "Robust Control for Dynamical Systems with Non-Gaussian Noise via
+ Formal Abstractions"
+
+Originally coded by:        Thom Badings
+Contact e-mail address:     thom.badings@ru.nl
+______________________________________________________________________________
+"""
+
 import numpy as np              # Import Numpy for computations
 from core.preprocessing.define_gears_order import discretizeGearsMethod        
 import core.preprocessing.master_classes as master
 import scipy
 from pathlib import Path
-
-
 
 class robot(master.LTI_master):
     

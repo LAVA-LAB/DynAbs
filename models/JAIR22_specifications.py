@@ -1,8 +1,20 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+
+Reach-avoid specifications used for the models in the paper:
+ "Robust Control for Dynamical Systems with Non-Gaussian Noise via
+ Formal Abstractions"
+
+Originally coded by:        Thom Badings
+Contact e-mail address:     thom.badings@ru.nl
+______________________________________________________________________________
+"""
+
 import numpy as np
 import sys
 import core.preprocessing.master_classes as master
-
-
 
 class robot_spec(master.spec_master):
     
@@ -281,8 +293,8 @@ class spacecraft_2D_spec(master.spec_master):
         self.control['uMin'] = [-2, -2]
         self.control['uMax'] = [2, 2]
 
-        self.partition['boundary']  = np.array([[-5.2+0.6, 2.2], [-5.2+.8*4, 10.8+10.4], [-4, 4], [-4, 4]])
-        self.partition['number']    = [17, 20+13-4, 5, 5]
+        self.partition['boundary']  = np.array([[-4.6, 2.2], [-2, 21.2], [-4, 4], [-4, 4]])
+        self.partition['number']    = [17, 29, 5, 5]
     
         # Actions per dimension (if 'auto', equal to nr of regions)
         self.targets['boundary']    = 'auto'

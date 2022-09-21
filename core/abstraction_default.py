@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from core.abstraction import Abstraction
 from core.define_model import define_model
 
@@ -24,10 +27,14 @@ class abstraction_default(Abstraction):
 
         Parameters
         ----------
+        args : obj
+            Parsed arguments
         setup : dict
             Setup dictionary.
-        model : dict
+        model_raw : dict
             Base model for which to create the abstraction.
+        spec_raw : dict
+            Specification dictionary
 
         Returns
         -------
@@ -69,6 +76,27 @@ class abstraction_default(Abstraction):
     def get_enabled_actions(self, model, spec, 
                             dim_n=False, dim_p=False, verbose=False,
                             print_every=1000):
+        '''
+        Compute enabled state-action pairs
+
+        Parameters
+        ----------
+        model : dict
+            Base model for which to create the abstraction.
+        spec : dict
+            Specification dictionary
+        dim_n : list
+            Dimensions of the state space to do computations for
+        dim_p : list
+            Dimensions of the control space to do computations for
+
+        Returns
+        -------
+        enabled : For each state, set of enabled actions
+        enabled_inv : For each action, set of states it is enabled in
+        None
+
+        '''
         
         # Compute the backward reachable set (not accounting for target point yet)    
         if dim_n is False or dim_p is False or len(dim_n) == model.n:
@@ -224,7 +252,6 @@ class abstraction_default(Abstraction):
                                     axis = 1)
 
             enabled_in_tups = [tuple(j) for j in np.array(state_tuples)[enabled_in]]
-            enabled_in_idxs = np.array(state_idxs)[enabled_in]
 
             enabled_inv[a_tup] = set(enabled_in_tups)
 
@@ -237,7 +264,6 @@ class abstraction_default(Abstraction):
                 
             if a_idx % print_every == 0:
                 print('Action to',act.center[dim_n],'enabled in',len(enabled_in_tups),'states') 
-                #print(self.partition['R']['center'][enabled_in_idxs])
                 
         return enabled, enabled_inv, None
 
@@ -257,8 +283,6 @@ class abstraction_default(Abstraction):
         ----------
         tab : dict
             Table dictionary.
-        k : int
-            Discrete time step.
 
         Returns
         -------
@@ -270,13 +294,12 @@ class abstraction_default(Abstraction):
         prob = {}
         ignore = {}
         regions_list = {}
-        printEvery = 1 # min(100, max(1, int(self.actions['nr_actions']/10)))
 
         noise_samples = Abstraction.noise_sampler(self)
 
         # If block refinement is true, use actual values of successor states,
         # computed in the abstraction on the previous time step
-        if self.args.block_refinement:
+        if self.args.improved_synthesis:
             successor_states = self.blref.state_relation
 
         else:
@@ -299,7 +322,7 @@ class abstraction_default(Abstraction):
                     self.spec.partition, self.partition, self.trans,
                     successor_samples, successor_states, regions_list = cache)
 
-        if self.args.block_refinement and self.blref.initial:
+        if self.args.improved_synthesis and self.blref.initial:
             self.regions_list_cache = regions_list
                 
         return prob, ignore
@@ -365,6 +388,8 @@ def defBasisVectors(model, verbose=False):
 
         Parameters
         ----------
+        model : Dict
+            Model dictionary
         verbose : Bool
             If True, provide verbose output.
 
@@ -399,19 +424,3 @@ def defBasisVectors(model, verbose=False):
                   np.linalg.norm(basis_vectors[i,:]))
         
         return basis_vectors
-
-
-        
-def exclude_samples(samples, width):
-    
-    N,n = samples.shape
-    
-    S = np.reshape(samples, (N,n,1))
-    diff = S - S.T
-    width_tile = np.tile(width, (N,1)).T
-    boolean = np.any(diff > width_tile, axis=1) | np.any(diff < -width_tile, axis=1)
-    
-    mp = map(np.nonzero, boolean)
-    exclude = [set(m[0]) for m in mp]
-    
-    return exclude

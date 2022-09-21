@@ -1,24 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-
-Implementation of the method proposed in the paper:
- "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
-  Dynamical Models with Epistemic Uncertainty"
-
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
-______________________________________________________________________________
-"""
-
 import numpy as np              # Import Numpy for computations
 import itertools                # Import to crate iterators
 import sys                      # Allows to terminate the code at some point
 import pandas as pd             # Import Pandas to store data in frames
 import sys                      # Allows to terminate the code at some point
-import os                       # Import OS to allow creationg of folders
-import csv                      # Import to create/load CSV files
 import random                   # Import to use random variables
 import subprocess               # Import to call prism via terminal command
 from progressbar import progressbar # Import to create progress bars
@@ -81,7 +68,7 @@ class Abstraction(object):
 
     def define_states(self):
         ''' 
-        Define the discrete state space partition and target points
+        Define the discrete state space partition
         
         Returns
         -------
@@ -164,6 +151,13 @@ class Abstraction(object):
 
 
     def define_target_points(self):
+        ''' 
+        Define target points of the abstraction
+        
+        Returns
+        -------
+        None.
+        '''
         
         self.actions = {'obj': {},
                         'backreach_obj': {},
@@ -289,6 +283,19 @@ class Abstraction(object):
         
     def _composeEnabledActions(self, dim_n, enabled_sub, enabled_sub_inv, 
                                control_error_sub):
+        ''' 
+        Determine which actions are actually enabled.
+        
+        Parameters
+        ----------
+        dim_n : Dimensions of the state space to consider
+        enabled_sub, enabled_sub_inv, control_error_sub : list of
+            enabled actions in the independent dimensions of the state space
+        
+        Returns
+        -------
+        None.
+        '''
         
         if None in control_error_sub:
             no_error = True
@@ -314,8 +321,6 @@ class Abstraction(object):
         nr_act = 0
         
         # Zipping over the product of the keys/values of the dictionaries
-
-        #:
         for keys, vals_enab in progressbar(zip(enabled_inv_keys, enabled_inv_vals), redirect_stdout=True):
 
             # Check if we have to save an error term as well
@@ -408,7 +413,7 @@ class Abstraction(object):
         problem_type = self.spec.problem_type
         
         # Initialize MDP object
-        if self.args.block_refinement:
+        if self.args.improved_synthesis:
             self.mdp = mdp(self.setup, 2, self.partition, self.actions, self.blref)
         else:
             self.mdp = mdp(self.setup, self.N, self.partition, self.actions)
@@ -428,7 +433,7 @@ class Abstraction(object):
             
     def solve_iMDP(self):
         '''
-        Solve the (i)MDP usign PRISM
+        Solve the (i)MDP using PRISM
 
         Returns
         -------
@@ -505,13 +510,13 @@ class Abstraction(object):
         if self.spec.problem_type == 'avoid':
             self.results['optimal_reward'] = 1 - self.results['optimal_reward']
 
-        if self.args.block_refinement:
+        if self.args.improved_synthesis:
             policy_all = policy_all[[-1], :]
 
         for i,row in enumerate(policy_all):
             
             # Determine if we are in block refinement mode
-            if self.args.block_refinement:
+            if self.args.improved_synthesis:
                 k = self.blref.k - i
             else:
                 k = self.N - i - 1

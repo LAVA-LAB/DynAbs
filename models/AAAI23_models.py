@@ -3,7 +3,7 @@
 
 """
 
-Implementation of the method proposed in the paper:
+Models used in the paper:
  "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
   Dynamical Models with Epistemic Uncertainty"
 

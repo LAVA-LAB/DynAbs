@@ -1,17 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-
-Implementation of the method proposed in the paper:
- "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
-  Dynamical Models with Epistemic Uncertainty"
-
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
-______________________________________________________________________________
-"""
-
 import argparse
 import numpy as np
 from ast import literal_eval
@@ -19,11 +8,6 @@ from ast import literal_eval
 def parse_arguments():
     """
     Function to parse arguments provided
-
-    Parameters
-    ----------
-    :manualModel: Override model as provided as argument in the command
-    :nobisim: Override bisimulatoin option as provided as argument in the command
 
     Returns
     -------
@@ -50,10 +34,15 @@ def parse_arguments():
     parser.add_argument('--iterations', type=int, action="store", dest='iterations', 
                         default=1, help="Number of repetitions of computing iMDP probability intervals")
 
-    parser.add_argument('--nongaussian_noise', dest='gaussian_noise', action='store_true',
+    parser.add_argument('--nongaussian_noise', dest='nongaussian_noise', action='store_true',
                         help="If enabled, non-Gaussian noise samples (if available) are used")
     parser.set_defaults(nongaussian_noise=False)
-    
+
+    # Enable/disable improved policy synthesis scheme
+    parser.add_argument('--improved_synthesis', dest='improved_synthesis', action='store_true',
+                        help="If enabled, the improved policy synthesis scheme is enabled")
+    parser.set_defaults(improved_synthesis=False)
+
     # Argument for model to load
     parser.add_argument('--model', type=str, action="store", dest='model', 
                         default=False, help="Model to load", required=False)
@@ -73,6 +62,10 @@ def parse_arguments():
     parser.add_argument('--partition_plot', dest='partition_plot', action='store_true',
                         help="If enabled, create plot of state space partition")
     parser.set_defaults(partition_plot=False)
+
+    parser.add_argument('--plot', dest='plot', action='store_true',
+                        help="If enabled, plots are created after finishing the programme")
+    parser.set_defaults(plot=False)
     
     parser.add_argument('--verbose', dest='verbose', action='store_true',
                         help="If enabled, provide more detailed outputs of script")
@@ -123,11 +116,13 @@ def parse_arguments():
     
     ####
     ####
+
+    parser.add_argument('--mdp_mode', type=str, action="store", dest='mdp_mode', 
+                        default='interval', help="Is either `estimate` (MDP) or `interval` (iMDP; default)")
+
     # Now, parse the command line arguments and store the
     # values in the `args` variable
     args, unknown = parser.parse_known_args()
-    
-    args.mdp_mode = 'interval'
     
     if len(unknown) > 0:
         print('\nWarning: There are unknown arguments:\n', unknown,'\n')

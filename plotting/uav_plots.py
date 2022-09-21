@@ -85,8 +85,6 @@ def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions,
         
         critIdx   = np.array(keys[crit])
         
-        print(critIdx,'--',critIdx[i_hide])
-        
         if all(critIdx[i_hide] == cut_idx):
         
             critStateLow = [regions['low'][crit][is1], regions['low'][crit][is2]]

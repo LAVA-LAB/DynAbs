@@ -1,34 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-
-Implementation of the method proposed in the paper:
- "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
-  Dynamical Models with Epistemic Uncertainty"
-
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
-______________________________________________________________________________
-"""
-
 import numpy as np              # Import Numpy for computations
 from scipy.sparse.csgraph import connected_components
 
-def define_model(setup, model_raw, spec):
+def define_model(model_raw, spec):
     '''
     Define model within abstraction object for given value of lump
-
-    Parameters
-    ----------
-    lump : int
-        Value of lump to create model for.
-
-    Returns
-    -------
-    model : TYPE
-        DESCRIPTION.
-
     '''
     
     spec.partition['boundary'] = np.array(spec.partition['boundary']).astype(float)
@@ -89,7 +67,7 @@ def find_connected_components(A, B, n, p):
     
     return dim_n, dim_p
 
-def make_fully_actuated(model, manualDimension='auto', observer=False):
+def make_fully_actuated(model, manualDimension='auto'):
     '''
     Given a model in `model`, render it fully actuated.
 
@@ -99,9 +77,6 @@ def make_fully_actuated(model, manualDimension='auto', observer=False):
         Main dictionary of the LTI system model.
     manualDimension : int or str, optional
         Desired dimension of the state of the model The default is 'auto'.
-    observer : Boolean, default=False
-        If True, it is assumed that the system is not directly observable, so
-        an observer is created.
 
     Returns
     -------
