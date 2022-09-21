@@ -1,6 +1,6 @@
 # Introduction of this ReadMe file
 
-This artefact contains the source code for the AAAI 2023 submission with the title:
+This artefact contains the source code for the paper with the title:
 
 - "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic Dynamical Models with Epistemic Uncertainty"
 
