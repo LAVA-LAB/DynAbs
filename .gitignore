@@ -4,6 +4,10 @@ __pycache__/
 *.pyo
 *.DS_Store
 
+# Ignore options file
+options.txt
+path_to_prism.txt
+
 output/*
 !output/.keep
 

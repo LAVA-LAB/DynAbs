@@ -1,32 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
- ______________________________________
-|                                      |
-|  SCENARIO-BASED ABSTRACTION PROGRAM  |
-|______________________________________|
-
-Implementation of the method proposed in the paper:
-
-  Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & 
-  Marielle Stoelinga (2021). Sampling-based Robust Control of Autonomous 
-  Systems with Non-Gaussian Noise. AAAI 2022.
-
-Originally coded by:        Thom S. Badings
-Contact e-mail address:     thom.badings@ru.nl>
-______________________________________________________________________________
-
-Module containing smaller ancillary functions called repeatedly by other 
-functions
-"""
-
 import numpy as np              # Import Numpy for computations
 import math                     # Import Math for mathematical operations
 import time                     # Import to create tic/toc functions
 import sys                      # Allows to terminate the code at some point
 import itertools                # Import to crate iterators
 import os                       # Import OS to allow creationg of folders
+from scipy.spatial import Delaunay
 
 class table(object):
     '''
@@ -84,6 +65,42 @@ class table(object):
         if head:
             print('-'*sum(self.col_width))
 
+
+
+def in_hull(p, hull):
+    '''
+    Test if points in `p` are in `hull`.
+
+    `p` should be a `NxK` coordinates of `N` points in `K` dimensions
+    `hull` is either a scipy.spatial.Delaunay object or the `MxK` array of the 
+    coordinates of `M` points in `K`dimensions for which Delaunay triangulation
+    will be computed
+    '''
+    
+    if not isinstance(hull,Delaunay):
+        print(' -- Creating hull...')
+        hull = Delaunay(hull, qhull_options='QJ')
+
+    boolArray = hull.find_simplex(p) >= 0
+
+    return boolArray
+
+
+
+def overapprox_box(brs):
+    '''
+    Overapproximate a backward reachable set as a box
+    '''
+    
+    brs_min = np.min(brs, axis=0)
+    brs_max = np.max(brs, axis=0)
+    
+    backreach_heur = np.vstack((brs_min, brs_max))
+    
+    return backreach_heur
+
+
+
 def createDirectory(folder):
     '''
     Helpeer function to create a directory if it not exists yet
@@ -101,6 +118,8 @@ def createDirectory(folder):
     if not os.path.exists(folder):
         os.makedirs(folder)
 
+
+
 def TicTocGenerator():
     ''' Generator that returns the elapsed run time '''
     ti = time.time() # initial time
@@ -108,7 +127,9 @@ def TicTocGenerator():
     while True:
         tf = time.time()
         yield tf-ti # returns the time difference
-        
+
+
+
 def TicTocDifference():
     ''' Generator that returns time differences '''
     tf0 = time.time() # initial time
@@ -118,8 +139,12 @@ def TicTocDifference():
         tf = time.time()
         yield tf-tf0 # returns the time difference
 
+
+
 TicToc = TicTocGenerator() # create an instance of the TicTocGen generator
 TicTocDiff = TicTocDifference() # create an instance of the TicTocGen generator
+
+
 
 def toc(tempBool=True):
     ''' Print current time difference '''
@@ -128,11 +153,15 @@ def toc(tempBool=True):
     if tempBool:
         print( "Elapsed time: %f seconds." %tempTimeInterval )
 
+
+
 def tic():
     ''' Start time recorder '''
     # Records a time in TicToc, marks the beginning of a time interval
     toc(False)
     
+
+
 def tocDiff(tempBool=True):
     ''' Print current time difference '''
     # Prints the time difference yielded by generator instance TicToc
@@ -144,11 +173,15 @@ def tocDiff(tempBool=True):
         
     return tempTimeInterval
 
+
+
 def ticDiff():
     ''' Start time recorder '''
     # Records a time in TicToc, marks the beginning of a time interval
     tocDiff(False)
     
+
+
 def nchoosek(n, k):
     '''
     Binomial coefficient or all combinations
@@ -161,6 +194,8 @@ def nchoosek(n, k):
         r = n/k * nchoosek(n-1, k-1)
     return round(r)
     
+
+
 def is_invertible(a):
     '''
     Check if matrix `a` is invertibe
@@ -179,6 +214,8 @@ def is_invertible(a):
     
     return a.shape[0] == a.shape[1] and np.linalg.matrix_rank(a) == a.shape[0]
 
+
+
 def printWarning(text):
     '''
     Print a warning
@@ -196,6 +233,8 @@ def printWarning(text):
     
     print("\u001b[35m>>> "+str(text)+" <<<\x1b[0m")
     
+
+
 def printSuccess(text):
     '''
     Print a success message
@@ -212,7 +251,9 @@ def printSuccess(text):
     '''
     
     print("\u001b[32m>>> "+str(text)+" <<<\x1b[0m")
-    
+
+
+
 def mat_to_vec(inp):
     '''
     Convert `inp` from a matrix to a vector
@@ -231,36 +272,52 @@ def mat_to_vec(inp):
     
     return np.reshape(inp, np.size(inp))
 
+
+
 def dot(v,w):
     x,y = v
     X,Y = w
     return x*X + y*Y
 
+
+
 def length(v):
     x,y = v
     return math.sqrt(x*x + y*y)
+
+
 
 def vector(b,e):
     x,y = b
     X,Y = e
     return (X-x, Y-y)
 
+
+
 def unit(v):
     x,y = v
     mag = length(v)
     return (x/mag, y/mag)
 
+
+
 def distance(p0,p1):
     return length(vector(p0,p1))
+
+
 
 def scale(v,sc):
     x,y = v
     return (x * sc, y * sc)
 
+
+
 def add(v,w):
     x,y = v
     X,Y = w
     return (x+X, y+Y)
+
+
 
 def pnt2line(pnt, start, end):
     '''
@@ -282,6 +339,8 @@ def pnt2line(pnt, start, end):
     dist = distance(nearest, pnt_vec)
     nearest = add(nearest, start)
     return dist, nearest
+
+
 
 def point_in_poly(x,y,poly):
     '''
@@ -305,6 +364,8 @@ def point_in_poly(x,y,poly):
 
     return inside
 
+
+
 def cm2inch(*tupl):
     '''
     Convert centimeters to inches
@@ -315,13 +376,17 @@ def cm2inch(*tupl):
         return tuple(i/inch for i in tupl[0])
     else:
         return tuple(i/inch for i in tupl)
-            
+
+
+
 def floor_decimal(a, precision=0):
     '''
     Floor function, but than with a specific precision
     '''
     
     return np.round(a - 0.5 * 10**(-precision), precision)
+
+
 
 def writeFile(file, operation="w", content=[""]):
     '''
@@ -344,7 +409,9 @@ def writeFile(file, operation="w", content=[""]):
     filehandle = open(file, operation)
     filehandle.writelines(content)
     filehandle.close()
-    
+
+
+
 def setStateBlock(partition, **kwargs):
     '''
     Create a block of discrete regions for the given partition (can be used
@@ -367,16 +434,16 @@ def setStateBlock(partition, **kwargs):
     '''
     
     nrArgs = len(kwargs)
-    stateDim = len(partition['nrPerDim'])
+    stateDim = len(partition['number'])
     
-    if nrArgs != len(partition['nrPerDim']):
+    if nrArgs != len(partition['number']):
         print('State dimension is',stateDim,'but only',nrArgs,
               'arguments given.')
         sys.exit()
     
     row = [None for i in range(stateDim)]
     
-    center_domain = (np.array(partition['nrPerDim'])-1) * 0.5 * \
+    center_domain = (np.array(partition['number'])-1) * 0.5 * \
                      np.array(partition['width'])
     
     for i,value in enumerate(kwargs.values()):
@@ -386,7 +453,7 @@ def setStateBlock(partition, **kwargs):
             row[i] = np.linspace(
                         -center_domain[i] + np.array(partition['origin'][i]), 
                          center_domain[i] + np.array(partition['origin'][i]), 
-                         partition['nrPerDim'][i])
+                         partition['number'][i])
             
         else:
             
@@ -394,9 +461,13 @@ def setStateBlock(partition, **kwargs):
             
     return np.array(list(itertools.product(*row)))
 
+
+
 def unit_vector(vector):
     """ Returns the unit vector of the vector.  """
     return vector / np.linalg.norm(vector)
+
+
 
 def angle_between(v1, v2):
     """ Returns the angle in radians between vectors 'v1' and 'v2'::
@@ -411,3 +482,8 @@ def angle_between(v1, v2):
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+
+
+def flatten(t):
+    return [item for sublist in t for item in sublist]
