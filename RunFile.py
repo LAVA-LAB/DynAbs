@@ -220,6 +220,7 @@ exporter.save_to_excel(Ab.setup.directories['outputF'] + \
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
 
+# Plots for AAAI 2023 paper
 if harm_osc:
     print('-- Export results for longitudinal drone dynamics as in paper...')
     
@@ -235,6 +236,7 @@ if Ab.model.name == 'anaesthesia_delivery':
 
     heatmap_3D(Ab.setup, centers, values)
 
+# Plots for JAIR paper / AAAI 2022
 if args.plot:
     from RunPlots import plot
     plot(path = Ab.setup.directories['outputF']+'data_dump.p')

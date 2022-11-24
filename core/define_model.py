@@ -25,10 +25,10 @@ def define_model(model_raw, spec):
     
     if lump == 0:
         model = make_fully_actuated(model_raw, 
-                   manualDimension = 'auto', observer=False)
+                   manualDimension = 'auto')
     else:
         model = make_fully_actuated(model_raw, 
-                   manualDimension = lump, observer=False)
+                   manualDimension = lump)
         
     # Determine inverse A matrix
     model.A_inv  = np.linalg.inv(model.A)

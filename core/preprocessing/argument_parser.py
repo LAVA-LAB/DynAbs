@@ -118,7 +118,7 @@ def parse_arguments():
     ####
 
     parser.add_argument('--mdp_mode', type=str, action="store", dest='mdp_mode', 
-                        default='interval', help="Is either `estimate` (MDP) or `interval` (iMDP; default)")
+                        default='interval', help="Is either `estimate` (MDP) or `interval` (iMDP; default option)")
 
     # Now, parse the command line arguments and store the
     # values in the `args` variable

@@ -36,7 +36,7 @@ class abstraction_epistemic(Abstraction):
 
         '''
         
-        model, spec = define_model(setup, model_raw, spec_raw)
+        model, spec = define_model(model_raw, spec_raw)
 
         # Copy setup to internal variable
         self.setup = setup
