@@ -17,8 +17,8 @@ def parse_arguments():
     
     parser = argparse.ArgumentParser(description="Sampling-Based Abstraction Method",
                                      prefix_chars='--')
-    # Scenario problem main arguments
-    
+
+    ### Scenario problem main arguments
     parser.add_argument('--noise_samples', type=int, action="store", dest='noise_samples', 
                         default=20000, help="Number of noise samples to use")
     
@@ -28,9 +28,6 @@ def parse_arguments():
     parser.add_argument('--sample_clustering', type=float, action="store", dest='sample_clustering', 
                         default=1e-2, help="Distance at which to cluster noise samples")
     
-    parser.add_argument('--prism_java_memory', type=int, action="store", dest='prism_java_memory', 
-                        default=1, help="Max. memory usage by JAVA / PRISM")
-    
     parser.add_argument('--iterations', type=int, action="store", dest='iterations', 
                         default=1, help="Number of repetitions of computing iMDP probability intervals")
 
@@ -38,14 +35,24 @@ def parse_arguments():
                         help="If enabled, non-Gaussian noise samples (if available) are used")
     parser.set_defaults(nongaussian_noise=False)
 
+    ### Memory allocation
+    # Prism java memory
+    parser.add_argument('--prism_java_memory', type=int, action="store", dest='prism_java_memory', 
+                        default=1, help="Max. memory usage by JAVA / PRISM")
+    
     # Enable/disable improved policy synthesis scheme
     parser.add_argument('--improved_synthesis', dest='improved_synthesis', action='store_true',
                         help="If enabled, the improved policy synthesis scheme is enabled")
     parser.set_defaults(improved_synthesis=False)
 
+    ### Abstraction options
+    # File from which to load model
+    parser.add_argument('--model_file', type=str, action="store", dest='model_file', 
+                        default=False, help="File to load model from", required=True)
+    
     # Argument for model to load
     parser.add_argument('--model', type=str, action="store", dest='model', 
-                        default=False, help="Model to load", required=False)
+                        default=False, help="Model to load", required=True)
 
     # Type of abstraction to create
     parser.add_argument('--abstraction_type', type=str, action="store", dest='abstraction_type', 
@@ -59,6 +66,7 @@ def parse_arguments():
     parser.add_argument('--x_init', type=str, action="store", dest='x_init', 
                         default='[]', help="Initial state for Monte Carlo simulations")
     
+    ### Plotting options
     parser.add_argument('--partition_plot', dest='partition_plot', action='store_true',
                         help="If enabled, create plot of state space partition")
     parser.set_defaults(partition_plot=False)
@@ -67,11 +75,14 @@ def parse_arguments():
                         help="If enabled, plots are created after finishing the programme")
     parser.set_defaults(plot=False)
     
+    ### Verbose switch
     parser.add_argument('--verbose', dest='verbose', action='store_true',
                         help="If enabled, provide more detailed outputs of script")
     parser.set_defaults(verbose=False)
-    
+
     ####
+    ####
+
     #### Drone model arguments ####
     parser.add_argument('--drone_spring', dest='drone_spring', action='store_true',
                         help="Enable spring coefficient in drone benchmark")
@@ -88,6 +99,8 @@ def parse_arguments():
                         default=100, help="Monte Carlo simulations to evaluate controller safety")
     
     ####
+    ####
+
     #### Building temperature model arguments ####
     parser.add_argument('--bld_partition', type=str, action="store", dest='bld_partition', 
                         default='[25,35]', help="Size of the state space partition")
@@ -101,12 +114,14 @@ def parse_arguments():
     
     ####
     ####
+
     #### Anaesthesia delivery model arguments ####
     parser.add_argument('--drug_partition', type=str, action="store", dest='drug_partition', 
                         default='[20,20,20]', help="Size of the state space partition")
 
     ####
     ####
+    
     #### UAV model arguments ####
     parser.add_argument('--UAV_dim', type=int, action="store", dest='UAV_dim', 
                         default=2, help="Dimension of the UAV model to run")

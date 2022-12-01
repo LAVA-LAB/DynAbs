@@ -225,8 +225,8 @@ def UAVplot3d_visvis(setup, args, model, regions, goal_regions,
     ax = vv.gca()
     
     ix = 0
-    iy = 2
-    iz = 4
+    iy = 1
+    iz = 2
     
     regionWidth_xyz = np.array([spec.partition['width'][0], 
                                 spec.partition['width'][2], 
@@ -275,24 +275,14 @@ def UAVplot3d_visvis(setup, args, model, regions, goal_regions,
     print('-- Critical regions drawn')
 
     # Add traces
-    i = 0
-    for trace in traces.values():
-
-        state_traj = trace['x']
-
-        # Only show trace if there are at least two points
-        if len(state_traj) < 2:
-            printWarning('Warning: trace '+str(i)+
-                         ' has length of '+str(len(state_traj)))
-            continue
-        else:
-            i+= 1
-            
-        if i >= traces_to_plot:
-            break
+    for i,trace_array in enumerate(traces):
         
-        # Convert nested list to 2D array
-        trace_array = np.array(state_traj)
+        if i == 0:
+            clr = 'b'
+            ms = '.'
+        else:
+            clr = (1,0.647,0)
+            ms = 'x'
         
         # Extract x,y coordinates of trace
         x = trace_array[:, ix]
@@ -301,7 +291,7 @@ def UAVplot3d_visvis(setup, args, model, regions, goal_regions,
         points = np.array([x,y,z]).T
         
         # Plot precise points
-        vv.plot(x,y,z, lw=0, mc='b', ms='.')
+        vv.plot(x,y,z, ms=ms, lw=0, mc=clr, markerWidth=20)
         
         # Linear length along the line:
         distance = np.cumsum( np.sqrt(np.sum( np.diff(points, axis=0)**2, 
@@ -311,10 +301,10 @@ def UAVplot3d_visvis(setup, args, model, regions, goal_regions,
         # Interpolation for different methods:
         alpha = np.linspace(0, 1, 75)
         
-        if len(state_traj) == 2:
+        if len(trace_array) == 2:
                 kind = 'linear'
         else:
-            kind = 'quadratic'
+            kind = 'cubic'
 
         interpolator =  interp1d(distance, points, kind=kind, axis=0)
         interpolated_points = interpolator(alpha)
@@ -324,13 +314,22 @@ def UAVplot3d_visvis(setup, args, model, regions, goal_regions,
         zp = interpolated_points[:,2]
         
         # Plot trace
-        vv.plot(xp,yp,zp, lw=1, lc='b')
+        vv.plot(xp,yp,zp, lw=5, lc=clr)
 
     print('-- Traces regions drawn')
 
     ax.axis.xLabel = 'X'
     ax.axis.yLabel = 'Y'
     ax.axis.zLabel = 'Z'
+    
+    # Hide ticks labels and axis labels
+    ax.axis.xLabel = ax.axis.yLabel = ax.axis.zLabel = ''    
+    ax.axis.xTicks = ax.axis.yTicks = ax.axis.zTicks = []
+    
+    a.axis.axisColor = 'k'
+    a.axis.showGrid = True
+    a.axis.edgeWidth = 10
+    a.bgcolor = 'w'
     
     app = vv.use()
     
@@ -339,7 +338,7 @@ def UAVplot3d_visvis(setup, args, model, regions, goal_regions,
     
     vv.axis('tight', axes=ax)
     
-    fig.position.w = 700
+    fig.position.w = 1000
     fig.position.h = 600
     
     im = vv.getframe(vv.gcf())

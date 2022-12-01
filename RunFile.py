@@ -47,14 +47,8 @@ mpl.rcParams['figure.dpi'] = 300
 #-----------------------------------------------------------------------------
 
 args = parse_arguments()
-
 args.base_dir = os.path.dirname(os.path.abspath(__file__))
 print('Base directory:', args.base_dir)
-
-# Specify the file from which we load models
-models_file = 'JAIR22_models'
-    
-args.partition_plot = False
 
 print('Run using arguments:')
 for key,val in vars(args).items():
@@ -69,10 +63,10 @@ with open(os.path.join(args.base_dir, 'path_to_prism.txt')) as f:
 #-----------------------------------------------------------------------------
 
 # Define model
-print('Run `'+args.model+'` model...')
+print('Run `'+args.model+'` model from set `'+args.model_file+'`...')
 
 # Retreive a list of all available models
-models = importlib.import_module("models."+models_file, package=None)
+models = importlib.import_module("models."+args.model_file, package=None)
 modelClasses = np.array(getmembers(models, isclass))
 names   = modelClasses[:,0]
 methods = modelClasses[:,1]
@@ -219,6 +213,10 @@ exporter.save_to_excel(Ab.setup.directories['outputF'] + \
 
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
+
+#-----------------------------------------------------------------------------
+# Create plots
+#-----------------------------------------------------------------------------
 
 # Plots for AAAI 2023 paper
 if harm_osc:

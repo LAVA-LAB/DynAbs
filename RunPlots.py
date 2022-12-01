@@ -52,10 +52,20 @@ def plot(path):
 
         if len(data['args'].x_init) == data['model'].n:
             s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
-            traces = data['mc'].traces[s_init]
+            #traces = data['mc'].traces[s_init]
+            
+            import os
+            folder = os.path.dirname(path)
+            
+            import csv
+            trace1 = np.loadtxt(folder+'/traj_01.csv')
+            trace2 = np.loadtxt(folder+'/traj_02.csv')
+            
+            trace1[:,2] -= 12
+            trace2[:,2] -= 12
             
             UAV_3D_plotLayout(data['setup'], data['args'], data['model'], data['regions'], 
-                            data['goal_regions'], data['critical_regions'], traces, data['spec'])
+                            data['goal_regions'], data['critical_regions'], [trace1, trace2], data['spec'])
         else:
             print('-- No initial state provided')
 

@@ -3,7 +3,8 @@
 This artefact contains an implementation of the formal abstraction methods proposed in the following papers:
 
 - [Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & Marielle Stoelinga (2022). Sampling-based Robust Control of Autonomous Systems with Non-Gaussian Noise. AAAI 2022](https://ojs.aaai.org/index.php/AAAI/article/view/21201)
-- Thom Badings, Licio Romao, Alessandro Abate, David Parker, Hasan Poonawala, Marielle Stoelinga & Nils Jansen (2022). Robust Control for Dynamical Systems with Non-Gaussian Noise via Formal Abstractions (submitted).
+- Thom Badings, Licio Romao, Alessandro Abate, David Parker, Hasan Poonawala, Marielle Stoelinga & Nils Jansen (2022). Robust Control for Dynamical Systems with Non-Gaussian Noise via Formal Abstractions (to appear in JAIR).
+- Thom Badings, Licio Romao, Alessandro Abate, & Nils Jansen (2023). Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic Dynamical Models with Epistemic Uncertainty (accepted for presentation at AAAI 2023).
 
 This repository contains all code and instructions that are needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM.
 
@@ -92,10 +93,10 @@ To ensure that PRISM can be found by the script, **you need to modify the path t
 
 # How to run for a single model?
 
-An example of running the program is as follows:
+An example of running the UAV benchmark (6D linear dynamical model) is as follows:
 
 ```bash
-$ python3 RunFile.py --model UAV --UAV_dim 3 --noise_samples 6400 --noise_factor 1 --nongaussian_noise --monte_carlo_iter 1000 --x_init '[-14,0,6,0,-2,0]' --plot
+$ python3 RunFile.py --model_file JAIR22_models --model UAV --UAV_dim 3 --prism_java_memory 8 --noise_samples 6400 --noise_factor 1 --nongaussian_noise --monte_carlo_iter 1000 --x_init '[-14,0,6,0,-2,0]' --plot
 ```
 
 This runs the 3D UAV benchmark from the paper, with `N=6400` (non-Gaussian) noise samples, and Monte Carlo simulations enabled.
@@ -124,6 +125,7 @@ Below, we list all arguments that can be passed to the command for running the p
 
 | Argument           | Required? | Default            | Type                     | Description |
 | ---                | ---       | ---                | ---                      | ---         |
+| model_file         | Yes       | N/A                | str                      | File from which to load model, without `.py` (by default, `AAAI23_models` and `JAIR22_models` are supplied) |
 | model              | Yes       | N/A                | str                      | Name of the model to load |
 | mdp_mode           | No        | interval            | str                      | If `estimate`, a point estimate MDP abstraction is created; if `interval`, a robust interval MDP abstraction is created |
 | abstraction_type   | No        | default            | str                      | If `default`, no epistemic uncertainty is considered; if `epistemic`, epistemic uncertainty is considered next to stochastic noise |
