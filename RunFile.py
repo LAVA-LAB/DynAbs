@@ -58,6 +58,14 @@ with open(os.path.join(args.base_dir, 'path_to_prism.txt')) as f:
     args.prism_folder = str(f.readlines()[0])
     print('-- Path to PRISM is:', args.prism_folder)
 
+# Abort if both the improved synthesis scheme and unbounded property is set
+if args.improved_synthesis and args.timebound == np.inf:
+    sys.exit("Cannot run script with both improved synthesis scheme and unbounded property")
+
+# Abort if both the improved synthesis scheme and monte carlo simulations is set
+if args.monte_carlo_iter and args.timebound == np.inf:
+    sys.exit("Cannot run script with both Monte Carlo simulations and unbounded property")
+
 #-----------------------------------------------------------------------------
 # Load model and set specification
 #-----------------------------------------------------------------------------

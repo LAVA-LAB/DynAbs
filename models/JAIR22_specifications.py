@@ -22,9 +22,6 @@ class robot_spec(master.spec_master):
 
         # Initialize superclass
         master.spec_master.__init__(self)        
-        
-        # Step-bound on spec
-        self.end_time = 64
 
         # Authority limit for the control u, both positive and negative
         self.control['uMin'] = [-5]
@@ -51,9 +48,6 @@ class building_2room_spec(master.spec_master):
 
         # Initialize superclass
         master.spec_master.__init__(self)        
-        
-        # Step-bound on spec
-        self.end_time = 32
 
         # Authority limit for the control u, both positive and negative
         self.control['uMin'] = [14, 14, T_boiler-10, T_boiler-10]
@@ -80,9 +74,6 @@ class building_1room_spec(master.spec_master):
 
         # Initialize superclass
         master.spec_master.__init__(self)        
-        
-        # Step-bound on spec
-        self.end_time = 64
 
         # Authority limit for the control u, both positive and negative
         self.control['uMin'] = [14, -10]
@@ -145,8 +136,6 @@ class shuttle_spec(master.spec_master):
                 np.array([[0.8, 1], [-0.9, -0.8], 'all', 'all'], dtype='object'),
                 np.array([[0.9, 1], [-1.0, -0.9], 'all', 'all'], dtype='object')
         ))
-        
-        self.end_time = 16
 
 
 
@@ -156,9 +145,6 @@ class UAV_spec(master.spec_master):
 
         # Initialize superclass
         master.spec_master.__init__(self)        
-        
-        # Step-bound on spec
-        self.end_time = 32
 
         # Authority limit for the control u, both positive and negative
         if modelDim == 2:
@@ -249,9 +235,6 @@ class spacecraft_spec(master.spec_master):
 
         # Initialize superclass
         master.spec_master.__init__(self)        
-        
-        # Step-bound on spec
-        self.end_time = 32
     
         # Authority limit for the control u, both positive and negative
         self.control['uMin'] = [-2, -2, -2]
@@ -285,9 +268,6 @@ class spacecraft_2D_spec(master.spec_master):
 
         # Initialize superclass
         master.spec_master.__init__(self)        
-        
-        # Step-bound on spec
-        self.end_time = 32
     
         # Authority limit for the control u, both positive and negative
         self.control['uMin'] = [-2, -2]
@@ -316,9 +296,6 @@ class spacecraft_1D_spec(master.spec_master):
 
         # Initialize superclass
         master.spec_master.__init__(self)        
-        
-        # Step-bound on spec
-        self.end_time = 32
     
         # Authority limit for the control u, both positive and negative
         self.control['uMin'] = [-2]

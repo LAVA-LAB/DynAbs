@@ -43,7 +43,10 @@ class Abstraction(object):
         print(' -- Dimension of the control input:',self.model.p)
         
         # Number of simulation time steps
-        self.N = int(self.spec.end_time / self.model.lump)
+        if self.args.timebound == np.inf:
+            self.N = np.inf
+        else:
+            self.N = int(self.args.timebound / self.model.lump)
         
         # Determine if model has parametric uncertainty
         if hasattr(self.model, 'A_set'):
@@ -146,8 +149,12 @@ class Abstraction(object):
         
         # Initialize results dictionaries
         self.results = dict()
-        self.results['optimal_policy'] = np.zeros((self.N, self.partition['nr_regions']), dtype=int)
+        if self.args.timebound == np.inf:
+            v = 1
+        else:
+            v = self.N
 
+        self.results['optimal_policy'] = np.zeros((v, self.partition['nr_regions']), dtype=int)
 
 
     def define_target_points(self):
@@ -496,13 +503,6 @@ class Abstraction(object):
 
         '''
 
-        # Read policy CSV file
-        policy_all = pd.read_csv(policy_file, header=None).iloc[:, self.mdp.head:].\
-            fillna(-1).to_numpy()
-            
-        # Flip policy upside down (PRISM generates last time step at top!)
-        # policy_all = np.flipud(policy_all)
-        
         rewards_k0 = pd.read_csv(vector_file, header=None).iloc[self.mdp.head:].to_numpy()
         self.results['optimal_reward'] = rewards_k0.flatten()
         
@@ -510,29 +510,40 @@ class Abstraction(object):
         if self.spec.problem_type == 'avoid':
             self.results['optimal_reward'] = 1 - self.results['optimal_reward']
 
-        if self.args.improved_synthesis:
-            policy_all = policy_all[[-1], :]
+        if self.args.timebound == np.inf:
 
-        for i,row in enumerate(policy_all):
-            
-            # Determine if we are in block refinement mode
+            # For unbounded properties, PRISM does currently not yet export the policy
+            self.results['optimal_policy'] = pd.DataFrame()
+        
+        else:
+
+            # Read policy CSV file
+            policy_all = pd.read_csv(policy_file, header=None).iloc[:, self.mdp.head:].\
+                fillna(-1).to_numpy()
+
             if self.args.improved_synthesis:
-                k = self.blref.k - i
-            else:
-                k = self.N - i - 1
+                policy_all = policy_all[[-1], :]
 
-            # Terminate if not a valid time step
-            if k < 0:
-                continue
-
-            for j,value in enumerate(row):
-
-                # If value is not -1 (means no action defined)
-                if value != -1:
-                    # Split string
-                    value_split = value.split('_')
-                    # Store action ID
-                    self.results['optimal_policy'][k,j] = int(value_split[1])
+            for i,row in enumerate(policy_all):
+                
+                # Determine if we are in block refinement mode
+                if self.args.improved_synthesis:
+                    k = self.blref.k - i
                 else:
-                    # If no policy is known, set to -1
-                    self.results['optimal_policy'][k,j] = int(value)    
+                    k = self.N - i - 1
+
+                # Terminate if not a valid time step
+                if k < 0:
+                    continue
+
+                for j,value in enumerate(row):
+
+                    # If value is not -1 (means no action defined)
+                    if value != -1:
+                        # Split string
+                        value_split = value.split('_')
+                        # Store action ID
+                        self.results['optimal_policy'][k,j] = int(value_split[1])
+                    else:
+                        # If no policy is known, set to -1
+                        self.results['optimal_policy'][k,j] = int(value)    

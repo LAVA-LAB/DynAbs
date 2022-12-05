@@ -127,6 +127,7 @@ Below, we list all arguments that can be passed to the command for running the p
 | ---                | ---       | ---                | ---                      | ---         |
 | model_file         | Yes       | N/A                | str                      | File from which to load model, without `.py` (by default, `AAAI23_models` and `JAIR22_models` are supplied) |
 | model              | Yes       | N/A                | str                      | Name of the model to load |
+| timebound          | Yes       | N/A                | int or 'inf'             | Timebound on the specificatoin/property, which can be a positive integer or 'inf' for an infinite horizon (unbounded) |
 | mdp_mode           | No        | interval            | str                      | If `estimate`, a point estimate MDP abstraction is created; if `interval`, a robust interval MDP abstraction is created |
 | abstraction_type   | No        | default            | str                      | If `default`, no epistemic uncertainty is considered; if `epistemic`, epistemic uncertainty is considered next to stochastic noise |
 | noise_samples      | No        | 20000              | int                      | Number of noise samples to use for computing transition probability intervals |

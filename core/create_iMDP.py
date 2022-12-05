@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import numpy as np
+
 from .commons import writeFile
 from progressbar import progressbar # Import to create progress bars
 
@@ -60,20 +62,24 @@ class mdp(object):
 
         '''
         
+        if self.N != np.inf:
+            timebound = 'F<='+str(self.N)+' '
+        else:
+            timebound = 'F '
+        
         if mode == 'estimate':
             # If mode is default, set maximum probability as specification
             if problem_type == 'avoid':
-                specification = 'Pmin=? [ F<='+str(self.N)+' "failed" ]'    
+                specification = 'Pmin=? [ '+timebound+'"failed" ]'    
             else:
-                specification = 'Pmax=? [ F<='+str(self.N)+' "reached" ]'
+                specification = 'Pmax=? [ '+timebound+'"reached" ]'
             
         elif mode == 'interval':
             # If mode is interval, set lower bound of max. prob. as spec.
             if problem_type == 'avoid':
-                #specification = 'Pminmax=? [ F<='+str(self.N)+' "failed" ]'
-                specification = 'Pminmax=? [ F<='+str(self.N)+' "failed" ]'
+                specification = 'Pminmax=? ['+timebound+' "failed" ]'
             else:
-                specification = 'Pmaxmin=? [ F<='+str(self.N)+' "reached" ]'            
+                specification = 'Pmaxmin=? ['+timebound+' "reached" ]'            
             
         # Define specification file
         specfile = self.setup.directories['outputFcase']+ \

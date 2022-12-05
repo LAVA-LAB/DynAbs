@@ -18,6 +18,34 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Sampling-Based Abstraction Method",
                                      prefix_chars='--')
 
+
+
+    ### Abstraction options
+    # File from which to load model
+    parser.add_argument('--model_file', type=str, action="store", dest='model_file', 
+                        default=False, help="File to load model from", required=True)
+    
+    # Argument for model to load
+    parser.add_argument('--model', type=str, action="store", dest='model', 
+                        default=False, help="Model to load", required=True)
+
+    parser.add_argument('--timebound', type=str, action="store", dest='timebound', 
+                        default='inf', help="Timebound on the temporal logic specification ('inf' for infinity)", required=False)
+
+    # Type of abstraction to create
+    parser.add_argument('--abstraction_type', type=str, action="store", dest='abstraction_type', 
+                        default='default', help="Type of abstraction to generate (can be 'default' or 'epistemic')", required=False)
+    
+    # Number of Monte Carlo simulation iterations
+    parser.add_argument('--monte_carlo_iter', type=int, action="store", dest='monte_carlo_iter', 
+                        default=0, help="Number of Monte Carlo simulations to perform")
+
+    # Initial state for Monte Carlo simulations
+    parser.add_argument('--x_init', type=str, action="store", dest='x_init', 
+                        default='[]', help="Initial state for Monte Carlo simulations")
+    
+
+
     ### Scenario problem main arguments
     parser.add_argument('--noise_samples', type=int, action="store", dest='noise_samples', 
                         default=20000, help="Number of noise samples to use")
@@ -35,6 +63,8 @@ def parse_arguments():
                         help="If enabled, non-Gaussian noise samples (if available) are used")
     parser.set_defaults(nongaussian_noise=False)
 
+
+
     ### Memory allocation
     # Prism java memory
     parser.add_argument('--prism_java_memory', type=int, action="store", dest='prism_java_memory', 
@@ -45,27 +75,8 @@ def parse_arguments():
                         help="If enabled, the improved policy synthesis scheme is enabled")
     parser.set_defaults(improved_synthesis=False)
 
-    ### Abstraction options
-    # File from which to load model
-    parser.add_argument('--model_file', type=str, action="store", dest='model_file', 
-                        default=False, help="File to load model from", required=True)
-    
-    # Argument for model to load
-    parser.add_argument('--model', type=str, action="store", dest='model', 
-                        default=False, help="Model to load", required=True)
 
-    # Type of abstraction to create
-    parser.add_argument('--abstraction_type', type=str, action="store", dest='abstraction_type', 
-                        default='default', help="Type of abstraction to generate (can be 'default' or 'epistemic')", required=False)
-    
-    # Number of Monte Carlo simulation iterations
-    parser.add_argument('--monte_carlo_iter', type=int, action="store", dest='monte_carlo_iter', 
-                        default=0, help="Number of Monte Carlo simulations to perform")
 
-    # Initial state for Monte Carlo simulations
-    parser.add_argument('--x_init', type=str, action="store", dest='x_init', 
-                        default='[]', help="Initial state for Monte Carlo simulations")
-    
     ### Plotting options
     parser.add_argument('--partition_plot', dest='partition_plot', action='store_true',
                         help="If enabled, create plot of state space partition")
@@ -75,6 +86,8 @@ def parse_arguments():
                         help="If enabled, plots are created after finishing the programme")
     parser.set_defaults(plot=False)
     
+
+
     ### Verbose switch
     parser.add_argument('--verbose', dest='verbose', action='store_true',
                         help="If enabled, provide more detailed outputs of script")
@@ -139,6 +152,11 @@ def parse_arguments():
     # values in the `args` variable
     args, unknown = parser.parse_known_args()
     
+    if args.timebound == 'inf':
+        args.timebound = np.inf
+    else:
+        args.timebound = int(args.timebound)
+
     if len(unknown) > 0:
         print('\nWarning: There are unknown arguments:\n', unknown,'\n')
     

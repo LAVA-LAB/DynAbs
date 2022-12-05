@@ -1,4 +1,5 @@
-import pandas as pd             # Import Pandas to store data in frames
+import numpy as np
+import pandas as pd
 import pickle
 import pathlib
 
@@ -39,7 +40,8 @@ class result_exporter(object):
         
         # Load data into dataframes
         policy_df   = pd.DataFrame( Ab.results['optimal_policy'], 
-         columns=range(Ab.partition['nr_regions']), index=range(Ab.N)).T
+        columns=range(Ab.partition['nr_regions']), index=range(1 if Ab.N == np.inf else  Ab.N)).T
+
         reward_df   = pd.Series( Ab.results['optimal_reward'], 
          index=range(Ab.partition['nr_regions'])).T
         
