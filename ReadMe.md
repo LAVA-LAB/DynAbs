@@ -69,6 +69,12 @@ In addition to Python 3, a number of dependencies must be installed on your mach
    For more details on using PRISM, we refer to the PRISM documentation on 
    https://www.prismmodelchecker.org
 
+4. To create the 3D UAV trajectory plots, you may need to install a number of libraries required for Qt, which can be done using the command:
+
+   ```bash
+   $ sudo apt-get install -y libdbus-1-3 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0                          libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
+   ```
+
 ## 3. Copy artefact files and install packages
 
 Download and extract the artefact files to a folder on the machine with writing access (needed to store results).
