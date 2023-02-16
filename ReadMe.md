@@ -13,15 +13,6 @@ Python version: `3.8.8`. For a list of the required Python packages, please see 
 ------
 
 
-
-# Table of contents
-
-[TOC]
-
-------
-
-
-
 # Installation and execution of the program
 
 **<u>Important note:</u>** the PRISM version that we use only runs on MacOS or Linux.
