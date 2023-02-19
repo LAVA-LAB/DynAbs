@@ -155,6 +155,295 @@ def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions,
     plt.show()
 
 
+from scipy.interpolate import interp1d
+import visvis as vv
+
+class animate(object):
+    
+    def __init__(self, points, obj):
+        
+        self.points = points
+        self.i = 0
+        self.obj = obj
+        
+        return
+    
+    def move(self, reset):
+        
+        if reset:
+            self.i = 0
+        else:
+            self.i += 1
+        
+        if self.i < len(self.points):
+        
+            self.obj.dx = self.points[self.i, 0]
+            self.obj.dy = self.points[self.i, 1]
+            self.obj.dz = self.points[self.i, 2]
+        
+            done = False
+        
+        else:        
+            
+            done = True
+        
+        return done
+    
+    
+
+class plot_uav(object):
+    '''
+    Main abstraction object    
+    '''
+
+    def __init__(self, model, regions, goal_regions, critical_regions, spec):
+        
+        self.cut_value = np.zeros(3)
+        for i,d in enumerate(range(1, model.n, 2)):
+            if spec.partition['number'][d]/2 != round( 
+                    spec.partition['number'][d]/2 ):
+                self.cut_value[i] = 0
+            else:
+                self.cut_value[i] = spec.partition['number'][d] / 2
+        
+        print('Create 3D UAV plot using Visvis')
+
+        
+        
+        print('-- Visvis imported')
+
+        self.fig = vv.figure()
+        self.f = vv.clf()
+        self.a = vv.cla()
+        self.fig = vv.gcf()
+        self.ax = vv.gca()
+        
+        self.obj_anim_list = []
+        self.reset = False
+        self.times_reset = 0
+        
+        self.ix = 0
+        self.iy = 2
+        self.iz = 4
+        
+        self.vx = 1
+        self.vy = 3
+        self.vz = 5
+        
+        regionWidth_xyz = np.array([spec.partition['width'][self.ix], 
+                                    spec.partition['width'][self.iy], 
+                                    spec.partition['width'][self.iz]])    
+        
+        print('-- Visvis initialized')
+
+        # Draw goal states
+        for i,goal in enumerate(goal_regions):
+
+            goalState = regions['center'][goal]
+            if goalState[self.vx] == self.cut_value[0] and \
+                goalState[self.vy] == self.cut_value[1] and \
+                goalState[self.vz] == self.cut_value[2]:
+
+                print('--- Draw goal region',i)
+            
+                center_xyz = np.array([goalState[self.ix], 
+                                        goalState[self.iy], 
+                                        goalState[self.iz]])
+                
+                goal = vv.solidBox(tuple(center_xyz), 
+                                    scaling=tuple(regionWidth_xyz))
+                goal.faceColor = (0,1,0,0.8)
+
+        print('-- Goal regions drawn')
+
+        # Draw critical states
+        for i,crit in enumerate(critical_regions):
+
+            critState = regions['center'][crit]
+            if critState[self.vx] == self.cut_value[0] and \
+                critState[self.vy] == self.cut_value[1] and \
+                critState[self.vz] == self.cut_value[2]:
+            
+                print('--- Draw critical region',i)
+
+                center_xyz = np.array([critState[self.ix], 
+                                        critState[self.iy], 
+                                        critState[self.iz]])    
+            
+                critical = vv.solidBox(tuple(center_xyz), 
+                                        scaling=tuple(regionWidth_xyz))
+                critical.faceColor = (1,0,0,0.8)
+        
+        print('-- Critical regions drawn')
+
+
+    def _get_smooth_curve(self, points, steps = 25):
+        
+        # Linear length along the line:
+        distance = np.cumsum( np.sqrt(np.sum( np.diff(points, axis=0)**2, 
+                                              axis=1 )) )
+        distance = np.insert(distance, 0, 0)/distance[-1]
+        
+        # Interpolation for different methods:
+        alpha = np.linspace(0, 1, steps*len(points))
+        
+        if len(points) == 2:
+                kind = 'linear'
+        else:
+            kind = 'cubic'
+
+        interpolator =  interp1d(distance, points, kind=kind, axis=0)
+        interpolated_points = interpolator(alpha)
+        
+        x = interpolated_points[:,0]
+        y = interpolated_points[:,1]
+        z = interpolated_points[:,2]
+        
+        return x,y,z
+
+    
+    def add_trace_static(self, trace, color, marker):
+            
+            # Extract x,y coordinates of trace
+            x = trace[:, self.ix]
+            y = trace[:, self.iy]
+            z = trace[:, self.iz]
+            points = np.array([x,y,z]).T
+            
+            # Plot precise points
+            vv.plot(x,y,z, ms=marker, lw=0, mc=color, markerWidth=20)
+            
+            xp,yp,zp = self._get_smooth_curve(points)
+            
+            # Plot trace
+            vv.plot(xp,yp,zp, lw=5, lc=color)
+            
+            
+    def add_trace_animated(self, trace):
+        
+        # Extract x,y coordinates of trace
+        x = trace[:, self.ix]
+        y = trace[:, self.iy]
+        z = trace[:, self.iz]
+        points = np.array([x,y,z]).T
+        
+        xp,yp,zp = self._get_smooth_curve(points)
+        points_intp = np.array([xp,yp,zp]).T
+        
+        bm = vv.meshRead('drone.obj')
+        obj = vv.OrientableMesh(self.ax, bm)
+        
+        droneRot = vv.Transform_Rotate(90, ax=1, ay=0, az=0)
+        droneScale = vv.Transform_Scale(0.2, 0.2, 0.2)
+        obj.transformations.insert(1,droneRot)
+        obj.transformations.insert(2,droneScale)
+        
+        # obj = vv.solidSphere(scaling = 0.3)
+        objTrans = obj.transformations[0]
+        obj_anim = animate(points_intp, objTrans)
+        
+        self.obj_anim_list += [obj_anim]
+        
+        return obj_anim
+        
+    
+    def render(self, spec):
+
+        self.ax.axis.xLabel = 'X'
+        self.ax.axis.yLabel = 'Y'
+        self.ax.axis.zLabel = 'Z'
+        
+        # Hide ticks labels and axis labels
+        self.ax.axis.xLabel = self.ax.axis.yLabel = self.ax.axis.zLabel = ''    
+        self.ax.axis.xTicks = self.ax.axis.yTicks = self.ax.axis.zTicks = []
+        
+        self.a.axis.axisColor = 'k'
+        self.a.axis.showGrid = True
+        self.a.axis.edgeWidth = 10
+        self.a.bgcolor = 'w'
+        
+        self.f.relativeFontSize = 1.6
+        # ax.position.Correct(dh=-5)
+        
+        vv.axis('tight', axes=self.ax)
+        
+        self.fig.position.w = 1000
+        self.fig.position.h = 900
+        
+        self.im = vv.getframe(vv.gcf())
+        
+        bndr = spec.partition['boundary']
+        
+        self.ax.SetLimits(rangeX=tuple(bndr[self.ix]), 
+                          rangeY=tuple(bndr[self.iy]), 
+                          rangeZ=tuple(bndr[self.iz]))
+        
+        self.ax.SetView({'zoom':0.03, 'elevation':65, 'azimuth':-20})
+        
+        print('-- Plot configured')
+
+
+    def render_static(self, setup):
+
+        if 'outputFcase' in setup.directories:
+        
+            filename = setup.directories['outputFcase'] + \
+                        'UAV_paths_screenshot.png'
+            
+        else:
+            
+            filename = setup.directories['outputF'] + 'UAV_paths_screenshot.png'
+        
+        vv.screenshot(filename, sf=3, bg='w', ob=vv.gcf())
+        app = vv.use()
+        app.Run()
+        
+        
+    def onTimer(self):
+        
+        done = [obj.move(self.reset) for obj in self.obj_anim_list]        
+        self.ax.Draw()
+        self.reset = False
+        
+        if all(done):
+            self.times_reset += 1
+            self.reset = True
+        
+        
+    def render_dynamic(self, export, setup):
+        
+        if export:
+            rec = vv.record(vv.gcf())
+        
+        done = False
+        max_reps = 2
+        while not done:
+            self.onTimer()
+            
+            self.ax.Draw() # Tell the axes to redraw
+            self.fig.DrawNow() # Draw the figure NOW, instead of waiting for GUI event loop
+            
+            if self.times_reset >= max_reps:
+                done = True
+        
+        if export:
+            rec.Stop()
+        
+            if 'outputFcase' in setup.directories:
+            
+                filename = setup.directories['outputFcase'] + \
+                            'uav_simulation.gif'
+                
+            else:
+                
+                filename = setup.directories['outputF'] + 'uav_simulation.gif'
+            
+            rec.Export(filename, duration = 1/30)
+        
+        app = vv.use()
+        app.Run()
+
+
 
 def UAV_3D_plotLayout(setup, args, model, regions, 
                       goal_regions, critical_regions, traces, spec):
@@ -187,8 +476,7 @@ def UAV_3D_plotLayout(setup, args, model, regions,
 
 
 def UAVplot3d_visvis(setup, args, model, regions, goal_regions, 
-                     critical_regions, spec, traces, cut_value, 
-                     traces_to_plot = 10):
+                     critical_regions, spec, traces, cut_value):
     '''
     Create 3D trajectory plots for the 3D UAV benchmark
 

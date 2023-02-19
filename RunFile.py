@@ -55,7 +55,8 @@ for key,val in vars(args).items():
     print(' - `'+str(key)+'`: '+str(val))
 
 with open(os.path.join(args.base_dir, 'path_to_prism.txt')) as f:
-    args.prism_folder = str(f.readlines()[0])
+    args.prism_folder = str(f.readlines()[0]).strip()
+    
     print('-- Path to PRISM is:', args.prism_folder)
 
 # Abort if both the improved synthesis scheme and unbounded property is set
