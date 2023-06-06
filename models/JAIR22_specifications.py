@@ -18,14 +18,14 @@ import core.preprocessing.master_classes as master
 
 class robot_spec(master.spec_master):
     
-    def __init__(self):
+    def __init__(self, args):
 
         # Initialize superclass
         master.spec_master.__init__(self)        
 
         # Authority limit for the control u, both positive and negative
-        self.control['uMin'] = [-5]
-        self.control['uMax'] = [5]
+        self.control['uMin'] = [-5*float(args.model_params['u_multiply'])]
+        self.control['uMax'] = [5*float(args.model_params['u_multiply'])]
         
         self.partition['boundary']  = np.array([[-21, 21], [-21, 21]])
         self.partition['number']    = [21, 21]

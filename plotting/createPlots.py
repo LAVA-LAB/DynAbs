@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt # Import Pyplot to generate plots
 import seaborn as sns
 from matplotlib import cm
 
+plt.ioff()
+
 from core.commons import printWarning, mat_to_vec, cm2inch
 from core.define_partition import define_partition
 
@@ -85,7 +87,7 @@ def reachability_plot(setup, results, mc=None):
     for form in setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
     
-    plt.show()
+    # plt.show()
     
 
 
@@ -147,7 +149,7 @@ def heatmap_3D_view(model, setup, spec, region_centers, results):
             plt.savefig(filename+'.'+str(form), format=form, 
                         bbox_inches='tight')
         
-        plt.show()
+        # plt.show()
         
         
     
@@ -232,9 +234,11 @@ def heatmap_2D(args, model, setup, c_tuple, spec, values, title = 'auto'):
     fig.tight_layout()
 
     # Save figure
+    add = 'u_multiply='+str(args.model_params['u_multiply'])+'_stability_param='+str(args.model_params['stability_param'])
+
     filename = setup.directories['outputFcase']+'2D_Heatmap_N=' + \
-                str(args.noise_samples)
+                str(args.noise_samples)+add
     for form in setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
-    plt.show()
+    # plt.show()

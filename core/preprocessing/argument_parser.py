@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import json
 import argparse
 import numpy as np
 from ast import literal_eval
@@ -147,6 +148,12 @@ def parse_arguments():
 
     parser.add_argument('--mdp_mode', type=str, action="store", dest='mdp_mode', 
                         default='interval', help="Is either `estimate` (MDP) or `interval` (iMDP; default option)")
+
+    ####
+    ####
+
+    parser.add_argument('--model_params', type=json.loads, action="store", dest='model_params', 
+                        default='{}', help="Manual model parameters (provided as dictionary)")
 
     # Now, parse the command line arguments and store the
     # values in the `args` variable

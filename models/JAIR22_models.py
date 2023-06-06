@@ -31,6 +31,8 @@ class robot(master.LTI_master):
 
         '''
         
+        self.args = args
+
         # Initialize superclass
         master.LTI_master.__init__(self)
         
@@ -42,8 +44,8 @@ class robot(master.LTI_master):
         self.tau = 1
         
         # State transition matrix
-        self.A  = np.array([[1, self.tau],
-                                [0, 1]])
+        self.A  = np.array([[1/args.model_params['stability_param'], self.tau],
+                            [0, 1]])
         
         # Input matrix
         self.B  = np.array([[self.tau**2/2],
@@ -61,7 +63,7 @@ class robot(master.LTI_master):
     def set_spec(self):
         
         from models.JAIR22_specifications import robot_spec
-        spec = robot_spec()        
+        spec = robot_spec(self.args)        
             
         spec.problem_type = 'reachavoid'
         

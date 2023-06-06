@@ -16,6 +16,9 @@ def plot(path):
     data = pickle.load(infile)
     infile.close()
 
+    # print(data['setup'].directories['outputFcase'])
+    # data['setup'].directories['outputFcase'] = '/home/thom/Documents/DynAbs/output/Ab_UAV_02-19-2023_21-30-37/N=6400_0/'
+
     from plotting.createPlots import reachability_plot
     if 'mc' in data:
         print('Create plot with Monte Carlo results')
@@ -29,7 +32,7 @@ def plot(path):
     from plotting.createPlots import heatmap_2D
     heatmap_2D(data['args'], data['model'], data['setup'], data['regions']['c_tuple'], data['spec'], data['results']['optimal_reward'])
 
-    from plotting.uav_plots import UAV_plot_2D, UAV_3D_plotLayout, plot_uav
+    from plotting.uav_plots import UAV_plot_2D, plot_uav_layout, plot_uav_sim
     from core.define_partition import state2region
 
     ######
@@ -50,7 +53,6 @@ def plot(path):
     if data['model'].name == 'UAV' and data['model'].modelDim == 3:
 
         if len(data['args'].x_init) == data['model'].n:
-            s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
             
             # import os
             # folder = os.path.dirname(path)
@@ -62,42 +64,10 @@ def plot(path):
             # trace1[:,2] -= 12
             # trace2[:,2] -= 12
             
-            UAV = plot_uav(data['model'], data['regions'], data['goal_regions'], data['critical_regions'], data['spec'])
             
-            static = False
-            export = False       
+            plot_uav_layout(data)
+            plot_uav_sim(data)
             
-            num = 1
-            
-            if static:
-            
-                for i in range(num):
-                    trace = np.array(data['mc'].traces[s_init][i]['x'])
-                    
-                    if i == 0:
-                        color = 'b'
-                        marker = '.'
-                    else:
-                        color = (1,0.647,0)
-                        marker = 'x'
-                        
-                    UAV.add_trace_static(trace, color, marker)
-                
-                UAV.render(data['spec'])
-                UAV.render_static(data['setup'])
-                
-            else:
-                
-                for i in range(num):
-                    trace = np.array(data['mc'].traces[s_init][i]['x'])
-                    
-                    UAV.add_trace_animated(trace)
-                    
-                UAV.render(data['spec'])
-                UAV.render_dynamic(export)
-            
-            # UAV_3D_plotLayout(data['setup'], data['args'], data['model'], data['regions'], 
-            #                 data['goal_regions'], data['critical_regions'], traces, data['spec'])
         else:
             print('-- No initial state provided')
 

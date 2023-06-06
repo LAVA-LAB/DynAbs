@@ -8,6 +8,7 @@ from matplotlib.patches import Rectangle
 import matplotlib.patches as patches
 
 from core.commons import printWarning, cm2inch
+from core.define_partition import state2region
 
 def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions, 
                 spec, traces, cut_idx, traces_to_plot = 10, line=False):
@@ -155,6 +156,72 @@ def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions,
     plt.show()
 
 
+
+def plot_uav_layout(data, static = False, export = True, fname = 'uav_layout'):
+    '''
+    Plot UAV planning layout without resulting traces / simulations
+    '''
+    
+    print('- Plot UAV planning environment without trajectories...')
+    
+    UAV = plot_uav(data['model'], data['regions'], data['goal_regions'], data['critical_regions'], data['spec'])
+    
+    if static:
+        
+        UAV.render(data['spec'])
+        UAV.render_screenshot(data['setup'], fname = str(fname)+'.png')
+        
+    else:
+        
+        UAV.render(data['spec'])
+        UAV.render_rotate(export, data['setup'], fname = str(fname)+'.gif')
+
+    return
+    
+
+
+def plot_uav_sim(data, num = 10, static = False, export = True, fname = 'uav_trajectories'):
+    '''
+    Plot UAV problem withresulting traces (if static) or simulations (othw.)
+    '''
+    
+    print('- Plot UAV planning environment with {} trajectories...'.format(num))
+    
+    s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
+    
+    UAV = plot_uav(data['model'], data['regions'], data['goal_regions'], data['critical_regions'], data['spec'])
+    
+    if static:
+    
+        for i in range(num):
+            trace = np.array(data['mc'].traces[s_init][i]['x'])
+            
+            # if i == 0:
+            color = 'b'
+            marker = '.'
+            # else:
+            #     color = (1,0.647,0)
+            #     marker = 'x'
+                
+            UAV.add_trace_static(trace, color, marker)
+        
+        UAV.render(data['spec'])
+        UAV.render_screenshot(data['setup'], fname = str(fname)+'.png')
+        
+    else:
+        
+        for i in range(num):
+            trace = np.array(data['mc'].traces[s_init][i]['x'])
+            
+            UAV.add_trace_animated(trace)
+            
+        UAV.render(data['spec'])
+        UAV.render_dynamic(export, data['setup'], fname = str(fname)+'.gif')
+
+    return
+
+
+
 from scipy.interpolate import interp1d
 import visvis as vv
 
@@ -235,7 +302,7 @@ class plot_uav(object):
                                     spec.partition['width'][self.iz]])    
         
         print('-- Visvis initialized')
-
+        
         # Draw goal states
         for i,goal in enumerate(goal_regions):
 
@@ -244,7 +311,7 @@ class plot_uav(object):
                 goalState[self.vy] == self.cut_value[1] and \
                 goalState[self.vz] == self.cut_value[2]:
 
-                print('--- Draw goal region',i)
+                # print('--- Draw goal region',i)
             
                 center_xyz = np.array([goalState[self.ix], 
                                         goalState[self.iy], 
@@ -264,7 +331,7 @@ class plot_uav(object):
                 critState[self.vy] == self.cut_value[1] and \
                 critState[self.vz] == self.cut_value[2]:
             
-                print('--- Draw critical region',i)
+                # print('--- Draw critical region',i)
 
                 center_xyz = np.array([critState[self.ix], 
                                         critState[self.iy], 
@@ -367,8 +434,8 @@ class plot_uav(object):
         
         vv.axis('tight', axes=self.ax)
         
-        self.fig.position.w = 1000
-        self.fig.position.h = 900
+        self.fig.position.w = 500
+        self.fig.position.h = 500
         
         self.im = vv.getframe(vv.gcf())
         
@@ -378,25 +445,24 @@ class plot_uav(object):
                           rangeY=tuple(bndr[self.iy]), 
                           rangeZ=tuple(bndr[self.iz]))
         
-        self.ax.SetView({'zoom':0.03, 'elevation':65, 'azimuth':-20})
+        self.ax.SetView({'zoom':0.026, 'elevation':65, 'azimuth':-20})
         
         print('-- Plot configured')
 
 
-    def render_static(self, setup):
+    def render_screenshot(self, setup, fname):
 
         if 'outputFcase' in setup.directories:
         
-            filename = setup.directories['outputFcase'] + \
-                        'UAV_paths_screenshot.png'
+            filename = setup.directories['outputFcase'] + str(fname)
             
         else:
             
-            filename = setup.directories['outputF'] + 'UAV_paths_screenshot.png'
+            filename = setup.directories['outputF'] + str(fname)
         
         vv.screenshot(filename, sf=3, bg='w', ob=vv.gcf())
-        app = vv.use()
-        app.Run()
+        # app = vv.use()
+        # app.Run()
         
         
     def onTimer(self):
@@ -410,7 +476,7 @@ class plot_uav(object):
             self.reset = True
         
         
-    def render_dynamic(self, export, setup):
+    def render_dynamic(self, export, setup, fname):
         
         if export:
             rec = vv.record(vv.gcf())
@@ -427,222 +493,42 @@ class plot_uav(object):
                 done = True
         
         if export:
-            rec.Stop()
+            self._export_recording(rec, setup, fname)
         
-            if 'outputFcase' in setup.directories:
+        
+    def render_rotate(self, export, setup, fname):
+        
+        if export:
+            rec = vv.record(vv.gcf())
+        
+        Nangles = 720
+        
+        for i in range(Nangles):
             
-                filename = setup.directories['outputFcase'] + \
-                            'uav_simulation.gif'
-                
-            else:
-                
-                filename = setup.directories['outputF'] + 'uav_simulation.gif'
+            self.ax.camera.azimuth = 360 * float(i) / Nangles
+            if self.ax.camera.azimuth>180:
+                self.ax.camera.azimuth -= 360
             
-            rec.Export(filename, duration = 1/30)
+            self.ax.Draw() # Tell the axes to redraw
+            self.fig.DrawNow() # Draw the figure NOW, instead of waiting for GUI event loop
         
-        app = vv.use()
-        app.Run()
-
-
-
-def UAV_3D_plotLayout(setup, args, model, regions, 
-                      goal_regions, critical_regions, traces, spec):
-    '''
-    Create a plot that shows the layout of the UAV problem (without results)
-    
-    Parameters
-    ----------
-    ScAb : abstraction instance
-        Full object of the abstraction being plotted for
+        if export:
+            self._export_recording(rec, setup, fname)
         
-    Returns
-    -------
-    None.
         
-    '''
-    
-    cut_value = np.zeros(3)
-    for i,d in enumerate(range(1, model.n, 2)):
-        if spec.partition['number'][d]/2 != round( 
-                spec.partition['number'][d]/2 ):
-            cut_value[i] = 0
-        else:
-            cut_value[i] = spec.partition['number'][d] / 2    
-    
-    UAVplot3d_visvis(setup, args, model, regions, goal_regions, 
-                     critical_regions, spec, traces=traces, 
-                     cut_value=cut_value ) 
-
-
-
-def UAVplot3d_visvis(setup, args, model, regions, goal_regions, 
-                     critical_regions, spec, traces, cut_value):
-    '''
-    Create 3D trajectory plots for the 3D UAV benchmark
-
-    Parameters
-    ----------
-    setup : dict
-        Setup dictionary.
-    model : dict
-        Main dictionary of the LTI system model.
-    abstr : dict
-        Dictionay containing all information of the finite-state abstraction.
-    traces : list
-        Nested list containing the trajectories (traces) to plot for
-    cut_value : array
-        Values to create the cross-section for
-
-    Returns
-    -------
-    None.
-
-    '''
-    
-    print('Create 3D UAV plot using Visvis')
-
-    from scipy.interpolate import interp1d
-    import visvis as vv
-    
-    print('-- Visvis imported')
-
-    fig = vv.figure()
-    f = vv.clf()
-    a = vv.cla()
-    fig = vv.gcf()
-    ax = vv.gca()
-    
-    ix = 0
-    iy = 1
-    iz = 2
-    
-    regionWidth_xyz = np.array([spec.partition['width'][0], 
-                                spec.partition['width'][2], 
-                                spec.partition['width'][4]])    
-    
-    print('-- Visvis initialized')
-
-    # Draw goal states
-    for i,goal in enumerate(goal_regions):
-
-        goalState = regions['center'][goal]
-        if goalState[1] == cut_value[0] and \
-           goalState[3] == cut_value[1] and \
-           goalState[5] == cut_value[2]:
-
-            print('--- Draw goal region',i)
+    def _export_recording(self, rec, setup, fname):
         
-            center_xyz = np.array([goalState[0], 
-                                   goalState[2], 
-                                   goalState[4]])
+        rec.Stop()
+    
+        if 'outputFcase' in setup.directories:
+        
+            filename = setup.directories['outputFcase'] + str(fname)
             
-            goal = vv.solidBox(tuple(center_xyz), 
-                               scaling=tuple(regionWidth_xyz))
-            goal.faceColor = (0,1,0,0.8)
-
-    print('-- Goal regions drawn')
-
-    # Draw critical states
-    for i,crit in enumerate(critical_regions):
-
-        critState = regions['center'][crit]
-        if critState[1] == cut_value[0] and \
-           critState[3] == cut_value[1] and \
-           critState[5] == cut_value[2]:
-        
-            print('--- Draw critical region',i)
-
-            center_xyz = np.array([critState[0], 
-                                   critState[2], 
-                                   critState[4]])    
-        
-            critical = vv.solidBox(tuple(center_xyz), 
-                                   scaling=tuple(regionWidth_xyz))
-            critical.faceColor = (1,0,0,0.8)
-    
-    print('-- Critical regions drawn')
-
-    # Add traces
-    for i,trace_array in enumerate(traces):
-        
-        if i == 0:
-            clr = 'b'
-            ms = '.'
         else:
-            clr = (1,0.647,0)
-            ms = 'x'
+            
+            filename = setup.directories['outputF'] + str(fname)
         
-        # Extract x,y coordinates of trace
-        x = trace_array[:, ix]
-        y = trace_array[:, iy]
-        z = trace_array[:, iz]
-        points = np.array([x,y,z]).T
+        rec.Export(filename, duration = 1/30)
         
-        # Plot precise points
-        vv.plot(x,y,z, ms=ms, lw=0, mc=clr, markerWidth=20)
-        
-        # Linear length along the line:
-        distance = np.cumsum( np.sqrt(np.sum( np.diff(points, axis=0)**2, 
-                                              axis=1 )) )
-        distance = np.insert(distance, 0, 0)/distance[-1]
-        
-        # Interpolation for different methods:
-        alpha = np.linspace(0, 1, 75)
-        
-        if len(trace_array) == 2:
-                kind = 'linear'
-        else:
-            kind = 'cubic'
-
-        interpolator =  interp1d(distance, points, kind=kind, axis=0)
-        interpolated_points = interpolator(alpha)
-        
-        xp = interpolated_points[:,0]
-        yp = interpolated_points[:,1]
-        zp = interpolated_points[:,2]
-        
-        # Plot trace
-        vv.plot(xp,yp,zp, lw=5, lc=clr)
-
-    print('-- Traces regions drawn')
-
-    ax.axis.xLabel = 'X'
-    ax.axis.yLabel = 'Y'
-    ax.axis.zLabel = 'Z'
-    
-    # Hide ticks labels and axis labels
-    ax.axis.xLabel = ax.axis.yLabel = ax.axis.zLabel = ''    
-    ax.axis.xTicks = ax.axis.yTicks = ax.axis.zTicks = []
-    
-    a.axis.axisColor = 'k'
-    a.axis.showGrid = True
-    a.axis.edgeWidth = 10
-    a.bgcolor = 'w'
-    
-    app = vv.use()
-    
-    f.relativeFontSize = 1.6
-    # ax.position.Correct(dh=-5)
-    
-    vv.axis('tight', axes=ax)
-    
-    fig.position.w = 1000
-    fig.position.h = 600
-    
-    im = vv.getframe(vv.gcf())
-    
-    ax.SetView({'zoom':0.042, 'elevation':25, 'azimuth':-35})
-    
-    print('-- Plot configured')
-
-    if 'outputFcase' in setup.directories:
-    
-        filename = setup.directories['outputFcase'] + \
-                    'UAV_paths_screenshot.png'
-        
-    else:
-        
-        filename = setup.directories['outputF'] + 'UAV_paths_screenshot.png'
-    
-    vv.screenshot(filename, sf=3, bg='w', ob=vv.gcf())
-    app.Run()
+        # app = vv.use()
+        # app.Run()
