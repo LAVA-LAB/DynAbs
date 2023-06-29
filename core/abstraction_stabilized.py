@@ -19,7 +19,7 @@ from core.define_partition import computeRegionIdx
 from core.commons import tic, ticDiff, tocDiff, table, in_hull
 from core.scenario_approach import load_scenario_table
 
-class abstraction_default(Abstraction):
+class abstraction_stabilized(Abstraction):
 
     def __init__(self, args, setup, model_raw, spec_raw):
         '''
@@ -42,7 +42,7 @@ class abstraction_default(Abstraction):
 
         '''
         
-        model, spec = define_model(model_raw, spec_raw)
+        model, spec = define_model(model_raw, spec_raw, stabilize_lqr=True)
 
         # Copy setup to internal variable
         self.setup = setup
@@ -58,20 +58,7 @@ class abstraction_default(Abstraction):
         
         Abstraction.__init__(self)
     
-
-
-    def define_backreachsets(self):
-
-        # For a default abstraction, the target of an action is a point,
-        # so there is only a single backreachset.
-
-        # Compute the backward reachable set objects
-        self.actions['backreach_obj']['default'] = backreachset(name='default', target_point = np.zeros(self.model.n))
-            
-        # Compute the zero-shifted inflated backward reachable set
-        self.actions['backreach_obj']['default'].compute_default_set(self.model)    
-
-
+    
 
     def get_enabled_actions(self, model, spec, 
                             dim_n=False, dim_p=False, verbose=False,
@@ -110,27 +97,14 @@ class abstraction_default(Abstraction):
             
             model, spec = partial_model(self.flags, deepcopy(model), deepcopy(spec), dim_n, dim_p)
             compositional = True
-            
-        
+
+
         enabled = {}
         enabled_inv = {}   
 
-        #############################
-
-        from .commons import angle_between
-        
-        def f7(seq):
-            seen = set()
-            seen_add = seen.add
-            return [x for x in seq if not (x in seen or seen_add(x))]
-
-        print('dim_n;', dim_n)
-
-        # Compute inverse reachability area        
-        x_inv_area = self.actions['backreach_obj']['default'].verts[:, dim_n]
-        x_inv_area = np.unique(x_inv_area, axis=0)
-
         enabled_polypoints = dict()
+
+
 
         nr_corners = 2**model.n
 
@@ -153,56 +127,7 @@ class abstraction_default(Abstraction):
         selected_regions = [np.unique(r[:, dim_n], axis=0) for r in self.partition['allCorners'][state_idxs,:,:]]
         region_corners = np.concatenate(selected_regions)
 
-        if dimEqual:
-            
-            print(' -- Computing inverse basis vectors...')
-            # Use preferred method: map back the skewed image to squares
-            
-            basis_vectors = defBasisVectors(model, verbose=verbose)   
 
-            if verbose:
-                for i,v1 in enumerate(basis_vectors):
-                    for j,v2 in enumerate(basis_vectors):
-                        if i != j:
-                            print(' ---- Angle between control',i,'and',j,':',
-                                  angle_between(v1,v2) / np.pi * 180)
-            
-            parralelo2cube = np.linalg.inv( basis_vectors )
-            
-            x_inv_area_normalized = x_inv_area @ parralelo2cube
-            
-            predSet_originShift = -np.average(x_inv_area_normalized, axis=0)
-            if verbose:
-                print('Basis vectors:', basis_vectors)
-
-                print('Transformation:',parralelo2cube)            
-                print('Normal inverse area:',x_inv_area)
-                
-                print('Normalized hypercube:',x_inv_area_normalized)
-                
-                print('Off origin:',predSet_originShift)
-            
-                print('Shifted normalized hypercube:',x_inv_area @ parralelo2cube
-                        + predSet_originShift)
-                
-            allRegionVertices = region_corners @ parralelo2cube \
-                    + predSet_originShift
-
-        else:
-            
-            print(' -- Creating inverse hull...')
-            
-            print(self.model.A)
-            print(self.model.B)
-            print(x_inv_area)
-
-            # Use standard method: check if points are in (skewed) hull
-            x_inv_hull = Delaunay(x_inv_area, qhull_options='QJ')
-            
-            if verbose:
-                print('Normal inverse area:',x_inv_area)
-        
-            allRegionVertices = region_corners
 
         # For every action
         for a_tup,a_idx in self.actions['tup2idx'].items(): #progressbar(enumerate(actions['tup2idx']), redirect_stdout=True):
@@ -210,54 +135,36 @@ class abstraction_default(Abstraction):
             # If we are in compositional mode, only check this action if all 
             # excluded dimensions are zero        
             if compositional and any(np.array(a_tup)[dim_excl] != 0):
+                print('skip')
                 continue
-            
+
             # Get reference to current action object
             act   = self.actions['obj'][a_idx]
-
-            if dimEqual:
-
-                # Shift the origin points (instead of the target point)
-                A_inv_d = model.A_inv @ np.array(act.center[dim_n])
-                
-                # Python implementation
-                allVerticesNormalized = (A_inv_d @ parralelo2cube) - \
-                                         allRegionVertices
-
-                # Reshape the whole matrix that we obtain
-                # nr rows = nr states; nr columns = nr of vertices * dimension
-                poly_reshape = np.reshape( allVerticesNormalized,
-                                (len(state_idxs), 
-                                 nr_corners*model.n))
-
-                # Enabled actions are ones that have all corner points within
-                # the origin-centered hypercube with unit length
-                enabled_in = np.maximum(np.max(poly_reshape, axis=1), 
-                                        -np.min(poly_reshape, axis=1)) <= 1.0
-
-            else:
-
-                # Shift the origin points (instead of the target point)
-                A_inv_d = model.A_inv @ np.array(act.center[dim_n])
-
-                if a_idx == 190:
-                    print(x_inv_area)
-
-                # Subtract the shift from all corner points
-                allVertices = A_inv_d - allRegionVertices
             
-                # Check which points are in the convex hull
-                polypoints_vec = in_hull(allVertices, x_inv_hull)
+            if len(act.backreach) == 0:
+                print('- Backward reachable set for action {} is empty, so skip'.format(a_idx))
+                continue
+
+            # Use standard method: check if points are in (skewed) hull
+            try:
+                x_inv_hull = Delaunay(act.backreach, qhull_options='QJ')
+            except:
+                x_inv_hull = Delaunay(act.backreach)
+
+            # Check which points are in the convex hull
+            polypoints_vec = in_hull(region_corners, x_inv_hull)
+
+            # Map enabled vertices of the partitions to actual partitions
+            enabled_polypoints = np.reshape(  polypoints_vec, 
+                            (len(state_idxs), nr_corners))
+        
+            # Polypoints contains the True/False results for all vertices
+            # of every partition. An action is enabled in a state if it 
+            # is enabled in all its vertices
+            enabled_in = np.all(enabled_polypoints == True, 
+                                axis = 1)
             
-                # Map enabled vertices of the partitions to actual partitions
-                enabled_polypoints = np.reshape(  polypoints_vec, 
-                              (len(state_idxs), nr_corners))
-            
-                # Polypoints contains the True/False results for all vertices
-                # of every partition. An action is enabled in a state if it 
-                # is enabled in all its vertices
-                enabled_in = np.all(enabled_polypoints == True, 
-                                    axis = 1)
+
 
             enabled_in_tups = [tuple(j) for j in np.array(state_tuples)[enabled_in]]
 
@@ -272,7 +179,7 @@ class abstraction_default(Abstraction):
                 
             if a_idx % print_every == 0:
                 print('Action to',act.center[dim_n],'enabled in',len(enabled_in_tups),'states') 
-                
+
         return enabled, enabled_inv, None
 
 

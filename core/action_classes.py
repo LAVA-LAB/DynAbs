@@ -5,12 +5,14 @@ import itertools
 import numpy as np
 import cvxpy as cp
 
+from models.stabilize import compute_stabilized_control_vertices
+
 class action(object):
     '''
     Action object
     ''' 
     
-    def __init__(self, idx, model, center, idx_tuple, backreach_obj):
+    def __init__(self, idx, model, center, idx_tuple, backreach_obj, shift):
         
         '''
         Initialize action and compute the (inflated) backward reachable set 
@@ -27,8 +29,7 @@ class action(object):
         
         self.error              = None
         self.enabled_in         = set()
-          
-        shift = model.A_inv @ self.center
+        
         self.backreach = self.backreach_obj.verts + shift
         
         if not backreach_obj.target_set_size is None:
@@ -41,12 +42,13 @@ class backreachset(object):
     Backward reachable set
     '''
     
-    def __init__(self, name, target_set_size=None):
+    def __init__(self, name, target_point = 0, target_set_size = None):
         
         self.name = name
+        self.target_point = target_point
         self.target_set_size = target_set_size
         
-    def compute_default_set(self, model):
+    def compute_default_set(self, model, verbose=False):
         '''
         Compute the default (inflated) backward reachable set for a target
         point at the origin (zero).
@@ -56,28 +58,53 @@ class backreachset(object):
         model : Model object
 
         '''
+
+        if hasattr(model, 'K'):
+
+            u_vertices = compute_stabilized_control_vertices(model, self.target_point)
+
+        else:
+
+            # Compute matrix of all possible control inputs
+            control_mat = [[model.uMin[i], model.uMax[i]] for i in range(model.p)]
         
-        self.verts = def_backward_reach(model)
+            u_vertices = np.array(list(itertools.product(*control_mat)))
         
-        if not self.target_set_size is None:
-            
-            alphas = np.eye(len(self.verts))
-            
-            BRS_inflated = []
-            
-            # Compute the control error
-            for err in itertools.product(*self.target_set_size):
-                for alpha in alphas:
-                    prob,x,_ = find_backward_inflated(model.A, np.array(err), 
-                                                      alpha, self.verts)
-                    
-                    BRS_inflated += [x]
-            
-            self.verts_infl = np.array(BRS_inflated)
-    
+        if len(u_vertices) == 0:
+            print('- WARNING: backward reachable set for target point {} is empty'.format(self.target_point.flatten()))
+
+            # Backward reachable set is empty
+            self.verts = np.array([])
+
+        else:
+            # Backward reachable set is non empty
+            self.verts = def_backward_reach(model, 
+                                            np.reshape(self.target_point, (model.n, 1)), 
+                                            u_vertices)
+
+            if not self.target_set_size is None:
+                
+                alphas = np.eye(len(self.verts))
+                
+                BRS_inflated = []
+                
+                # Compute the control error
+                for err in itertools.product(*self.target_set_size):
+                    for alpha in alphas:
+                        prob,x,_ = find_backward_inflated(model.A, np.array(err), 
+                                                        alpha, self.verts)
+                        
+                        BRS_inflated += [x]
+                
+                self.verts_infl = np.array(BRS_inflated)
+
+        if verbose:
+            print('target_point: ', self.target_point)
+            print('u_vertices: ', u_vertices)
+            print('backward reachable set:', self.verts)
 
 
-def def_backward_reach(model):
+def def_backward_reach(model, target_point, u_vertices):
     '''
     Compute the backward reachable set for the given model (assuming target 
     point is zero)
@@ -94,18 +121,10 @@ def def_backward_reach(model):
 
     '''
     
-    # Compute matrix of all possible control inputs
-    control_mat = [[model.uMin[i], model.uMax[i]] for i in 
-          range(model.p)]
-    
-    u_all = np.array(list(itertools.product(*control_mat)))
-    
     # Compute backward reachable set (inverse dynamics under all extreme
     # control inputs)
-    # The transpose needed to do computation for all control inputs at once
-    inner = -model.B @ u_all.T - model.Q
-    
-    backreach = (model.A_inv @ inner).T
+    # The transpose needed to do computation for all control inputs at once    
+    backreach = (model.A_inv @ (target_point - model.B @ u_vertices.T - model.Q)).T
     
     return backreach
 

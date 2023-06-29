@@ -27,15 +27,16 @@ class robot_spec(master.spec_master):
         self.control['uMin'] = [-5*float(args.model_params['u_multiply'])]
         self.control['uMax'] = [5*float(args.model_params['u_multiply'])]
         
-        self.partition['boundary']  = np.array([[-21, 21], [-21, 21]])
-        self.partition['number']    = [21, 21]
+        self.partition['boundary']  = np.array([[-41, 41], [-41, 41]])
+        self.partition['number']    = [41, 41]
         
         # Actions per dimension (if 'auto', equal to nr of regions)
         self.targets['boundary']    = 'auto'
         self.targets['number']      = 'auto'
             
         self.goal = [
-            np.array([[-1, 1], [-1 ,1]], dtype='object')
+            np.array([[-1, 1], [-1, 1]], dtype='object')
+            #np.array([[11, 13], [5 ,7]], dtype='object')
             ]
         
         self.critical = None

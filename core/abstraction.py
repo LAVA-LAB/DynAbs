@@ -15,7 +15,7 @@ from .define_partition import define_partition, define_spec_region, \
     partition_plot, state2region
 from .commons import tocDiff, printWarning
 from .create_iMDP import mdp
-from .action_classes import action
+from .action_classes import action, backreachset
 
 '''
 ------------------------------------------------------------------------------
@@ -165,63 +165,100 @@ class Abstraction(object):
         -------
         None.
         '''
-        
-        self.actions = {'obj': {},
-                        'backreach_obj': {},
-                        'tup2idx': {},
-                        'extra_act': []} 
 
-        print('\nDefining backward reachable sets...')
-        
-        # Define backward reachable sets
-        self.define_backreachsets()
+        if self.args.model_params['stabilizing_controller']:
+
+            self.actions = {'obj': {},
+                            'backreach_obj': {},
+                            'tup2idx': {},
+                            'extra_act': []} 
             
-        backreach_obj = self.actions['backreach_obj']['default']
-                
-        print('\nDefining target points...')
-        
-        # Create the target point for every action (= every state)
-        if type(self.spec.targets['number']) == str:
+            print('\nDefining backward reachable sets...')
+            
             # Set default target points to the center of every region
-            
-            for center, (tup,idx) in zip(self.partition['R']['center'],
+                
+            for target_point, (tup,idx) in zip(self.partition['R']['center'],
                                         self.partition['R']['idx'].items()):
                 
-                self.actions['obj'][idx] = action(idx, self.model, center, tup, 
-                                                  backreach_obj)
+                # Compute the backward reachable set objects
+                self.actions['backreach_obj'][idx] = backreachset(name='default', target_point = target_point)
+                    
+                # Compute the zero-shifted inflated backward reachable set
+                self.actions['backreach_obj'][idx].compute_default_set(self.model)    
+
+                shift = 0
+
+                # Create action object and connect it to the backward reachable set
+                self.actions['obj'][idx] = action(idx, self.model, target_point, tup, 
+                                                    self.actions['backreach_obj'][idx], shift)
                 self.actions['tup2idx'][tup] = idx
+
+            self.actions['nr_actions'] = len(self.actions['obj'])
+
+        else:
+
+            self.actions = {'obj': {},
+                            'backreach_obj': {},
+                            'tup2idx': {},
+                            'extra_act': []} 
+
+            print('\nDefining backward reachable sets...')
             
-        else:  
-            
-            print(' -- Compute manual target points; no. per dim:',self.spec.targets['number'])
-        
-            ranges = map(np.linspace, self.spec.targets['boundary'][:,0],
-                         self.spec.targets['boundary'][:,1], self.spec.targets['number'])
-            
-            tuples = map(np.arange, np.zeros(self.model.n),
-                         self.spec.targets['number'])
-            
-            for idx,(center,tup) in enumerate(zip(itertools.product(*ranges),
-                                                itertools.product(*tuples))):
+            # Define backward reachable sets
+            self.define_backreachsets()
                 
-                self.actions['obj'][idx] = action(idx, self.model, 
-                                                  np.array(center), tup, 
-                                                  backreach_obj)
-                self.actions['tup2idx'][tup] = idx
-        
-        nr_default_act = len(self.actions['obj'])
-        
-        # Add additional target points if this is requested
-        if 'extra' in self.spec.targets:
+            backreach_obj = self.actions['backreach_obj']['default']
+                    
+            print('\nDefining target points...')
             
-            backreach_obj = self.actions['backreach_obj']['extra']
-            
-            for i,center in enumerate(self.spec.targets['extra']):    
+            # Create the target point for every action (= every state)
+            if type(self.spec.targets['number']) == str:
+                # Set default target points to the center of every region
                 
-                self.actions['obj'][nr_default_act+i] = action(nr_default_act+i, self.model, center, -i, backreach_obj)
-                self.actions['extra_act'] += [self.actions['obj'][nr_default_act+i]]
-        
-        self.actions['nr_actions'] = len(self.actions['obj'])
+                for center, (tup,idx) in zip(self.partition['R']['center'],
+                                            self.partition['R']['idx'].items()):
+                    
+                    shift = self.model.A_inv @ center
+
+                    self.actions['obj'][idx] = action(idx, self.model, center, tup, 
+                                                    backreach_obj, shift)
+                    self.actions['tup2idx'][tup] = idx
+                
+            else:  
+                
+                print(' -- Compute manual target points; no. per dim:',self.spec.targets['number'])
+            
+                ranges = map(np.linspace, self.spec.targets['boundary'][:,0],
+                            self.spec.targets['boundary'][:,1], self.spec.targets['number'])
+                
+                tuples = map(np.arange, np.zeros(self.model.n),
+                            self.spec.targets['number'])
+                
+                for idx,(center,tup) in enumerate(zip(itertools.product(*ranges),
+                                                    itertools.product(*tuples))):
+                    
+                    shift = self.model.A_inv @ np.array(center)
+
+                    self.actions['obj'][idx] = action(idx, self.model, 
+                                                    np.array(center), tup, 
+                                                    backreach_obj, shift)
+                    self.actions['tup2idx'][tup] = idx
+            
+            nr_default_act = len(self.actions['obj'])
+            
+            # Add additional target points if this is requested
+            if 'extra' in self.spec.targets:
+                
+                backreach_obj = self.actions['backreach_obj']['extra']
+                
+                for i,center in enumerate(self.spec.targets['extra']):    
+                    
+                    shift = self.model.A_inv @ center
+
+                    self.actions['obj'][nr_default_act+i] = action(nr_default_act+i, self.model, center, -i, backreach_obj, shift)
+                    self.actions['extra_act'] += [self.actions['obj'][nr_default_act+i]]
+            
+            self.actions['nr_actions'] = len(self.actions['obj'])
 
 
 

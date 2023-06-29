@@ -13,8 +13,6 @@ Git repository: https://gitlab.science.ru.nl/tbadings/sample-abstract
 ______________________________________________________________________________
 """
 
-# %run "~/documents/sample-abstract/RunFile.py"
-
 # Load general packages
 from datetime import datetime   # Import Datetime to get current date/time
 import pandas as pd             # Import Pandas to store data in frames
@@ -27,6 +25,7 @@ import importlib
 
 # Load main classes and methods
 from core.abstraction_default import abstraction_default
+from core.abstraction_stabilized import abstraction_stabilized
 from core.abstraction_epistemic import abstraction_epistemic
 from core.monte_carlo import MonteCarloSim
 from core.commons import createDirectory
@@ -46,9 +45,29 @@ mpl.rcParams['figure.dpi'] = 300
 # Parse arguments
 #-----------------------------------------------------------------------------
 
-args = parse_arguments()
+args = parse_arguments(run_in_vscode = False)
 args.base_dir = os.path.dirname(os.path.abspath(__file__))
 print('Base directory:', args.base_dir)
+
+args.model_file = 'JAIR22_models'
+args.model = 'robot'
+args.timebound = 64
+args.noise_samples = 1600
+args.confidence = 0.01
+args.prism_java_memory = 8
+args.plot = True
+args.model_params = {'u_multiply': 2,
+                     'stability_param': 0.5,
+                     'stabilizing_controller': False,
+                     'stabilizing_poles': False} #[-0.8, 0.8]}
+
+# args.two_phase_transient_length = 4
+# args.monte_carlo_iterations = -1
+# args.R_size = [24, 24]
+# args.R_width = [0.5, 0.5]
+# args.plot_heatmap = [0, 1]
+# args.horizon = 24
+# args.plot_trajectory_2D = [0, 1]
 
 print('Run using arguments:')
 for key,val in vars(args).items():
@@ -101,7 +120,9 @@ print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\
       '\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 
 # Create the main object for the current instance
-if args.abstraction_type == 'default':
+if args.model_params['stabilizing_controller']:
+    method = abstraction_stabilized
+elif args.abstraction_type == 'default':
     method = abstraction_default
 elif args.abstraction_type == 'epistemic':
     method = abstraction_epistemic

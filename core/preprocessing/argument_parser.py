@@ -6,7 +6,7 @@ import argparse
 import numpy as np
 from ast import literal_eval
 
-def parse_arguments():
+def parse_arguments(run_in_vscode):
     """
     Function to parse arguments provided
 
@@ -16,19 +16,20 @@ def parse_arguments():
 
     """
     
+    if run_in_vscode:
+        sys.argv = [""]
+
     parser = argparse.ArgumentParser(description="Sampling-Based Abstraction Method",
                                      prefix_chars='--')
-
-
 
     ### Abstraction options
     # File from which to load model
     parser.add_argument('--model_file', type=str, action="store", dest='model_file', 
-                        default=False, help="File to load model from", required=True)
+                        default=False, help="File to load model from")
     
     # Argument for model to load
     parser.add_argument('--model', type=str, action="store", dest='model', 
-                        default=False, help="Model to load", required=True)
+                        default=False, help="Model to load")
 
     parser.add_argument('--timebound', type=str, action="store", dest='timebound', 
                         default='inf', help="Timebound on the temporal logic specification ('inf' for infinity)", required=False)
@@ -181,5 +182,8 @@ def parse_arguments():
     except:
         args.drug_partition = list(literal_eval(args.drug_partition))
 
+
+    if 'stabilizing_poles' not in args.model_params:
+        args.model_params['stabilizing_poles'] = False
 
     return args

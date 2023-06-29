@@ -18,6 +18,8 @@ import core.preprocessing.master_classes as master
 import scipy
 from pathlib import Path
 
+from models.stabilize import ackermann
+
 class robot(master.LTI_master):
     
     def __init__(self, args):
@@ -53,6 +55,11 @@ class robot(master.LTI_master):
         
         self.Q = np.array([[0],[0]]) #np.zeros((2,1))
         
+        # Stabilizing controller
+        if args.model_params['stabilizing_poles'] is not False:
+            poles = args.model_params['stabilizing_poles']
+            self.A, self.K = ackermann(self.A, self.B, poles)
+
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)

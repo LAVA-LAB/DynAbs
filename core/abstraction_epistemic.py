@@ -58,7 +58,7 @@ class abstraction_epistemic(Abstraction):
 
         for name, target_set in self.spec.error['target_set_size'].items():
             # Compute the backward reachable set objects
-            self.actions['backreach_obj'][name] = backreachset(name, target_set)
+            self.actions['backreach_obj'][name] = backreachset(name, target_set, target_point = np.zeros(self.model.n))
             
             # Compute the zero-shifted inflated backward reachable set
             self.actions['backreach_obj'][name].compute_default_set(self.model)    
