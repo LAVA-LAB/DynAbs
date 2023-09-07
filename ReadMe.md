@@ -50,11 +50,11 @@ In addition to Python 3, a number of dependencies must be installed on your mach
    $ sudo apt install default-jdk
    ```
 
-3. PRISM (iMDP branch) - In the desired PRISM installation folder, run the following commands:
+3. PRISM 4.8 - In the desired PRISM installation folder, run the following commands:
 
    ```bash
-   $ git clone -b imc https://github.com/davexparker/prism prism-imc
-   $ cd prism-imc/prism; make
+   $ git clone -b v4.8 https://github.com/prismmodelchecker/prism.git
+   $ cd prism/prism; make
    ```
 
    For more details on using PRISM, we refer to the PRISM documentation on 
@@ -83,7 +83,7 @@ Please checkout the file `requirements.txt` to see the full list of packages tha
 To ensure that PRISM can be found by the script, **you need to modify the path to the PRISM folder** in the  `path_to_prism.txt` file. Set the PRISM folder to the one where you installed it (the filename should end with `/prism/`, such that it points the folder in which the `bin/` folder is located), and save your changes. For example, the path to PRISM can look as follows:
 
 ```
-/home/<location-to-prism>/prism-imc/prism/
+/home/<location-to-prism>/prism/prism/
 ```
 
 ------
