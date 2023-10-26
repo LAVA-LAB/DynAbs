@@ -459,22 +459,22 @@ class Abstraction(object):
         
         print(' -- Running PRISM with specification for mode',
               mode.upper()+'...')
-    
+
         file_prefix = self.setup.directories['outputFcase'] + "PRISM_" + mode
-        policy_file = file_prefix + '_policy.csv'
+        policy_file = file_prefix + '_policy.txt'
         vector_file = file_prefix + '_vector.csv'
-    
-        options = ' -ex -exportadv "'+policy_file+'"'+ \
-                  ' -exportvector "'+vector_file+'"'
+
+        options = ' -exportstrat "' + policy_file + '"' + \
+                  ' -exportvector "' + vector_file + '"'
     
         print(' --- Execute PRISM command for EXPLICIT model description')        
 
-        model_file      = '"'+self.mdp.prism_file+'"'             
-    
+        model_file      = '"'+self.mdp.prism_file+'"'
+
         # Explicit model
-        command = prism_folder+"bin/prism -javamaxmem "+ \
-            str(self.args.prism_java_memory)+"g -importmodel "+model_file+" -pf '"+ \
-            spec+"' "+options
+        command = prism_folder + "bin/prism -javamaxmem " + \
+                  str(self.args.prism_java_memory) + "g -importmodel " + model_file + " -pf '" + \
+                  spec + "' " + options
         
         subprocess.Popen(command, shell=True).wait()    
         
@@ -483,9 +483,7 @@ class Abstraction(object):
             
         self.time['5_MDPsolved'] = tocDiff(False)
         print('MDP solved in',self.time['5_MDPsolved'])
-        
-        
-    
+
     def loadPRISMresults(self, policy_file, vector_file):
         '''
         Load results from existing PRISM output files.
@@ -505,7 +503,7 @@ class Abstraction(object):
 
         rewards_k0 = pd.read_csv(vector_file, header=None).iloc[self.mdp.head:].to_numpy()
         self.results['optimal_reward'] = rewards_k0.flatten()
-        
+
         # Convert avoid probability to the safety probability
         if self.spec.problem_type == 'avoid':
             self.results['optimal_reward'] = 1 - self.results['optimal_reward']
@@ -514,36 +512,27 @@ class Abstraction(object):
 
             # For unbounded properties, PRISM does currently not yet export the policy
             self.results['optimal_policy'] = pd.DataFrame()
-        
+
         else:
 
-            # Read policy CSV file
-            policy_all = pd.read_csv(policy_file, header=None).iloc[:, self.mdp.head:].\
-                fillna(-1).to_numpy()
+            # Updated for new PRISM policy/strategy generation (September 2023)
+            with open(policy_file) as f:
+                policy_raw = f.readlines()
 
-            if self.args.improved_synthesis:
-                policy_all = policy_all[[-1], :]
+            import re
+            policy_all = np.full((self.mdp.N, self.mdp.nr_states), fill_value='-1', dtype='<U16')
 
-            for i,row in enumerate(policy_all):
-                
-                # Determine if we are in block refinement mode
-                if self.args.improved_synthesis:
-                    k = self.blref.k - i
-                else:
-                    k = self.N - i - 1
+            # Fill a numpy array with the policy (rows are time steps, columns are states)
+            # First row means the action at time k=0, second row at time k=1, etc...
+            for line in policy_raw:
+                line = line.replace('(', '').replace(')', '').replace('\n', '')
+                state, time, action = re.split(r",|:", line)
+                if int(state) >= 0:
+                    # An action of 'null' means that no action was enabled at all
+                    if action != 'null':
+                        # Otherwise, the action is read as 'a_100', with '100' the action number.
+                        # Thus, we split the string and only store the number into the policy matrix.
+                        action_number = action.split('_')[1]
+                        policy_all[int(time), int(state)] = action_number
 
-                # Terminate if not a valid time step
-                if k < 0:
-                    continue
-
-                for j,value in enumerate(row):
-
-                    # If value is not -1 (means no action defined)
-                    if value != -1:
-                        # Split string
-                        value_split = value.split('_')
-                        # Store action ID
-                        self.results['optimal_policy'][k,j] = int(value_split[1])
-                    else:
-                        # If no policy is known, set to -1
-                        self.results['optimal_policy'][k,j] = int(value)    
+            self.results['optimal_policy'] = policy_all

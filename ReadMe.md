@@ -8,7 +8,7 @@ This artefact contains an implementation of the formal abstraction methods propo
 
 This repository contains all code and instructions that are needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM.
 
-Python version: `3.8.8`. For a list of the required Python packages, please see the `requirements.txt` file. 
+Python version: `3.8.8`. For a list of the required Python packages, please see the `requirements.txt` file. The code is tested with PRISM version `4.8`.
 
 ------
 
@@ -50,11 +50,11 @@ In addition to Python 3, a number of dependencies must be installed on your mach
    $ sudo apt install default-jdk
    ```
 
-3. PRISM (iMDP branch) - In the desired PRISM installation folder, run the following commands:
+3. PRISM - In the desired PRISM installation folder, run the following commands:
 
    ```bash
-   $ git clone -b imc https://github.com/davexparker/prism prism-imc
-   $ cd prism-imc/prism; make
+   $ git clone https://github.com/prismmodelchecker/prism.git prism
+   $ cd prism/prism; make
    ```
 
    For more details on using PRISM, we refer to the PRISM documentation on 
