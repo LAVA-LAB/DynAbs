@@ -472,7 +472,8 @@ class Abstraction(object):
         model_file      = '"'+self.mdp.prism_file+'"'
 
         # Explicit model
-        command = prism_folder + "bin/prism -javamaxmem " + \
+        prism_folder = prism_folder.replace("\n", "").replace("\r", "")
+        command = prism_folder + "/bin/prism -javamaxmem " + \
                   str(self.args.prism_java_memory) + "g -importmodel " + model_file + " -pf '" + \
                   spec + "' " + options
         
