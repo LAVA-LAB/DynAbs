@@ -89,7 +89,9 @@ class drone(master.LTI_master):
         
         # Disturbance matrix
         self.Q  = np.array([[0],[0]])
-        
+
+        self.state_variables = ['x_pos', 'x_vel']
+
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)
@@ -229,7 +231,9 @@ class building_temp(master.LTI_master):
             
         else:
             print('-- Do not enabled parameter uncertainty')
-            
+
+        self.state_variables = ['t_room1', 't_boil1']
+
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)
@@ -281,7 +285,9 @@ class anaesthesia_delivery(master.LTI_master):
         
         # Disturbance matrix
         self.Q  = np.array([[0],[0],[0]])
-        
+
+        self.state_variables = ['conc1','conc2','conc3']
+
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)

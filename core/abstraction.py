@@ -83,7 +83,9 @@ class Abstraction(object):
         
         # Define partitioning of state-space
         self.partition = dict()
-        
+
+        self.partition['state_variables'] = self.model.state_variables
+
         # Determine origin of partition
         self.spec.partition['number'] = np.array(self.spec.partition['number'])
         self.spec.partition['width'] = np.array([-1,1]) @ \
@@ -526,14 +528,25 @@ class Abstraction(object):
             # Fill a numpy array with the policy (rows are time steps, columns are states)
             # First row means the action at time k=0, second row at time k=1, etc...
             for line in policy_raw:
+                # Each line is of the form (idx1,idx2,...),k:action
                 line = line.replace('(', '').replace(')', '').replace('\n', '')
-                state, time, action = re.split(r",|:", line)
-                if int(state) >= 0:
-                    # An action of 'null' means that no action was enabled at all
-                    if action != 'null':
-                        # Otherwise, the action is read as 'a_100', with '100' the action number.
-                        # Thus, we split the string and only store the number into the policy matrix.
-                        action_number = action.split('_')[1]
-                        policy_all[int(time), int(state)] = action_number
+                elems = line.split(',')
+
+                # Separate state index tuple (idx1,idx2,...)
+                idx_str = elems[:-1]
+                idx_tuple = tuple(map(int, idx_str))
+
+                # Seperate time k from action
+                time, action = elems[-1].split(':')
+
+                # An action of 'null' means that no action was enabled at all
+                if action != 'null':
+                    # Retrieve state ID from the tuple
+                    state = self.partition['R']['idx'][tuple(idx_tuple)]
+
+                    # Otherwise, the action is read as 'a_100', with '100' the action number.
+                    # Thus, we split the string and only store the number into the policy matrix.
+                    action_number = action.split('_')[1]
+                    policy_all[int(time), int(state)] = action_number
 
             self.results['optimal_policy'] = policy_all

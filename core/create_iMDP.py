@@ -136,9 +136,18 @@ class mdp(object):
         ### Write states file
         PRISM_statefile = self.setup.directories['outputFcase']+ \
             self.setup.mdp['filename']+"_"+mode+".sta"
-        
-        state_file_string = '\n'.join(['(x)\n0:(-3)\n1:(-2)\n2:(-1)'] + 
-              [str(i+head)+':('+str(i)+')' for i in range(self.nr_regions + blref_states)])
+
+        # Define tuple of state variables (for header in PRISM state file)
+        state_var_string = ['(' + ','.join(partition['state_variables']) + ')']
+
+        state_file_header = ['0:(' + ','.join([str(-3)] * len(partition['state_variables'])) + ')',
+                             '1:(' + ','.join([str(-2)] * len(partition['state_variables'])) + ')',
+                             '2:(' + ','.join([str(-1)] * len(partition['state_variables'])) + ')']
+
+        state_file_content = [str(i+head)+':'+str(partition['R']['idx_inv'][i]).replace(' ', '')
+               for i in range(self.nr_regions + blref_states)]
+
+        state_file_string = '\n'.join(state_var_string + state_file_header + state_file_content)
         
         # Write content to file
         writeFile(PRISM_statefile, 'w', state_file_string)

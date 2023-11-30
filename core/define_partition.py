@@ -156,6 +156,7 @@ def define_partition(dim, nrPerDim, regionWidth, origin):
     nr_regions = np.prod(nrPerDim)
     partition = {'center': np.zeros((nr_regions, dim), dtype=float), 
                  'idx': {},
+                 'idx_inv': {},
                  'c_tuple': {}}
     
     partition['low'] = np.zeros((nr_regions, dim), dtype=float)
@@ -175,6 +176,7 @@ def define_partition(dim, nrPerDim, regionWidth, origin):
         partition['upp'][i] = np.round(center + regionWidth/2, 
                                         decimals=dec)
         partition['idx'][tuple(idx)] = i
+        partition['idx_inv'][i] = tuple(idx)
     
     return partition
 

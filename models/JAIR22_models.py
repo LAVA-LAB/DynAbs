@@ -50,7 +50,9 @@ class robot(master.LTI_master):
                                 [self.tau]])
         
         self.Q = np.array([[0],[0]]) #np.zeros((2,1))
-        
+
+        self.state_variables = ['x_pos', 'x_vel']
+
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)
@@ -109,7 +111,9 @@ class shuttle(master.LTI_master):
                            [-0.00137, 0.66648]]) / 2
         
         self.Q = np.zeros((4,1))
-        
+
+        self.state_variables = ['x_pos', 'y_pos', 'x_vel', 'y_vel']
+
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)
@@ -226,7 +230,9 @@ class building_2room(master.LTI_master):
         self.A = np.eye(4) + self.tau*A_cont
         self.B = B_cont*self.tau
         self.Q = W_cont*self.tau
-        
+
+        self.state_variables = ['t_room1', 't_room2', 't_boil1', 't_boil2']
+
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)
@@ -310,7 +316,9 @@ class building_1room(master.LTI_master):
         self.A = np.eye(2) + self.tau*A_cont
         self.B = B_cont*self.tau
         self.Q = W_cont*self.tau
-        
+
+        self.state_variables = ['t_room1', 't_boil1']
+
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)
@@ -371,6 +379,8 @@ class UAV(master.LTI_master):
             
             # Disturbance matrix
             self.Q  = np.array([[0],[0],[0],[0],[0],[0]])
+
+            self.state_variables = ['x_pos', 'x_vel', 'y_pos', 'y_vel', 'z_pos', 'z_vel']
                 
         else:
             self.A  = scipy.linalg.block_diag(Ablock, Ablock)
@@ -378,6 +388,8 @@ class UAV(master.LTI_master):
         
             # Disturbance matrix
             self.Q  = np.array([[0],[0],[0],[0]])
+
+            self.state_variables = ['x_pos', 'x_vel', 'y_pos', 'y_vel']
             
         # Determine system dimensions
         self.n = np.size(self.A,1)
@@ -476,7 +488,9 @@ class spacecraft(master.LTI_master):
         ])
 
         self.Q  = np.array([[0],[0],[0],[0],[0],[0]])
-            
+
+        self.state_variables = ['x_pos', 'y_pos', 'z_pos', 'x_vel', 'y_vel', 'z_vel']
+
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)
@@ -540,7 +554,9 @@ class spacecraft_2D(master.LTI_master):
         ])
 
         self.Q  = np.array([[0],[0],[0],[0]])
-            
+
+        self.state_variables = ['x_pos', 'y_pos', 'x_vel', 'y_vel']
+
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)
@@ -603,7 +619,9 @@ class spacecraft_1D(master.LTI_master):
         ])
 
         self.Q  = np.array([[0],[0]])
-            
+
+        self.state_variables = ['z_pos', 'z_vel']
+
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)
