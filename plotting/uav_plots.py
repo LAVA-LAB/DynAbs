@@ -7,11 +7,13 @@ from matplotlib import cm
 from matplotlib.patches import Rectangle
 import matplotlib.patches as patches
 
+plt.ioff()
+
 from core.commons import printWarning, cm2inch
 from core.define_partition import state2region
 
-def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions, 
-                spec, traces, cut_idx, traces_to_plot = 10, line=False):
+def UAV_plot_2D(i_show, model, setup, args, regions, goal_regions, critical_regions,
+                spec, traces, cut_idx, traces_to_plot = 10, line=False, plot_vectors=False):
     '''
     Create 2D trajectory plots for the 2D UAV benchmark
 
@@ -32,7 +34,7 @@ def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions,
     
     print('Show state variables',i_show,'and hide',i_hide)
     
-    fig, ax = plt.subplots(figsize=cm2inch(6.1, 5))
+    fig, ax = plt.subplots(figsize=cm2inch(6.1, 4))
     
     plt.xlabel('$x$', labelpad=0)
     plt.ylabel('$y$', labelpad=0)
@@ -45,12 +47,15 @@ def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions,
     
     major_ticks_x = np.arange(min_xy[is1]+1, max_xy[is1]+1, 4*width[is1])
     major_ticks_y = np.arange(min_xy[is2]+1, max_xy[is2]+1, 4*width[is2])
-    
+
+    print(major_ticks_x)
+    print(major_ticks_y)
+
     minor_ticks_x = np.arange(min_xy[is1], max_xy[is1]+1, width[is1])
     minor_ticks_y = np.arange(min_xy[is2], max_xy[is2]+1, width[is2])
     
-    ax.set_xticks(major_ticks_x)
-    ax.set_yticks(major_ticks_y)
+    # ax.set_xticks(major_ticks_x)
+    # ax.set_yticks(major_ticks_y)
     ax.set_xticks(minor_ticks_x, minor=True)
     ax.set_yticks(minor_ticks_y, minor=True)
     
@@ -65,9 +70,23 @@ def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions,
     ax.set_xlim(min_xy[is1], max_xy[is1])
     ax.set_ylim(min_xy[is2], max_xy[is2])
     
-    ax.set_title("N = "+str(args.noise_samples),fontsize=10)
+    # ax.set_title("N = "+str(args.noise_samples),fontsize=10)
     
     keys = list( regions['idx'].keys() )
+
+    # Draw vectors showing dynamics
+    scaling = 1
+    if plot_vectors:
+
+        # Extract centers to plot arrows at
+        centers = np.unique(regions['center'][:,[is1,is2]], axis=0)[::6,:]
+
+        # Compute all vectors (each column is a vector)
+        vectors = scaling*(model.A[[is1,is2]][:,[is1,is2]] @ centers.T - centers.T).T
+
+        # Plot vectors
+        ax.quiver(centers[:,0], centers[:,1], vectors[:,0], vectors[:,1])
+
     # Draw goal states
     for goal in goal_regions:
         
@@ -77,7 +96,7 @@ def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions,
             goal_lower = [regions['low'][goal][is1], regions['low'][goal][is2]]
             goalState = Rectangle(goal_lower, width=width[is1], 
                                   height=width[is2], color="green", 
-                                  alpha=0.3, linewidth=None)
+                                  alpha=0.5, linewidth=None)
             ax.add_patch(goalState)
     
     keys = list( regions['idx'].keys() )
@@ -91,7 +110,7 @@ def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions,
             critStateLow = [regions['low'][crit][is1], regions['low'][crit][is2]]
             criticalState = Rectangle(critStateLow, width=width[is1], 
                                   height=width[is2], color="red", 
-                                  alpha=0.3, linewidth=None)
+                                  alpha=0.5, linewidth=None)
             ax.add_patch(criticalState)
             
     # Add traces
@@ -153,7 +172,7 @@ def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions,
     for form in setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
-    plt.show()
+    plt.show(block = False)
 
 
 

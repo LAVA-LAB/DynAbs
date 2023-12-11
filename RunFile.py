@@ -49,25 +49,8 @@ args = parse_arguments(run_in_vscode = False)
 args.base_dir = os.path.dirname(os.path.abspath(__file__))
 print('Base directory:', args.base_dir)
 
-args.model_file = 'JAIR22_models'
-args.model = 'robot'
-args.timebound = 64
-args.noise_samples = 1600
-args.confidence = 0.01
-args.prism_java_memory = 8
-args.plot = True
-args.model_params = {'u_multiply': 2,
-                     'stability_param': 0.5,
-                     'stabilizing_controller': False,
-                     'stabilizing_poles': False} #[-0.8, 0.8]}
-
-# args.two_phase_transient_length = 4
-# args.monte_carlo_iterations = -1
-# args.R_size = [24, 24]
-# args.R_width = [0.5, 0.5]
-# args.plot_heatmap = [0, 1]
-# args.horizon = 24
-# args.plot_trajectory_2D = [0, 1]
+# args.model_params['stabilizing_controller'] = False
+# args.model_params['plot_vectors'] = True
 
 print('Run using arguments:')
 for key,val in vars(args).items():
@@ -264,7 +247,18 @@ if Ab.model.name == 'anaesthesia_delivery':
 
     heatmap_3D(Ab.setup, centers, values)
 
+from RunPlots import plot, get_data
+
 # Plots for JAIR paper / AAAI 2022
 if args.plot:
-    from RunPlots import plot
-    plot(path = Ab.setup.directories['outputF']+'data_dump.p')
+    data = get_data(path = Ab.setup.directories['outputF']+'data_dump.p')
+    plot(data)
+
+if 'plot_cross_section' in args.model_params:
+    from plotting.ECC_cross_section import get_cross_section
+    data = get_data(path = Ab.setup.directories['outputF']+'data_dump.p')
+    suffix = 'stab='+str(data['args'].model_params['stabilizing_controller']) + \
+             '_uMax='+str(data['model'].uMax[0])
+    if hasattr(data['model'], 'uBarMax'):
+        suffix += '_uBarMax='+str(data['model'].uBarMax[0])
+    get_cross_section(data['model'], data['setup'], data['regions']['c_tuple'], data['spec'], data['results']['optimal_reward'], suffix)

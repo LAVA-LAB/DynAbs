@@ -47,7 +47,7 @@ def computeRegionCenters(points, partition):
     centers = np.zeros(np.shape(points)) 
     
     # Shift the points to account for a non-zero origin
-    originShift = np.array(partition['origin'] )
+    originShift = np.array(partition['origin'])
     pointsShift = points - originShift
     
     for q in range(dim):
@@ -375,7 +375,7 @@ def partition_plot(i_show, i_hide, Ab, cut_value, act=None, stateLabels=False):
     for form in Ab.setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
-    plt.show()
+    plt.show(block = False)
 
 
 

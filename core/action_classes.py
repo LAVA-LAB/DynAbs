@@ -71,7 +71,8 @@ class backreachset(object):
             u_vertices = np.array(list(itertools.product(*control_mat)))
         
         if len(u_vertices) == 0:
-            print('- WARNING: backward reachable set for target point {} is empty'.format(self.target_point.flatten()))
+            if verbose:
+                print('- WARNING: backward reachable set for target point {} is empty'.format(self.target_point.flatten()))
 
             # Backward reachable set is empty
             self.verts = np.array([])

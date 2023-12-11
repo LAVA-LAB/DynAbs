@@ -4,7 +4,7 @@
 import numpy as np              # Import Numpy for computations
 from scipy.sparse.csgraph import connected_components
 
-def define_model(model_raw, spec, stabilize_lqr=False):
+def define_model(model_raw, spec, stabilizing_point=None, stabilize_lqr=False):
     '''
     Define model within abstraction object for given value of lump
     '''
@@ -29,7 +29,9 @@ def define_model(model_raw, spec, stabilize_lqr=False):
     else:
         model = make_fully_actuated(model_raw, 
                    manualDimension = lump)
-        
+
+    # Retreive system dimensions
+    model.p = np.size(model.B, 1)  # Nr of inputs
 
     #####
     # Stabilize system
@@ -37,10 +39,15 @@ def define_model(model_raw, spec, stabilize_lqr=False):
         from models.stabilize import lqr
         
         Q = np.eye(model.n)
-        R = 2*np.eye(model.n)
+        R = 20*np.eye(model.n)
 
         model.K = lqr(model.A, model.B, Q, R)
+        model.K = np.round(model.K, 5)
         model.A = (model.A - model.B @ model.K)
+
+        if stabilizing_point is not False:
+            model.Q += model.B @ model.K @ stabilizing_point
+            model.Q_flat = model.Q.flatten()
     #####
 
 
@@ -49,9 +56,6 @@ def define_model(model_raw, spec, stabilize_lqr=False):
     
     # Determine pseudo-inverse B matrix
     model.B_pinv = np.linalg.pinv(model.B)
-    
-    # Retreive system dimensions
-    model.p      = np.size(model.B,1)   # Nr of inputs
     
     uAvg = (model.uMin + model.uMax) / 2
     
@@ -193,11 +197,9 @@ def make_fully_actuated(model, manualDimension='auto'):
     
     # Redefine sampling time of model
     model.tau             *= dim
-    
-    model.uBarMin = 0.2*np.repeat(model.uMin, dim)
-    model.uBarMax = 0.2*np.repeat(model.uMax, dim)
 
-    model.uMin = np.repeat(model.uMin, dim)
-    model.uMax = np.repeat(model.uMax, dim)
+    # TODO check if np.tile fixed the problem here (versus np.repeat)
+    model.uMin = np.tile(model.uMin, dim)
+    model.uMax = np.tile(model.uMax, dim)
     
     return model

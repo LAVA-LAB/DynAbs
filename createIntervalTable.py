@@ -377,7 +377,7 @@ if __name__ == '__main__':
     # General styling
     fig.tight_layout()
     
-    plt.show()
+    plt.show(block = False)
     plt.pause(0.001)
     
     filename = 'probabilityBoundsOverSampleSize'
@@ -466,7 +466,7 @@ if __name__ == '__main__':
     # General styling
     fig.tight_layout()
     
-    plt.show()
+    plt.show(block = False)
     plt.pause(0.001)
     
     filename = 'boundsOverViolationFraction'

@@ -88,7 +88,7 @@ def oscillator_heatmap(Ab, title = 'auto'):
     for form in Ab.setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
-    plt.show()
+    plt.show(block = False)
     
     return average_value
 
@@ -263,7 +263,7 @@ def oscillator_traces(Ab, traces, action_traces, plot_trace_ids=None,
     for form in Ab.setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
-    plt.show()
+    plt.show(block = False)
     
 
 

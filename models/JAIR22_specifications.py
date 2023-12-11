@@ -21,22 +21,21 @@ class robot_spec(master.spec_master):
     def __init__(self, args):
 
         # Initialize superclass
-        master.spec_master.__init__(self)        
+        master.spec_master.__init__(self)
 
         # Authority limit for the control u, both positive and negative
-        self.control['uMin'] = [-5*float(args.model_params['u_multiply'])]
-        self.control['uMax'] = [5*float(args.model_params['u_multiply'])]
+        self.control['uMin'] = args.input_min
+        self.control['uMax'] = args.input_max
         
         self.partition['boundary']  = np.array([[-41, 41], [-41, 41]])
-        self.partition['number']    = [41, 41]
+        self.partition['number']    = args.partition_num_elem
         
         # Actions per dimension (if 'auto', equal to nr of regions)
         self.targets['boundary']    = 'auto'
         self.targets['number']      = 'auto'
             
         self.goal = [
-            np.array([[-1, 1], [-1, 1]], dtype='object')
-            #np.array([[11, 13], [5 ,7]], dtype='object')
+            np.array([[-3, 3], [-3, 3]], dtype='object')
             ]
         
         self.critical = None
@@ -45,17 +44,18 @@ class robot_spec(master.spec_master):
 
 class building_2room_spec(master.spec_master):
     
-    def __init__(self, T_boiler):
+    def __init__(self, args, T_boiler):
 
         # Initialize superclass
         master.spec_master.__init__(self)        
 
         # Authority limit for the control u, both positive and negative
+        print('> Use hardcoded control input constraints...')
         self.control['uMin'] = [14, 14, T_boiler-10, T_boiler-10]
         self.control['uMax'] = [26, 26, T_boiler+10, T_boiler+10]
         
         self.partition['boundary']  = np.array([[17.9, 22.1], [17.9, 22.1], [37.4, 39.2], [37.4, 39.2]])
-        self.partition['number']    = [21,21,9,9]
+        self.partition['number']    = args.partition_num_elem
         
         # Actions per dimension (if 'auto', equal to nr of regions)
         self.targets['boundary']    = 'auto'
@@ -71,17 +71,17 @@ class building_2room_spec(master.spec_master):
 
 class building_1room_spec(master.spec_master):
     
-    def __init__(self):
+    def __init__(self, args):
 
         # Initialize superclass
-        master.spec_master.__init__(self)        
+        master.spec_master.__init__(self)
 
         # Authority limit for the control u, both positive and negative
-        self.control['uMin'] = [14, -10]
-        self.control['uMax'] = [28, 10]
-        
+        self.control['uMin'] = args.input_min
+        self.control['uMax'] = args.input_max
+
         self.partition['boundary']  = np.array([[19.1, 22.9], [36, 40]])
-        self.partition['number']    = [19, 20]
+        self.partition['number'] = args.partition_num_elem
         
         # Actions per dimension (if 'auto', equal to nr of regions)
         self.targets['boundary']    = 'auto'
@@ -97,17 +97,17 @@ class building_1room_spec(master.spec_master):
 
 class shuttle_spec(master.spec_master):
     
-    def __init__(self):
+    def __init__(self, args):
 
         # Initialize superclass
         master.spec_master.__init__(self)
 
         # Authority limit for the control u, both positive and negative
-        self.control['uMin'] = [-0.1, -0.1]
-        self.control['uMax'] = [0.1, 0.1]
+        self.control['uMin'] = args.input_min
+        self.control['uMax'] = args.input_max
         
         self.partition['boundary']  = np.array([[-1, 1], [-1, 0], [-0.02, 0.02], [-0.02, 0.02]])
-        self.partition['number']    = [20, 10, 4, 4]
+        self.partition['number'] = args.partition_num_elem
         
         # Actions per dimension (if 'auto', equal to nr of regions)
         self.targets['boundary']    = 'auto'
@@ -140,6 +140,35 @@ class shuttle_spec(master.spec_master):
 
 
 
+class shuttle_spec_ECC(master.spec_master):
+
+    def __init__(self, args):
+        # Initialize superclass
+        master.spec_master.__init__(self)
+
+        # Authority limit for the control u, both positive and negative
+        self.control['uMin'] = args.input_min
+        self.control['uMax'] = args.input_max
+
+        self.partition['boundary'] = np.array([[-1, 1], [-1, 0], [-0.02, 0.02], [-0.02, 0.02]])
+        self.partition['number'] = args.partition_num_elem
+
+        # Actions per dimension (if 'auto', equal to nr of regions)
+        self.targets['boundary'] = 'auto'
+        self.targets['number'] = 'auto'
+
+        self.goal = [
+            np.array([[-0.05, 0.05], [-0.05, -0.04], 'all', 'all'], dtype='object')
+        ]
+
+        self.critical = [
+            np.array([[-0.5, 0.5], [-0.7, -0.3], 'all', 'all'], dtype='object'),
+            np.array([[-0.7, -0.5], [-0.6, -0.4], 'all', 'all'], dtype='object'),
+            np.array([[0.5, 0.7], [-0.6, -0.4], 'all', 'all'], dtype='object')
+        ]
+
+
+
 class UAV_spec(master.spec_master):
     
     def __init__(self, args, modelDim):
@@ -151,12 +180,12 @@ class UAV_spec(master.spec_master):
         if modelDim == 2:
 
             # Authority limit for the control u, both positive and negative
-            self.control['uMin'] = [-4, -4]
-            self.control['uMax'] = [4, 4]
-        
+            self.control['uMin'] = args.input_min
+            self.control['uMax'] = args.input_max
+
             self.partition['boundary']  = np.array([[-7, 7], [-3, 3], [-7, 7], [-3, 3]])
-            self.partition['number']    = [7, 4, 7, 4]
-        
+            self.partition['number'] = args.partition_num_elem
+
             # Actions per dimension (if 'auto', equal to nr of regions)
             self.targets['boundary']    = 'auto'
             self.targets['number']      = 'auto'
@@ -174,7 +203,11 @@ class UAV_spec(master.spec_master):
 
             # Let the user make a choice for the model dimension
             self.noiseMultiplier = args.noise_factor
-            
+
+            # Authority limit for the control u, both positive and negative
+            self.control['uMin'] = args.input_min
+            self.control['uMax'] = args.input_max
+
             # Authority limit for the control u, both positive and negative
             self.control['uMin'] = [-4, -4, -4]
             self.control['uMax'] = [4, 4, 4]
@@ -182,7 +215,7 @@ class UAV_spec(master.spec_master):
             self.partition['boundary']  = np.array([[-15, 15], [-2.25, 2.25], 
                                                     [-9,   9], [-2.25, 2.25], 
                                                     [-7,   7], [-2.25, 2.25]])
-            self.partition['number']    = [15, 3, 9, 3, 7, 3]
+            self.partition['number'] = args.partition_num_elem
         
             # Actions per dimension (if 'auto', equal to nr of regions)
             self.targets['boundary']    = 'auto'
@@ -235,11 +268,11 @@ class spacecraft_spec(master.spec_master):
     def __init__(self, args):
 
         # Initialize superclass
-        master.spec_master.__init__(self)        
-    
+        master.spec_master.__init__(self)
+
         # Authority limit for the control u, both positive and negative
-        self.control['uMin'] = [-2, -2, -2]
-        self.control['uMax'] = [2, 2, 2]
+        self.control['uMin'] = args.input_min
+        self.control['uMax'] = args.input_max
     
         self.partition['boundary']  = np.array([[-3.4, 1], 
                                                 [-2, 16.4], 
@@ -247,7 +280,7 @@ class spacecraft_spec(master.spec_master):
                                                 [-4, 4], 
                                                 [-4, 4],
                                                 [-2, 2]])
-        self.partition['number']    = [11, 23, 5, 5, 5, 5]
+        self.partition['number'] = args.partition_num_elem
     
         # Actions per dimension (if 'auto', equal to nr of regions)
         self.targets['boundary']    = 'auto'
@@ -268,14 +301,14 @@ class spacecraft_2D_spec(master.spec_master):
     def __init__(self, args):
 
         # Initialize superclass
-        master.spec_master.__init__(self)        
-    
+        master.spec_master.__init__(self)
+
         # Authority limit for the control u, both positive and negative
-        self.control['uMin'] = [-2, -2]
-        self.control['uMax'] = [2, 2]
+        self.control['uMin'] = args.input_min
+        self.control['uMax'] = args.input_max
 
         self.partition['boundary']  = np.array([[-4.6, 2.2], [-2, 21.2], [-4, 4], [-4, 4]])
-        self.partition['number']    = [17, 29, 5, 5]
+        self.partition['number'] = args.partition_num_elem
     
         # Actions per dimension (if 'auto', equal to nr of regions)
         self.targets['boundary']    = 'auto'

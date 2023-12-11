@@ -31,7 +31,9 @@ class drone(master.LTI_master):
         
         # Initialize superclass
         master.LTI_master.__init__(self)
-        
+
+        self.args = args
+
         # Number of time steps to lump together (can be used to make the model
         # fully actuated)
         self.lump = 1
@@ -102,7 +104,7 @@ class drone(master.LTI_master):
         
         from models.AAAI23_specifications import drone_spec
         
-        spec = drone_spec()
+        spec = drone_spec(self.args)
         spec.problem_type = 'reachavoid'
         
         return spec

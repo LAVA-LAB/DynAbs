@@ -10,14 +10,15 @@ ______________________________________________________________________________
 import pickle
 import numpy as np
 
-def plot(path):
+def get_data(path):
 
     infile = open(path, 'rb')
     data = pickle.load(infile)
     infile.close()
 
-    # print(data['setup'].directories['outputFcase'])
-    # data['setup'].directories['outputFcase'] = '/home/thom/Documents/DynAbs/output/Ab_UAV_02-19-2023_21-30-37/N=6400_0/'
+    return data
+
+def plot(data):
 
     from plotting.createPlots import reachability_plot
     if 'mc' in data:
@@ -43,8 +44,13 @@ def plot(path):
             s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
             traces = data['mc'].traces[s_init]
 
-            UAV_plot_2D((0,1), data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'], 
-                        data['spec'], traces, cut_idx = [0,0], traces_to_plot=10, line=True)
+            if 'plot_vectors' in data['args'].model_params:
+                plot_vectors = True
+            else:
+                plot_vectors =False
+
+            UAV_plot_2D((0,1), data['model'], data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'],
+                        data['spec'], traces, cut_idx = [0,0], traces_to_plot=10, line=True, plot_vectors=plot_vectors)
         else:
             print('-- No initial state provided')
 
@@ -83,7 +89,7 @@ def plot(path):
             s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
             traces = data['mc'].traces[s_init]
             
-            UAV_plot_2D((0,1), data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'], 
+            UAV_plot_2D((0,1), data['model'], data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'],
                         data['spec'], traces, cut_idx = [0,0,0,0], traces_to_plot=10, line=True)
         else:
             print('-- No initial state provided')    
@@ -128,7 +134,7 @@ def plot(path):
             s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
             traces = data['mc'].traces[s_init]
 
-            UAV_plot_2D((0,1), data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'], 
+            UAV_plot_2D((0,1), data['model'], data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'],
                         data['spec'], traces, cut_idx = [], traces_to_plot=10, line=True)
         else:
             print('-- No initial state provided')

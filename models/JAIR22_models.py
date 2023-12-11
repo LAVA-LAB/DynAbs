@@ -33,18 +33,18 @@ class robot(master.LTI_master):
 
         '''
         
-        self.args = args
-
         # Initialize superclass
         master.LTI_master.__init__(self)
-        
+
+        self.args = args
+
         # Number of time steps to lump together (can be used to make the model
         # fully actuated)
         self.lump = 2
         
         # Discretization step size
         self.tau = 1
-        
+
         # State transition matrix
         self.A  = np.array([[1/args.model_params['stability_param'], self.tau],
                             [0, 1]])
@@ -56,16 +56,16 @@ class robot(master.LTI_master):
         self.Q = np.array([[0],[0]]) #np.zeros((2,1))
         
         # Stabilizing controller
-        if args.model_params['stabilizing_poles'] is not False:
-            poles = args.model_params['stabilizing_poles']
-            self.A, self.K = ackermann(self.A, self.B, poles)
+        # if args.model_params['stabilizing_poles'] is not False:
+        #     poles = args.model_params['stabilizing_poles']
+        #     self.A, self.K = ackermann(self.A, self.B, poles)
 
         # Determine system dimensions
         self.n = np.size(self.A,1)
         self.p = np.size(self.B,1)
 
         self.noise = dict()
-        self.noise['w_cov'] = np.eye(np.size(self.A,1))*0.15
+        self.noise['w_cov'] = np.eye(np.size(self.A,1))
         
     def set_spec(self):
         
@@ -91,10 +91,12 @@ class shuttle(master.LTI_master):
         None.
 
         '''
-        
+
         # Initialize superclass
         master.LTI_master.__init__(self)
-        
+
+        self.args = args
+
         # Number of time steps to lump together (can be used to make the model
         # fully actuated)
         self.lump = 2
@@ -124,12 +126,15 @@ class shuttle(master.LTI_master):
         self.p = np.size(self.B,1)
 
         self.noise = dict()
-        self.noise['w_cov'] = np.diag([ 1e-4, 1e-4, 5e-8, 5e-8 ])
+        self.noise['w_cov'] = np.diag([ 5e-4, 5e-4, 5e-8, 5e-8 ])
         
     def set_spec(self):
         
-        from models.JAIR22_specifications import shuttle_spec
-        spec = shuttle_spec()        
+        from models.JAIR22_specifications import shuttle_spec, shuttle_spec_ECC
+        if 'shuttle_spec_ECC' in self.args.model_params:
+            spec = shuttle_spec_ECC(self.args)
+        else:
+            spec = shuttle_spec(self.args)
             
         spec.problem_type = 'reachavoid'
         
@@ -149,10 +154,12 @@ class building_2room(master.LTI_master):
         None.
 
         '''
-        
+
         # Initialize superclass
         master.LTI_master.__init__(self)
-        
+
+        self.args = args
+
         # Load building automation system (BAS) parameters
         import core.BAS.parameters as BAS_class
         self.BAS = BAS_class.parameters()
@@ -250,7 +257,7 @@ class building_2room(master.LTI_master):
     def set_spec(self):
         
         from models.JAIR22_specifications import building_2room_spec
-        spec = building_2room_spec(self.T_boiler)        
+        spec = building_2room_spec(self.args, self.T_boiler)
             
         spec.problem_type = 'reachavoid'
         
@@ -270,10 +277,12 @@ class building_1room(master.LTI_master):
         None.
 
         '''
-        
+
         # Initialize superclass
         master.LTI_master.__init__(self)
-        
+
+        self.args = args
+
         # Load building automation system (BAS) parameters
         import core.BAS.parameters as BAS_class
         self.BAS = BAS_class.parameters()
@@ -330,7 +339,7 @@ class building_1room(master.LTI_master):
     def set_spec(self):
         
         from models.JAIR22_specifications import building_1room_spec
-        spec = building_1room_spec()        
+        spec = building_1room_spec(self.args)
             
         spec.problem_type = 'reachavoid'
         

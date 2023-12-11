@@ -87,7 +87,7 @@ def reachability_plot(setup, results, mc=None):
     for form in setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
     
-    # plt.show()
+    plt.show(block = False)
     
 
 
@@ -149,7 +149,7 @@ def heatmap_3D_view(model, setup, spec, region_centers, results):
             plt.savefig(filename+'.'+str(form), format=form, 
                         bbox_inches='tight')
         
-        # plt.show()
+        plt.show(block = False)
         
         
     
@@ -195,7 +195,18 @@ def heatmap_2D(args, model, setup, c_tuple, spec, values, title = 'auto'):
         cut_centers = define_partition(model.n, [x_nr, y_nr, 1], 
                spec.partition['width'], 
                orig)['center']
-        
+
+    elif model.name == 'shuttle':
+
+        x_nr = spec.partition['number'][0]
+        y_nr = spec.partition['number'][1]
+
+        orig =  np.array([0,-0.5,0.005,0.005])
+
+        cut_centers = define_partition(model.n, [x_nr, y_nr, 1, 1],
+                                       spec.partition['width'],
+                                       orig)['center']
+
     else:
         print('ERROR: No suitable model type found for 2D heatmap')
         return
@@ -222,7 +233,7 @@ def heatmap_2D(args, model, setup, c_tuple, spec, values, title = 'auto'):
              vmin=0, vmax=1)
     ax.figure.axes[-1].yaxis.label.set_size(20)
     ax.invert_yaxis()
-    
+
     ax.set_xlabel('Var 1', fontsize=15)
     ax.set_ylabel('Var 2', fontsize=15)
     if title == 'auto':
@@ -234,11 +245,15 @@ def heatmap_2D(args, model, setup, c_tuple, spec, values, title = 'auto'):
     fig.tight_layout()
 
     # Save figure
-    add = 'u_multiply='+str(args.model_params['u_multiply'])+'_stability_param='+str(args.model_params['stability_param'])
+    add = ''
+    if hasattr(model, 'uBarMin'):
+        add += '_uBarMin='+str(model.uBarMin)
+    if 'stability_param' in args.model_params:
+        add += '_stability_param='+str(args.model_params['stability_param'])
 
     filename = setup.directories['outputFcase']+'2D_Heatmap_N=' + \
                 str(args.noise_samples)+add
     for form in setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
-        
-    # plt.show()
+
+    plt.show(block=False)

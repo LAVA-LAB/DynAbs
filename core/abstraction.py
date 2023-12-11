@@ -313,9 +313,11 @@ class Abstraction(object):
         print(nr_act,'actions enabled')
         if nr_act == 0:
             printWarning('No actions enabled at all, so terminate')
-            sys.exit()
+            assert False
+            # sys.exit()
 
         if len(self.args.x_init) == self.model.n:
+
             s_init = state2region(self.args.x_init, self.spec.partition, self.partition['R']['c_tuple'])[0]
             print('In initial state '+str(s_init)+', the following actions are enabled:')
             print([self.actions['obj'][a].center for a in self.actions['enabled'][s_init]])
@@ -498,11 +500,11 @@ class Abstraction(object):
               mode.upper()+'...')
     
         file_prefix = self.setup.directories['outputFcase'] + "PRISM_" + mode
-        policy_file = file_prefix + '_policy.csv'
+        policy_file = file_prefix + '_policy.txt'
         vector_file = file_prefix + '_vector.csv'
-    
-        options = ' -ex -exportadv "'+policy_file+'"'+ \
-                  ' -exportvector "'+vector_file+'"'
+
+        options = ' -exportstrat "' + policy_file + '"' + \
+                  ' -exportvector "' + vector_file + '"'
     
         print(' --- Execute PRISM command for EXPLICIT model description')        
 
@@ -554,12 +556,37 @@ class Abstraction(object):
         
         else:
 
-            # Read policy CSV file
-            policy_all = pd.read_csv(policy_file, header=None).iloc[:, self.mdp.head:].\
-                fillna(-1).to_numpy()
+            # Updated for new PRISM policy/strategy generation (September 2023)
+            with open(policy_file) as f:
+                policy_raw = f.readlines()
 
+            import re
+            policy_all = np.full((self.mdp.N, self.mdp.nr_states), fill_value='-1', dtype='<U16')
+
+            # Fill a numpy array with the policy (rows are time steps, columns are states)
+            # First row means the action at time k=0, second row at time k=1, etc...
+            for line in policy_raw:
+                line = line.replace('(', '').replace(')', '').replace('\n', '')
+                state, time, action = re.split(r",|:", line)
+                if int(state) >= 0:
+                    # An action of 'null' means that no action was enabled at all
+                    if action != 'null':
+                        # Otherwise, the action is read as 'a_100', with '100' the action number.
+                        # Thus, we split the string and only store the number into the policy matrix.
+                        action_number = action.split('_')[1]
+                        policy_all[int(time), int(state)] = action_number
+
+            self.results['optimal_policy'] = policy_all
+
+            '''
+            # In case of improved synthesis scheme, only keep the last action (at one-step to go)
             if self.args.improved_synthesis:
                 policy_all = policy_all[[-1], :]
+
+            np.set_printoptions(threshold=sys.maxsize)
+
+            print(policy_all)
+            assert False
 
             for i,row in enumerate(policy_all):
                 
@@ -583,4 +610,10 @@ class Abstraction(object):
                         self.results['optimal_policy'][k,j] = int(value_split[1])
                     else:
                         # If no policy is known, set to -1
-                        self.results['optimal_policy'][k,j] = int(value)    
+                        self.results['optimal_policy'][k,j] = int(value)
+
+            print(self.results['optimal_policy'])
+            assert False
+            '''
+
+        return

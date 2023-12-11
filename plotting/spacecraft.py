@@ -138,7 +138,7 @@ def spacecraft(setup, trace):
     for form in setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
-    plt.show()
+    plt.show(block = False)
 
 
 def Rx(theta):

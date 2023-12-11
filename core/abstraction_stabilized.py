@@ -42,7 +42,13 @@ class abstraction_stabilized(Abstraction):
 
         '''
         
-        model, spec = define_model(model_raw, spec_raw, stabilize_lqr=True)
+        model, spec = define_model(model_raw, spec_raw, stabilizing_point = args.model_params['stabilizing_point'],
+                                   stabilize_lqr = True)
+
+        # Compute input space used in the abstraction (typically more constrained than for stabilizing)
+        reps = int(model.p / len(args.input_min_constr))
+        model.uBarMin = np.tile(args.input_min_constr, reps)
+        model.uBarMax = np.tile(args.input_max_constr, reps)
 
         # Copy setup to internal variable
         self.setup = setup
@@ -98,7 +104,6 @@ class abstraction_stabilized(Abstraction):
             model, spec = partial_model(self.flags, deepcopy(model), deepcopy(spec), dim_n, dim_p)
             compositional = True
 
-
         enabled = {}
         enabled_inv = {}   
 
@@ -142,14 +147,15 @@ class abstraction_stabilized(Abstraction):
             act   = self.actions['obj'][a_idx]
             
             if len(act.backreach) == 0:
-                print('- Backward reachable set for action {} is empty, so skip'.format(a_idx))
+                if verbose:
+                    print('- Backward reachable set for action {} is empty, so skip'.format(a_idx))
                 continue
 
             # Use standard method: check if points are in (skewed) hull
             try:
-                x_inv_hull = Delaunay(act.backreach, qhull_options='QJ')
+                x_inv_hull = Delaunay(act.backreach[:,dim_n], qhull_options='QJ')
             except:
-                x_inv_hull = Delaunay(act.backreach)
+                x_inv_hull = Delaunay(act.backreach[:,dim_n])
 
             # Check which points are in the convex hull
             polypoints_vec = in_hull(region_corners, x_inv_hull)

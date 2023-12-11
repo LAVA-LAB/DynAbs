@@ -447,4 +447,4 @@ def transition_plot(samples, error, i_show, i_hide, args, setup, model, spec, pa
     for form in setup.plotting['exportFormats']:
         plt.savefig(filename+'.'+str(form), format=form, bbox_inches='tight')
         
-    plt.show()
+    plt.show(block = False)

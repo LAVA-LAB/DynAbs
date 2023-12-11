@@ -147,10 +147,8 @@ Moreover, the following arguments can specifically be passed for running one of 
 | drone                | drone_par_uncertainty | No        | False              | Boolean (no value)        | If `--drone_par_uncertainty` is passed, enable parameter uncertainty |
 | drone                | drone_mc_step         | No        | 0.2                | float                     | Step size in which to increment parameter deviation (to create Figs. 5 and 9 as in paper) |
 | drone                | drone_mc_iter         | No        | 0.2                | int                       | Number of Monte Carlo simulations (to create Figs. 5 and 9 as in paper) |
-| building_temp        | bld_partition         | No        | '[25,35]'          | str (interpreted as list) | Size of the state space partition |
 | building_temp        | bld_target_size       | No        | '[[-0.1,0.1],[-0.3,0.3]]' | str (interpreted as list) | Size of the target sets used |
 | building_temp        | bld_par_uncertainty   | No        | False              | Boolean (no value)        | If `--bld_par_uncertainty` is passed, enable parameter uncertainty |
-| anaesthesia_delivery | drug_partition        | No        | '[20,20,20]'       | str (interpreted as list) | Size of the state space partition |
 -->
 
 ------

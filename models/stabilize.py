@@ -78,7 +78,7 @@ def ackermann(A, B, poles, plot=False):
 
             break
 
-        plt.show()
+        plt.show(block = False)
         
     return Acl, Kgain
 
@@ -95,7 +95,7 @@ def lqr(A, B, Q, R):
 
 def compute_stabilized_control_vertices(model, target_point):
 
-    alpha = -model.K @ model.A_inv @ target_point
+    alpha = -model.K @ model.A_inv @ (target_point - model.Q_flat)
     beta  = np.eye(model.p) + model.K @ model.A_inv @ model.B
 
     G = np.vstack([beta, -beta, np.eye(model.p), -np.eye(model.p)])

@@ -263,9 +263,14 @@ class MonteCarloSim():
             else:
                 # Use Gaussian noise samples
                 x[k+1] = x_hat + self.noise[s_abs, m, k]
-               
-            if any(self.model.uMin > u[k]) or any(self.model.uMax < u[k]):
-                self.tab.print_row([s_init, m, k, 'Control input '+str(u[k])+' outside limits'], sort="Warning")
+
+            if hasattr(self.model, 'K'):
+                uTotal = u[k] - self.model.K @ x[k]
+            else:
+                uTotal = u[k]
+
+            if any(self.model.uMin > uTotal) or any(self.model.uMax < uTotal):
+                self.tab.print_row([s_init, m, k, 'Control input '+str(uTotal)+' outside limits'], sort="Warning")
     
             # Add current state, belief, etc. to trace
             trace['k'] += [k+1]
