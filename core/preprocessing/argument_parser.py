@@ -18,7 +18,9 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Sampling-Based Abstraction Method",
                                      prefix_chars='--')
 
-
+    # Path to prism exectuable
+    parser.add_argument('--prism_executable', type=str, action="store", dest='prism_executable',
+                        default='~/Documents/prism/bin/prism', help="Path to the prism executable (located in the prism/bin/ folder)")
 
     ### Abstraction options
     # File from which to load model

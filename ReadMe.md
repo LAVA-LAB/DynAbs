@@ -78,14 +78,6 @@ $ pip3 install -r requirements.txt
 
 Please checkout the file `requirements.txt` to see the full list of packages that will be installed.
 
-## 4. Set path to PRISM
-
-To ensure that PRISM can be found by the script, **you need to modify the path to the PRISM folder** in the  `path_to_prism.txt` file. Set the PRISM folder to the one where you installed it (the filename should end with `/prism/`, such that it points the folder in which the `bin/` folder is located), and save your changes. For example, the path to PRISM can look as follows:
-
-```
-/home/<location-to-prism>/prism/prism/
-```
-
 ------
 
 # How to run for a single model?
@@ -93,10 +85,12 @@ To ensure that PRISM can be found by the script, **you need to modify the path t
 An example of running the UAV benchmark (6D linear dynamical model) is as follows:
 
 ```bash
-$ python3 RunFile.py --model_file JAIR22_models --model UAV --UAV_dim 3 --prism_java_memory 8 --noise_samples 6400 --noise_factor 1 --nongaussian_noise --monte_carlo_iter 1000 --x_init '[-14,0,6,0,-2,0]' --plot --timebound 16
+$ python3 RunFile.py --model_file JAIR22_models --model UAV --prism_executable '~/Documents/prism/bin/prism' --UAV_dim 3 --prism_java_memory 8 --noise_samples 6400 --noise_factor 1 --nongaussian_noise --monte_carlo_iter 1000 --x_init '[-14,0,6,0,-2,0]' --plot --timebound 16
 ```
 
 This runs the 3D UAV benchmark from the paper, with `N=6400` (non-Gaussian) noise samples, and Monte Carlo simulations enabled.
+
+> Importantly, you have to change the `prism_executable` argument such that it points to the Prism executable for you. This is the file named `prism` in the `.../prism/bin/` folder.
 
 All results are stored in the `output/` folder. When running `RunFile.py` for a new abstraction, a new folder is created that contains the application name and the current datetime, such as `Ab_UAV_09-21-2022_17-31-20/`. For every iteration, a subfolder is created, inwhich all results specific to that single iteration are saved. This includes:
 
@@ -108,10 +102,12 @@ All results are stored in the `output/` folder. When running `RunFile.py` for a 
 
 # How to run experiments from the paper?
 
-The figures and tables in the experimental section of the paper can be reproduced by running the shell script `run_experiments.sh` in the root folder of the repository:
+The figures and tables in the experimental section of the paper can be reproduced by running the shell script `run_experiments.sh` in the root folder of the repository.
+To run the experiments, change the `prism_executable` variable such that it points to the Prism executable on your machine (also see the information above), and then run the following to performe the experiments presented in the respective papers:
 
 ```bash
-bash run_experiments.sh
+bash run_experiments_JAIR23.sh
+bash run_experiments_AAAI23.sh
 ```
 
 ------

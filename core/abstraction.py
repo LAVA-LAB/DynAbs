@@ -9,6 +9,7 @@ import sys                      # Allows to terminate the code at some point
 import random                   # Import to use random variables
 import subprocess               # Import to call prism via terminal command
 from progressbar import progressbar # Import to create progress bars
+import pathlib
 
 from .define_model import find_connected_components
 from .define_partition import define_partition, define_spec_region, \
@@ -282,8 +283,7 @@ class Abstraction(object):
 
         if len(self.args.x_init) == self.model.n:
             s_init = state2region(self.args.x_init, self.spec.partition, self.partition['R']['c_tuple'])[0]
-            print('In initial state '+str(s_init)+', the following actions are enabled:')
-            print([self.actions['obj'][a].center for a in self.actions['enabled'][s_init]])
+            print('In initial state '+str(s_init)+', the number of enabled actions is:', len(self.actions['enabled'][s_init]))
 
         self.time['2_enabledActions'] = tocDiff(False)
         print('Enabled actions define - time:',self.time['2_enabledActions'])
@@ -449,8 +449,6 @@ class Abstraction(object):
         None.
 
         '''
-
-        prism_folder = self.args.prism_folder
         
         print('\n+++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
         
@@ -473,9 +471,10 @@ class Abstraction(object):
 
         model_file      = '"'+self.mdp.prism_file+'"'
 
-        # Explicit model
-        prism_folder = prism_folder.replace("\n", "").replace("\r", "")
-        command = prism_folder + "/bin/prism -javamaxmem " + \
+        # Check if the prism executable can be found and if so, run it on the generated iMDP.
+        if not pathlib.Path(self.args.prism_executable).is_file():
+            raise Exception(f"Could not find the prism executable. Please check if the following path to the executable is correct: {str(self.args.prism_executable)}")
+        command = self.args.prism_executable + " -javamaxmem " + \
                   str(self.args.prism_java_memory) + "g -importmodel " + model_file + " -pf '" + \
                   spec + "' " + options
         
