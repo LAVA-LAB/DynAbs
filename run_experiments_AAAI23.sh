@@ -1,7 +1,7 @@
 #!/bin/bash
 # Define number of iterations (i)
 i=10
-prism_exe='~/Documents/Tools/prism/prism/bin/prism'
+prism_exe='/Users/tbadings/Documents/Tools/prism/prism/bin/prism'
 #
 # Longitudinal drone dynamics benchmark
 echo -e "++++++++ RUN DRONE BENCHMARK ++++++++\n";

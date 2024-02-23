@@ -1,5 +1,5 @@
 #!/bin/bash
-prism_exe='~/Documents/Tools/prism/prism/bin/prism'
+prism_exe='/Users/tbadings/Documents/Tools/prism/prism/bin/prism'
 #
 # Shuttle benchmark against SReachTools
 python3 RunFile.py --model_file JAIR22_models --model shuttle --timebound 16 --prism_executable $prism_exe --noise_samples 1600 --confidence 0.01 --prism_java_memory 8 --monte_carlo_iter 100 --x_init '[-0.75, -0.85, 0.005, 0.005]' --plot
