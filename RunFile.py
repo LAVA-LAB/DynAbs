@@ -24,6 +24,7 @@ import sys
 import matplotlib as mpl
 from inspect import getmembers, isclass # To get list of all available models
 import importlib
+import pathlib
 
 # Load main classes and methods
 from core.abstraction_default import abstraction_default
@@ -49,6 +50,9 @@ mpl.rcParams['figure.dpi'] = 300
 args = parse_arguments()
 args.base_dir = os.path.dirname(os.path.abspath(__file__))
 print('Base directory:', args.base_dir)
+
+if not pathlib.Path(args.prism_executable).is_file():
+    raise Exception(f"Could not find the prism executable. Please check if the following path to the executable is correct: {str(args.prism_executable)}")
 
 print('Run using arguments:')
 for key,val in vars(args).items():
