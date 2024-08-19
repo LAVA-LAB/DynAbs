@@ -8,14 +8,14 @@ This artefact contains an implementation of the formal abstraction methods propo
 
 This repository contains all code and instructions that are needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM.
 
-Python version: `3.8.8`. For a list of the required Python packages, please see the `requirements.txt` file. The code is tested with PRISM version `4.8`.
+Python version: `3.8.8`. For a list of the required Python packages, please see the `requirements.txt` file. The code is tested with PRISM version `4.8.1.dev`.
 
 ------
 
 
 # Installation and execution of the program
 
-**<u>Important note:</u>** the PRISM version that we use only runs on MacOS or Linux.
+> **<u>Important note:</u>** We have only tested the artefact on MacOS and Linux. Windows is currently not supported (as we require building PRISM from source).
 
 We recommend using the artefact on a virtual environment, in order to keep things clean on your machine. Here, we explain how to install the artefact on such a virtual environment using Conda. Other methods for using virtual environments exist, but we assume that you have Python 3 installed (we tested with version 3.8.8).
 
@@ -24,7 +24,7 @@ We recommend using the artefact on a virtual environment, in order to keep thing
 To create a virtual environment with Conda, run the following command:
 
 ```bash
-$ conda create --name abstract_env
+$ conda create --name abstract_env python=3.8.8
 ```
 
 Then, to activate the virtual environment, run:
@@ -35,35 +35,30 @@ $ conda activate abstract_env
 
 ## 2. Install dependencies
 
-In addition to Python 3, a number of dependencies must be installed on your machine:
+We assume the git is installed on your machine. Then, the following dependencies must be installed on your machine:
 
-1. Git - Can be installed using the command:
-
-   ```bash
-   $ sudo apt update 
-   $ sudo apt install git
-   ```
-
-2. Java Development Kit (required to run PRISM) - Can be installed using the commands:
+1. Java Development Kit (required to run PRISM). On Linux, this can be installed using the commands:
 
    ```bash
    $ sudo apt install default-jdk
    ```
 
+   On MacOS, the Java Development kit can be installed via, for example, Homebrew.
+
 3. PRISM - In the desired PRISM installation folder, run the following commands:
 
    ```bash
-   $ git clone https://github.com/prismmodelchecker/prism.git prism
+   $ git clone https://github.com/prismmodelchecker/prism.git prism --branch v4.8.1
    $ cd prism/prism; make
    ```
 
    For more details on using PRISM, we refer to the PRISM documentation on 
    https://www.prismmodelchecker.org
    
-5. To create the 3D UAV trajectory plots, you may need to install a number of libraries required for Qt, which can be done using the command:
+5. To create the 3D UAV trajectory plots, you may need to install a number of libraries required for Qt. On linux, these libraries can be installed using the command:
 
    ```bash
-   $ sudo apt-get install -y libdbus-1-3 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0                          libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
+   $ sudo apt-get install -y libdbus-1-3 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
    ```
 
 ## 3. Copy artefact files and install packages
