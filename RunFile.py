@@ -205,7 +205,7 @@ for case_id in range(0, Ab.args.iterations):
                     Ab.mc = MonteCarloSim(Ab, iterations=Ab.args.monte_carlo_iter,
                                         writer=writer)
 
-            writer.save()
+            writer.close()
         else:
             Ab.blref.set_values(Ab.results['optimal_reward'])
 

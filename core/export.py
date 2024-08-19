@@ -62,7 +62,7 @@ class result_exporter(object):
             df.to_excel(writer, sheet_name=str(key))
         
         # Close the Pandas Excel writer and output the Excel file.
-        writer.save()
+        writer.close()
 
 
 

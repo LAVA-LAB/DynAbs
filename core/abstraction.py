@@ -10,6 +10,7 @@ import random                   # Import to use random variables
 import subprocess               # Import to call prism via terminal command
 from progressbar import progressbar # Import to create progress bars
 import pathlib
+import re
 
 from .define_model import find_connected_components
 from .define_partition import define_partition, define_spec_region, \
@@ -536,10 +537,10 @@ class Abstraction(object):
                 idx_tuple = tuple(map(int, idx_str))
 
                 # Seperate time k from action
-                time, action = elems[-1].split(':')
+                time, action = re.split(':|=', elems[-1])
 
                 # An action of 'null' means that no action was enabled at all
-                if action != 'null':
+                if not (action == 'null' or action == ''):
                     # Retrieve state ID from the tuple
                     state = self.partition['R']['idx'][tuple(idx_tuple)]
 
@@ -547,5 +548,7 @@ class Abstraction(object):
                     # Thus, we split the string and only store the number into the policy matrix.
                     action_number = action.split('_')[1]
                     policy_all[int(time), int(state)] = action_number
+
+                    print('Stored', state, time, action_number)
 
             self.results['optimal_policy'] = policy_all
