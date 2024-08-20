@@ -11,7 +11,7 @@ More specifically, this artefact contains an implementation of the methods propo
 
 This repository contains all code and instructions that are needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM.
 
-Python version: `3.10.14`. For a list of the required Python packages, please see the `requirements.txt` file. The code is tested with PRISM version `4.8.1.dev`.
+Python version: `3.10.14`. For a list of the required Python packages, please see the `requirements.txt` file. The code is tested with PRISM version `4.8.1`.
 
 ------
 
