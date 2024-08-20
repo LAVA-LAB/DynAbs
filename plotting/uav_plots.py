@@ -225,8 +225,8 @@ def UAVplot3d_visvis(setup, args, model, regions, goal_regions,
     ax = vv.gca()
     
     ix = 0
-    iy = 1
-    iz = 2
+    iy = 2
+    iz = 4
     
     regionWidth_xyz = np.array([spec.partition['width'][0], 
                                 spec.partition['width'][2], 
@@ -239,11 +239,9 @@ def UAVplot3d_visvis(setup, args, model, regions, goal_regions,
 
         goalState = regions['center'][goal]
         if goalState[1] == cut_value[0] and \
-           goalState[3] == cut_value[1] and \
-           goalState[5] == cut_value[2]:
+            goalState[3] == cut_value[1] and \
+            goalState[5] == cut_value[2]:
 
-            print('--- Draw goal region',i)
-        
             center_xyz = np.array([goalState[0], 
                                    goalState[2], 
                                    goalState[4]])
@@ -259,30 +257,47 @@ def UAVplot3d_visvis(setup, args, model, regions, goal_regions,
 
         critState = regions['center'][crit]
         if critState[1] == cut_value[0] and \
-           critState[3] == cut_value[1] and \
-           critState[5] == cut_value[2]:
+            critState[3] == cut_value[1] and \
+            critState[5] == cut_value[2]:
         
-            print('--- Draw critical region',i)
-
             center_xyz = np.array([critState[0], 
-                                   critState[2], 
-                                   critState[4]])    
+                                    critState[2], 
+                                    critState[4]])    
         
             critical = vv.solidBox(tuple(center_xyz), 
-                                   scaling=tuple(regionWidth_xyz))
+                                    scaling=tuple(regionWidth_xyz))
             critical.faceColor = (1,0,0,0.8)
     
     print('-- Critical regions drawn')
 
     # Add traces
-    for i,trace_array in enumerate(traces):
-        
+    i = 0
+    for trace in traces.values():
+
+        state_traj = trace['x']
+
+        # Set color and line style
         if i == 0:
             clr = 'b'
             ms = '.'
         else:
             clr = (1,0.647,0)
             ms = 'x'
+
+        # Only show trace if there are at least two points
+        if len(state_traj) < 2:
+            printWarning('Warning: trace '+str(i)+
+                         ' has length of '+str(len(state_traj)))
+            continue
+        else:
+            i+= 1
+
+        # Stop at desired number of traces
+        if i >= traces_to_plot:
+            break
+
+        # Convert nested list to 2D array
+        trace_array = np.array(state_traj)
         
         # Extract x,y coordinates of trace
         x = trace_array[:, ix]

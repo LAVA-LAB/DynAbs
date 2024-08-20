@@ -43,7 +43,7 @@ class MonteCarloSim():
 
         '''
         
-        print(' -- Starting Monte Carlo simulations...')
+        print('Starting Monte Carlo simulations...')
 
         if Ab.flags['underactuated']:
             self.controller = Controller(Ab.model)
@@ -60,6 +60,11 @@ class MonteCarloSim():
         self.args = Ab.args
         self.horizon = Ab.N
         self.spec = Ab.spec
+
+        if self.horizon == np.inf:
+            max_horizon = int(100)
+            print('-- Horizon of abstraction is infinite; set to {} for simulations'.format(max_horizon))
+            self.horizon = max_horizon
 
         self.random_initial_state = random_initial_state
 
@@ -114,7 +119,7 @@ class MonteCarloSim():
         
         if self.args.verbose:
             print(' -- Computing required random variables...')
-        
+
         # Gaussian noise mode
         self.noise = np.random.multivariate_normal(
                 np.zeros(self.model.n), self.model.noise['w_cov'],
@@ -218,7 +223,12 @@ class MonteCarloSim():
                 return trace, success
 
             # Retreive the action from the policy
-            action[k] = self.policy[k, x_region[k]]
+            if self.policy.shape[0] == 1:
+                # If infinite horizon, policy does not have a time index
+                action[k] = self.policy[0, x_region[k]]
+            else:
+                # If finite horizon, use action for the current time step k
+                action[k] = self.policy[k, x_region[k]]
 
             if action[k] == -1:
                 if self.args.verbose:
@@ -264,7 +274,7 @@ class MonteCarloSim():
                 # Use Gaussian noise samples
                 x[k+1] = x_hat + self.noise[s_abs, m, k]
                
-            if any(self.model.uMin > u[k]) or any(self.model.uMax < u[k]):
+            if (any(self.model.uMin > u[k]) or any(self.model.uMax < u[k])) and self.args.verbose:
                 self.tab.print_row([s_init, m, k, 'Control input '+str(u[k])+' outside limits'], sort="Warning")
     
             # Add current state, belief, etc. to trace

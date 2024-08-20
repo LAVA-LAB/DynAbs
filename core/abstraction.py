@@ -512,17 +512,47 @@ class Abstraction(object):
             self.results['optimal_reward'] = 1 - self.results['optimal_reward']
 
         if self.args.timebound == np.inf:
+            # Infinite horizon policy (no time index)
+            
+            # Updated for new PRISM policy/strategy generation (September 2023)
+            with open(policy_file) as f:
+                policy_raw = f.readlines()
 
-            # For unbounded properties, PRISM does currently not yet export the policy
-            self.results['optimal_policy'] = pd.DataFrame()
+            policy_all = np.full((1, self.mdp.nr_states), fill_value='-1', dtype='<U16')
+
+            # Fill a numpy array with the policy (rows are time steps, columns are states)
+            # First row means the action at time k=0, second row at time k=1, etc...
+            for line in policy_raw:
+                # Each line is of the form (idx1,idx2,...),k:action
+                line = line.replace('(', '').replace(')', '').replace('\n', '')
+                elems = re.split(',|:|=', line)
+                
+                # Separate state index tuple (idx1,idx2,...)
+                idx_str = elems[:-1]
+                idx_tuple = tuple(map(int, idx_str))
+
+                # Seperate time k from action
+                action = elems[-1]
+
+                # An action of 'null' means that no action was enabled at all
+                if not (action == 'null' or action == ''):
+                    # Retrieve state ID from the tuple
+                    state = self.partition['R']['idx'][tuple(idx_tuple)]
+
+                    # Otherwise, the action is read as 'a_100', with '100' the action number.
+                    # Thus, we split the string and only store the number into the policy matrix.
+                    action_number = action.split('_')[1]
+                    policy_all[0, int(state)] = action_number 
+
+            self.results['optimal_policy'] = policy_all
 
         else:
+            # Finite horizon policy (with time index)
 
             # Updated for new PRISM policy/strategy generation (September 2023)
             with open(policy_file) as f:
                 policy_raw = f.readlines()
 
-            import re
             policy_all = np.full((self.mdp.N, self.mdp.nr_states), fill_value='-1', dtype='<U16')
 
             # Fill a numpy array with the policy (rows are time steps, columns are states)
@@ -548,7 +578,5 @@ class Abstraction(object):
                     # Thus, we split the string and only store the number into the policy matrix.
                     action_number = action.split('_')[1]
                     policy_all[int(time), int(state)] = action_number
-
-                    print('Stored', state, time, action_number)
 
             self.results['optimal_policy'] = policy_all

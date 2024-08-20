@@ -17,7 +17,7 @@ from core.commons import overapprox_box, tic, ticDiff, tocDiff, table
 from core.cvx_opt import LP_vertices_contained
 from core.scenario_approach import load_scenario_table
 
-class abstraction_epistemic(Abstraction):
+class abstraction_parameter(Abstraction):
 
     def __init__(self, args, setup, model_raw, spec_raw):
         '''

@@ -1,6 +1,9 @@
 # Introduction of this ReadMe file
 
-This artefact contains an implementation of the formal abstraction methods proposed in the following papers:
+DynAbs is a tool that can be used to compute feedback controllers for stochastic linear dynamical systems with reach-avoid control tasks.
+The returned controllers are provably correct, which means that they satisfy the reach-avoid task *with at least a desired threshold probability.*
+
+More specifically, this artefact contains an implementation of the methods proposed in the following papers:
 
 - [Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & Marielle Stoelinga (2022). Sampling-based Robust Control of Autonomous Systems with Non-Gaussian Noise. AAAI 2022](https://ojs.aaai.org/index.php/AAAI/article/view/21201)
 - [Thom Badings, Licio Romao, Alessandro Abate, David Parker, Hasan Poonawala, Marielle Stoelinga & Nils Jansen (2022). Robust Control for Dynamical Systems with Non-Gaussian Noise via Formal Abstractions. JAIR 2023](https://www.jair.org/index.php/jair/article/view/14253)
@@ -8,7 +11,7 @@ This artefact contains an implementation of the formal abstraction methods propo
 
 This repository contains all code and instructions that are needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM.
 
-Python version: `3.8.8`. For a list of the required Python packages, please see the `requirements.txt` file. The code is tested with PRISM version `4.8.1.dev`.
+Python version: `3.10.14`. For a list of the required Python packages, please see the `requirements.txt` file. The code is tested with PRISM version `4.8.1.dev`.
 
 ------
 
@@ -17,58 +20,61 @@ Python version: `3.8.8`. For a list of the required Python packages, please see 
 
 > **<u>Important note:</u>** We have only tested the artefact on MacOS and Linux. Windows is currently not supported (as we require building PRISM from source).
 
-We recommend using the artefact on a virtual environment, in order to keep things clean on your machine. Here, we explain how to install the artefact on such a virtual environment using Conda. Other methods for using virtual environments exist, but we assume that you have Python 3 installed (we tested with version 3.8.8).
+We recommend using the artefact on a virtual environment, in order to keep things clean on your machine. Here, we explain how to install the artefact on such a virtual environment using Conda. Other methods for using virtual environments exist, but we assume that you have Python 3 installed (we tested with version `3.10.14`).
 
 ## 1. Create virtual environment
 
-To create a virtual environment with Conda, run the following command:
+To create a virtual environment with Conda and the prefered Python version, run the following command (replacing `abstract_env` with the desired name for the environment):
 
 ```bash
-$ conda create --name abstract_env python=3.8.8
+conda create --name abstract_env python=3.10.14
 ```
 
 Then, to activate the virtual environment, run:
 
 ```bash
-$ conda activate abstract_env
+conda activate abstract_env
 ```
 
 ## 2. Install dependencies
 
 We assume the git is installed on your machine. Then, the following dependencies must be installed on your machine:
 
-1. Java Development Kit (required to run PRISM). On Linux, this can be installed using the commands:
+1. Java Development Kit (required to run PRISM, see https://prismmodelchecker.org/manual/InstallingPRISM/Instructions for details). On Linux, this can be installed using the commands:
 
    ```bash
-   $ sudo apt install default-jdk
+   sudo apt install default-jdk
    ```
 
-   On MacOS, the Java Development kit can be installed via, for example, Homebrew.
+   On MacOS, the Java Development kit can be installed via, for example, Homebrew or Oracle (https://www.oracle.com/java/technologies/downloads/#jdk22-mac).
 
-3. PRISM - In the desired PRISM installation folder, run the following commands:
+3. PRISM - In the desired PRISM installation folder, clone PRISM (version `4.8.1`) from git and run the makefile:
 
    ```bash
-   $ git clone https://github.com/prismmodelchecker/prism.git prism --branch v4.8.1
-   $ cd prism/prism; make
+   git clone https://github.com/prismmodelchecker/prism.git prism --branch v4.8.1;
+   cd prism/prism; 
+   make
    ```
 
-   For more details on using PRISM, we refer to the PRISM documentation on 
+   For more details on installing and using PRISM, we refer to the PRISM documentation on 
    https://www.prismmodelchecker.org
    
-5. To create the 3D UAV trajectory plots, you may need to install a number of libraries required for Qt. On linux, these libraries can be installed using the command:
+5. To create the 3D UAV trajectory plots, you may need to install a number of libraries required for Qt. On Linux, these libraries can be installed using the command:
 
    ```bash
-   $ sudo apt-get install -y libdbus-1-3 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
+   sudo apt-get install -y libdbus-1-3 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
    ```
+
+   On MacOS, the Python requirements should be sufficient to generate the 3D plots. If you run into any problems, feel free to contact us (see contact details at the bottom of the ReadMe).
 
 ## 3. Copy artefact files and install packages
 
-Download and extract the artefact files to a folder on the machine with writing access (needed to store results).
+Download and extract the artefact files to a folder on your machine, making sure that you grant writing access (needed to store results).
 
 Open a terminal and navigate to the artefact folder. Then, run the following command to install the required packages:
 
 ```bash
-$ pip3 install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 Please checkout the file `requirements.txt` to see the full list of packages that will be installed.
@@ -80,7 +86,7 @@ Please checkout the file `requirements.txt` to see the full list of packages tha
 An example of running the UAV benchmark (6D linear dynamical model) is as follows:
 
 ```bash
-$ python3 RunFile.py --model_file JAIR22_models --model UAV --prism_executable '~/Documents/prism/bin/prism' --UAV_dim 3 --prism_java_memory 8 --noise_samples 6400 --noise_factor 1 --nongaussian_noise --monte_carlo_iter 1000 --x_init '[-14,0,6,0,-2,0]' --plot --timebound 16
+python3 RunFile.py --model_file JAIR22_models --model UAV --prism_executable '~/Documents/prism/bin/prism' --UAV_dim 3 --prism_java_memory 8 --noise_samples 6400 --noise_factor 1 --nongaussian_noise --monte_carlo_iter 1000 --x_init '[-14,0,6,0,-2,0]' --plot --timebound 16
 ```
 
 This runs the 3D UAV benchmark from the paper, with `N=6400` (non-Gaussian) noise samples, and Monte Carlo simulations enabled.
@@ -101,7 +107,7 @@ The figures and tables in the experimental section of the paper can be reproduce
 To run the experiments, change the `prism_executable` variable such that it points to the Prism executable on your machine (also see the information above), and then run the following to performe the experiments presented in the respective papers:
 
 ```bash
-bash run_experiments_JAIR23.sh
+bash run_experiments_JAIR23.sh;
 bash run_experiments_AAAI23.sh
 ```
 
@@ -117,7 +123,7 @@ Below, we list all arguments that can be passed to the command for running the p
 | model              | Yes       | N/A                | str                      | Name of the model to load |
 | timebound          | Yes       | inf                | int or 'inf'             | Timebound on the specification/property, which can be a positive integer or 'inf' for an infinite horizon (unbounded) |
 | mdp_mode           | No        | interval            | str                      | If `estimate`, a point estimate MDP abstraction is created; if `interval`, a robust interval MDP abstraction is created |
-| abstraction_type   | No        | default            | str                      | If `default`, no epistemic uncertainty is considered; if `epistemic`, epistemic uncertainty is considered next to stochastic noise |
+| abstraction_type   | No        | default            | str                      | If `default`, no set-bounded parameter uncertainty is considered; if `parameter`, set-bounded parameter uncertainty is considered next to stochastic noise |
 | noise_samples      | No        | 20000              | int                      | Number of noise samples to use for computing transition probability intervals |
 | confidence         | No        | 1e-8               | float                    | Confidence level on individual transitions |
 | sample_clustering  | No        | 1e-2               | float                    | Distance at which to cluster (merge) similar noise samples |
@@ -130,28 +136,8 @@ Below, we list all arguments that can be passed to the command for running the p
 | x_init             | No        | []                 | List                     | Initial state for Monte Carlo simulations |
 | verbose            | No        | False              | Boolean (no value)       | If argument `--verbose` is passed, more verbose output is provided by the script |
 
-<!---
-Moreover, the following arguments can specifically be passed for running one of the benchmarks from the paper.
-| Benchmark            | Argument              | Required? | Default            | Type                      | Description |
-| ---                  | ---                   | ---       | ---                | ---                       | ---         |
-| drone                | drone_spring          | No        | False              | Boolean (no value)        | If `--drone_spring` is passed, the spring coefficient is modelled |
-| drone                | drone_par_uncertainty | No        | False              | Boolean (no value)        | If `--drone_par_uncertainty` is passed, enable parameter uncertainty |
-| drone                | drone_mc_step         | No        | 0.2                | float                     | Step size in which to increment parameter deviation (to create Figs. 5 and 9 as in paper) |
-| drone                | drone_mc_iter         | No        | 0.2                | int                       | Number of Monte Carlo simulations (to create Figs. 5 and 9 as in paper) |
-| building_temp        | bld_partition         | No        | '[25,35]'          | str (interpreted as list) | Size of the state space partition |
-| building_temp        | bld_target_size       | No        | '[[-0.1,0.1],[-0.3,0.3]]' | str (interpreted as list) | Size of the target sets used |
-| building_temp        | bld_par_uncertainty   | No        | False              | Boolean (no value)        | If `--bld_par_uncertainty` is passed, enable parameter uncertainty |
-| anaesthesia_delivery | drug_partition        | No        | '[20,20,20]'       | str (interpreted as list) | Size of the state space partition |
--->
-
 ------
 
-# Ancillary scripts
+# Contact
 
-In addition to the main Python program which is executed using `SBA-RunFile.py`, there are two ancillary scripts contained in the folder:
-
-### MatLab code to tabulate probability intervals
-
-We provide a convenient MatLab script, called `Tabulate-RunFile.m`, which can be used to tabulate all possible transition probability intervals for a given value of `N` (total number of samples) and `beta` (the confidence level). For more details on how the transition probability intervals are computed, please consult the main paper (and in particular Theorem 1).
-
-For every combination of `N` and `beta`, the script creates a `.csv` file, that contains the tabulated transition probability intervals, e.g., named `probabilityTable_N=3200_beta=0.01.csv`. When running the main Python program for these values of `N` and `beta`, the tabulated data is loaded into Python, to compute the transition probability intervals of the interval MDP.
+In case you have questions or experience problems with the code, feel free to reach out to Thom Badings (thombadings@gmail.com).

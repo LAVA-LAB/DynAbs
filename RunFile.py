@@ -3,13 +3,12 @@
 
 """
 
-Implementation of the method proposed in the paper:
- "Robust Control for Dynamical Systems with Non-Gaussian Noise via
-  Formal Abstractions"
+DynAbs: A Python tool for abstraction-based controller synthesis for stochastic dynamical systems
+For more information about the papers forming the foundations of this tool, see the ReadMe or the git repository below.
 
 Originally coded by:        Thom Badings
-Contact e-mail address:     thom.badings@ru.nl
-Git repository: https://gitlab.science.ru.nl/tbadings/sample-abstract
+Contact e-mail address:     thombadings@gmail.com
+Git repository: https://github.com/LAVA-LAB/DynAbs
 ______________________________________________________________________________
 """
 
@@ -28,7 +27,7 @@ import pathlib
 
 # Load main classes and methods
 from core.abstraction_default import abstraction_default
-from core.abstraction_epistemic import abstraction_epistemic
+from core.abstraction_parameter import abstraction_parameter
 from core.monte_carlo import MonteCarloSim
 from core.commons import createDirectory
 from core.export import result_exporter, pickle_results
@@ -102,8 +101,8 @@ print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\
 # Create the main object for the current instance
 if args.abstraction_type == 'default':
     method = abstraction_default
-elif args.abstraction_type == 'epistemic':
-    method = abstraction_epistemic
+elif args.abstraction_type == 'parameter':
+    method = abstraction_parameter
 else:
     sys.exit('ERROR: Abstraction type `'+args.abstraction_type+'` not valid')
 Ab = method(args, setup, model, spec)

@@ -36,7 +36,7 @@ def parse_arguments():
 
     # Type of abstraction to create
     parser.add_argument('--abstraction_type', type=str, action="store", dest='abstraction_type', 
-                        default='default', help="Type of abstraction to generate (can be 'default' or 'epistemic')", required=False)
+                        default='default', help="Type of abstraction to generate (can be 'default' or 'parameter')", required=False)
     
     # Number of Monte Carlo simulation iterations
     parser.add_argument('--monte_carlo_iter', type=int, action="store", dest='monte_carlo_iter', 

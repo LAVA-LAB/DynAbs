@@ -4,6 +4,7 @@
 import numpy as np              # Import Numpy for computations
 import pandas as pd             # Import Pandas to store data in frames
 import matplotlib.pyplot as plt # Import Pyplot to generate plots
+import seaborn as sns
 
 # Load main classes and methods
 from matplotlib.patches import Rectangle
@@ -11,6 +12,7 @@ import matplotlib.patches as patches
 
 from core.commons import printWarning, cm2inch
 from core.monte_carlo import MonteCarloSim
+from core.define_partition import define_partition
 
 def oscillator_heatmap(Ab, title = 'auto'):
     '''
@@ -26,9 +28,6 @@ def oscillator_heatmap(Ab, title = 'auto'):
     None.
 
     '''
-    
-    import seaborn as sns
-    from ..define_partition import define_partition
 
     x_nr = Ab.spec.partition['number'][0]
     y_nr = Ab.spec.partition['number'][1]
@@ -47,8 +46,8 @@ def oscillator_heatmap(Ab, title = 'auto'):
         
         j = i % y_nr
         k = i // y_nr
-        
-        difference = Ab.mc['reachability'][idx] - Ab.results['optimal_reward'][idx]
+
+        difference = Ab.mc.results['reachability_probability'][idx] - Ab.results['optimal_reward'][idx]
         
         if difference >= 0:
             # Guarantees safe (model checking >= empirical)
@@ -94,27 +93,11 @@ def oscillator_heatmap(Ab, title = 'auto'):
 
 
 
-def oscillator_traces(Ab, traces, action_traces, plot_trace_ids=None,
+def oscillator_traces(Ab, traces, plot_trace_ids=None,
               line=True, stateLabels=False, title = 'auto', case=0):
     '''
     Create 2D trajectory plots for the harmonic oscillator benchmark
-
-    Parameters
-    ----------
-    setup : dict
-        Setup dictionary.
-    model : dict
-        Main dictionary of the LTI system model.
-    partition : dict
-        Dictionay containing all information of the partitioning.
-    traces : list
-        Nested list containing the trajectories (traces) to plot for
-    line : Boolean, optional
-        If true, also plot line that connects points of traces. 
-        The default is False.
-    stateLabels : Boolean, optional
-        If true, plot IDs of the regions as well. The default is False.
-
+    
     Returns
     -------
     None.
@@ -193,13 +176,13 @@ def oscillator_traces(Ab, traces, action_traces, plot_trace_ids=None,
         if not plot_trace_ids is None and i not in plot_trace_ids:
             continue
         
-        if len(trace) < 2:
+        if len(trace['x']) < 2:
             printWarning('Warning: trace '+str(i)+
-                         ' has length of '+str(len(trace)))
+                         ' has length of '+str(len(trace['x'])))
             continue
         
         # Convert nested list to 2D array
-        trace_array = np.array(trace)
+        trace_array = np.array(trace['x'])
         
         # Extract x,y coordinates of trace
         x = trace_array[:, 0]
@@ -232,9 +215,9 @@ def oscillator_traces(Ab, traces, action_traces, plot_trace_ids=None,
         plt.plot(*points.T, 'o', markersize=2, color="black");
         
         action_centers = np.array([Ab.actions['obj'][a].center 
-                                   for a in action_traces[i][:len(trace)-1]] )
+                                   for a in trace['action'][:len(trace)-1]] )
         action_errors  = np.array([Ab.actions['obj'][a].error 
-                                   for a in action_traces[i][:len(trace)-1]] )           
+                                   for a in trace['action'][:len(trace)-1]] )           
         plt.plot(*action_centers.T, 'o', markersize=2, color="red");
         
         for center, error in zip(action_centers, action_errors):
@@ -375,11 +358,11 @@ class oscillator_experiment(object):
                                   init_states =[eval_state], random_initial_state=True)
             
             df.loc[mass, 'guaranteed'] = np.round(Ab.results['optimal_reward'][eval_state], 4)
-            df.loc[mass, 'simulated']  = np.round(Ab.mc['reachability'][eval_state], 4)
-            df.loc[mass, 'ratio']  = np.round(Ab.mc['reachability'][eval_state] / Ab.results['optimal_reward'][eval_state], 4)
+            df.loc[mass, 'simulated']  = np.round(Ab.mc.results['reachability_probability'][eval_state], 4)
+            df.loc[mass, 'ratio']  = np.round(Ab.mc.results['reachability_probability'][eval_state] / Ab.results['optimal_reward'][eval_state], 4)
             
-            oscillator_traces(Ab, Ab.mc['traces'][eval_state],
-                              Ab.mc['action_traces'][eval_state], 
+            oscillator_traces(Ab, 
+                              Ab.mc.traces[eval_state],
                               plot_trace_ids=[0], 
                               title='Traces for mass='+str(mass)+'; spring='+str(spring),
                               case=f)
