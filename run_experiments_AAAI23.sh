@@ -16,7 +16,7 @@ python3 RunFile.py --abstraction_type 'parameter' --model_file AAAI23_models --m
 python3 RunFile.py --abstraction_type 'parameter' --model_file AAAI23_models --model 'building_temp' --prism_executable $prism_exe --noise_samples 20000 --prism_java_memory 8 --bld_partition '[25,35]' --bld_target_size '[[-.1, .1], [-.3, .3]]' --iterations $i;
 python3 RunFile.py --abstraction_type 'parameter' --model_file AAAI23_models --model 'building_temp' --prism_executable $prism_exe --noise_samples 20000 --prism_java_memory 8 --bld_partition '[35,45]' --bld_target_size '[[-.1, .1], [-.3, .3]]' --iterations $i;
 python3 RunFile.py --abstraction_type 'parameter' --model_file AAAI23_models --model 'building_temp' --prism_executable $prism_exe --noise_samples 20000 --prism_java_memory 8 --bld_partition '[50,70]' --bld_target_size '[[-.05, .05], [-.15, .15]]' --iterations $i;
-python3 RunFile.py --abstraction_type 'parameter' --model_file AAAI23_models --model 'building_temp' --prism_executable $prism_exe --noise_samples 20000 --prism_java_memory 8 --bld_partition '[70,100]' --bld_target_size '[[-.05, .05], [-.15, .15]]' --iterations $i;
+python3 RunFile.py --abstraction_type 'parameter' --model_file AAAI23_models --model 'building_temp' --prism_executable $prism_exe --noise_samples 20000 --prism_java_memory 32 --bld_partition '[70,100]' --bld_target_size '[[-.05, .05], [-.15, .15]]' --iterations $i;
 #
 # Building temperature control problem, with set-bounded parameter uncertainty
 echo -e "++++++++ RUN TEMPERATURE CONTROL BENCHMARK (WITH EPISTEMIC UNCERTAINTY) ++++++++\n";
@@ -24,7 +24,7 @@ python3 RunFile.py --abstraction_type 'parameter' --model_file AAAI23_models --m
 python3 RunFile.py --abstraction_type 'parameter' --model_file AAAI23_models --model 'building_temp' --prism_executable $prism_exe --noise_samples 20000 --prism_java_memory 8 --bld_par_uncertainty --bld_partition '[25,35]' --bld_target_size '[[-.1, .1], [-.3, .3]]' --iterations $i;
 python3 RunFile.py --abstraction_type 'parameter' --model_file AAAI23_models --model 'building_temp' --prism_executable $prism_exe --noise_samples 20000 --prism_java_memory 8 --bld_par_uncertainty --bld_partition '[35,45]' --bld_target_size '[[-.1, .1], [-.3, .3]]' --iterations $i;
 python3 RunFile.py --abstraction_type 'parameter' --model_file AAAI23_models --model 'building_temp' --prism_executable $prism_exe --noise_samples 20000 --prism_java_memory 8 --bld_par_uncertainty --bld_partition '[50,70]' --bld_target_size '[[-.05, .05], [-.15, .15]]' --iterations $i;
-python3 RunFile.py --abstraction_type 'parameter' --model_file AAAI23_models --model 'building_temp' --prism_executable $prism_exe --noise_samples 20000 --prism_java_memory 8 --bld_par_uncertainty --bld_partition '[70,100]' --bld_target_size '[[-.05, .05], [-.15, .15]]' --iterations $i;
+python3 RunFile.py --abstraction_type 'parameter' --model_file AAAI23_models --model 'building_temp' --prism_executable $prism_exe --noise_samples 20000 --prism_java_memory 32 --bld_par_uncertainty --bld_partition '[70,100]' --bld_target_size '[[-.05, .05], [-.15, .15]]' --iterations $i;
 #
 # Anaesthesia delivery problem
 echo -e "++++++++ RUN ANAESTHESIA DELIVERY BENCHMARK ++++++++\n";
