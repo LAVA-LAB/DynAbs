@@ -25,6 +25,7 @@ def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions,
     
     from scipy.interpolate import interp1d
     
+    i_show = np.array(i_show, dtype=int)
     is1, is2 = i_show
     i_hide = np.array([i for i in range(len(spec.partition['width'])) 
                        if i not in i_show], dtype=int)
@@ -71,6 +72,7 @@ def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions,
     for goal in goal_regions:
         
         goalIdx   = np.array(keys[goal])
+
         if all(goalIdx[i_hide] == cut_idx):
 
             goal_lower = [regions['low'][goal][is1], regions['low'][goal][is2]]
