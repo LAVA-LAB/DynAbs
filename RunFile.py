@@ -182,16 +182,21 @@ for case_id in range(0, Ab.args.iterations):
         time_df = pd.DataFrame( data=Ab.time, index=[case_string] )
         time_df.to_excel(writer, sheet_name='Run time')
 
-        exporter.add_results(Ab, model_size, case_string)
+        if args.improved_synthesis:
+            # Store policy for current time step into overall policy
+            Ab.blref.append_policy(policy = Ab.results['optimal_policy'])
 
-        exporter.add_to_df(pd.DataFrame(data=N, index=[case_string], columns=['N']), 
-                            'general')
-        exporter.add_to_df(time_df, 'run_times')
-        exporter.add_to_df(pd.DataFrame(data=model_size, index=[case_string]), 
-                            'model_size')
+            # Check if we are done yet
+            blref_done = Ab.blref.decrease_time()
 
-        # Check if we are done yet
-        if not args.improved_synthesis or Ab.blref.decrease_time():
+            # If not done yet, prepare for next block refinement iteration
+            if not blref_done:
+                Ab.blref.set_values(Ab.results['optimal_reward'])
+            else:
+                # Load general policy (from block refinement scheme) back into general abstraction object
+                Ab.results['optimal_policy'] = Ab.blref.general_policy
+
+        if not args.improved_synthesis or blref_done:
             done = True
 
             if Ab.args.monte_carlo_iter > 0:
@@ -205,8 +210,15 @@ for case_id in range(0, Ab.args.iterations):
                                         writer=writer)
 
             writer.close()
-        else:
-            Ab.blref.set_values(Ab.results['optimal_reward'])
+
+        # Export results
+        exporter.add_results(Ab, Ab.blref.general_policy if args.improved_synthesis else Ab.results['optimal_policy'],
+                             model_size, case_string)
+        exporter.add_to_df(pd.DataFrame(data=N, index=[case_string], columns=['N']),
+                           'general')
+        exporter.add_to_df(time_df, 'run_times')
+        exporter.add_to_df(pd.DataFrame(data=model_size, index=[case_string]),
+                           'model_size')
 
     pickle_results(Ab)
 

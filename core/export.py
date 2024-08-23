@@ -33,13 +33,13 @@ class result_exporter(object):
 
         return self.writer
         
-    def add_results(self, Ab, model_size, case_id):
+    def add_results(self, Ab, optimal_policy, model_size, case_id):
         # Write model size results to Excel
         model_size_df = pd.DataFrame(model_size, index=[case_id])
         model_size_df.to_excel(self.writer, sheet_name='Model size')
         
         # Load data into dataframes
-        policy_df   = pd.DataFrame( Ab.results['optimal_policy'], 
+        policy_df   = pd.DataFrame( optimal_policy,
         columns=range(Ab.partition['nr_regions']), index=range(1 if Ab.N == np.inf else  Ab.N)).T
 
         reward_df   = pd.Series( Ab.results['optimal_reward'], 

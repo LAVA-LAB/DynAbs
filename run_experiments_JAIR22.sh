@@ -12,7 +12,7 @@ python3 RunFile.py --model_file JAIR22_models --model UAV --timebound 32 --UAV_d
 python3 RunFile.py --model_file JAIR22_models --model UAV --timebound 32 --UAV_dim 3 --prism_executable $prism_exe --noise_samples 6400 --prism_java_memory 14 --noise_factor 1 --nongaussian_noise --monte_carlo_iter 1000 --x_init '[-14,0,6,0,-2,0]' --plot
 #
 # 2D Building temperature control
-python3 RunFile.py --model_file JAIR22_models --model building_2room --timebound 32 --prism_executable $prism_exe --noise_samples 3200 --confidence 0.01 --prism_java_memory 14 --plot
+python3 RunFile.py --model_file JAIR22_models --model building_2room --timebound 32 --prism_executable $prism_exe --noise_samples 3200 --confidence 0.01 --prism_java_memory 64 --plot
 #
 # 1D Building temperature control
 python3 RunFile.py --model_file JAIR22_models --model building_1room --timebound 4 --prism_executable $prism_exe --noise_samples 3200 --confidence 0.01 --plot

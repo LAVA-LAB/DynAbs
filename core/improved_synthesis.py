@@ -13,6 +13,7 @@ ______________________________________________________________________________
 """
 
 import numpy as np
+import pandas as pd
 
 class improved_synthesis(object):
     '''
@@ -28,6 +29,9 @@ class improved_synthesis(object):
 
         self.partition = np.arange(0, 1, self.step_size)
 
+        # Initialize general policy
+        self.general_policy = np.full((N, num_regions), fill_value=-1, dtype=int)
+
         # Initially set time step equal to horizon
         self.k = N-1
         self.initial = True
@@ -37,6 +41,13 @@ class improved_synthesis(object):
         values[goal] = 1
 
         self.set_values(values)
+
+    def append_policy(self, policy):
+        # Append policy for current time step into the general policy
+        print('- Store (partial) policy for time step', self.k)
+        self.general_policy[self.k] = policy[0]
+
+        return
 
     def set_values(self, values):
 

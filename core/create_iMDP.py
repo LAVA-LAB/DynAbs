@@ -142,10 +142,12 @@ class mdp(object):
 
         state_file_header = ['0:(' + ','.join([str(-3)] * len(partition['state_variables'])) + ')',
                              '1:(' + ','.join([str(-2)] * len(partition['state_variables'])) + ')',
-                             '2:(' + ','.join([str(-1)] * len(partition['state_variables'])) + ')']
+                             '2:(' + ','.join([str(-1)] * len(partition['state_variables'])) + ')'] + \
+                             [str(i+head)+':(' + ','.join([str(-i-head-1)] * len(partition['state_variables'])) + ')'
+               for i in range(blref_states)] # If improved synthesis is enabled, then append block refinement states.
 
-        state_file_content = [str(i+head)+':'+str(partition['R']['idx_inv'][i]).replace(' ', '')
-               for i in range(self.nr_regions + blref_states)]
+        state_file_content = [str(i+head+blref_states)+':'+str(partition['R']['idx_inv'][i]).replace(' ', '')
+               for i in range(self.nr_regions)]
 
         state_file_string = '\n'.join(state_var_string + state_file_header + state_file_content)
         
@@ -316,8 +318,6 @@ class mdp(object):
         blref_transitions = ''
         blref_trans=0
         if self.improved_synthesis:
-            val = self.improved_synthesis.lb_values
-
             for i,val in enumerate(self.improved_synthesis.lb_values):
                 if val < 1:
                     blref_transitions += str(i + head) + ' 0 1 ['+str(1-val)+','+str(1-val)+']\n'
