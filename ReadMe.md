@@ -6,6 +6,8 @@ This artefact contains an implementation of the formal abstraction methods propo
 - [Thom Badings, Licio Romao, Alessandro Abate, David Parker, Hasan Poonawala, Marielle Stoelinga & Nils Jansen (2022). Robust Control for Dynamical Systems with Non-Gaussian Noise via Formal Abstractions. JAIR 2023](https://www.jair.org/index.php/jair/article/view/14253)
 - [Thom Badings, Licio Romao, Alessandro Abate, & Nils Jansen (2023). Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic Dynamical Models with Epistemic Uncertainty. AAAI 2023](https://arxiv.org/pdf/2210.05989.pdf)
 
+> **Note:** This branch contains the code for reference 4 [Badings et al., ECC 2024]. For the code of the other references 1-3, please see the main branch.
+
 This repository contains all code and instructions that are needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM.
 
 Python version: `3.8.8`. For a list of the required Python packages, please see the `requirements.txt` file. 
