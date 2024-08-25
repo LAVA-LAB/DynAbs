@@ -3,20 +3,10 @@
 
 """
 
-This script belongs to the paper with the title:
-    
- "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
-  Dynamical Models with Epistemic Uncertainty"
-
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
-
-Specifically, this script generates the tables of probability intervals, used
-for computing the transition probabilities of our sampling-based abstractions.
+This script generates the tables of probability intervals, used for computing the 
+transition probabilities of our sampling-based abstractions.
 ______________________________________________________________________________
 """
-
-# %run "~/documents/sample-abstract/createIntervalTable.py"
 
 import numpy as np
 import pandas as pd

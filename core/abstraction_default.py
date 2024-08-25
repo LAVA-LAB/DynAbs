@@ -4,12 +4,12 @@
 from core.abstraction import Abstraction
 from core.define_model import define_model
 
-import numpy as np              # Import Numpy for computations
-import itertools                # Import to create iterators
+import numpy as np
+import itertools
 import os
-from copy import deepcopy       # Import to copy variables in Python
-from progressbar import progressbar # Import to create progress bars
-from scipy.spatial import Delaunay # Import to create convex hulls
+from copy import deepcopy
+from progressbar import progressbar
+from scipy.spatial import Delaunay
 from operator import itemgetter
 
 from .action_classes import backreachset, partial_model

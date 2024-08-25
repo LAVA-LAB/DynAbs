@@ -5,9 +5,12 @@ The returned controllers are provably correct, which means that they satisfy the
 
 More specifically, this artefact contains an implementation of the methods proposed in the following papers:
 
-- [Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & Marielle Stoelinga (2022). Sampling-based Robust Control of Autonomous Systems with Non-Gaussian Noise. AAAI 2022](https://ojs.aaai.org/index.php/AAAI/article/view/21201)
-- [Thom Badings, Licio Romao, Alessandro Abate, David Parker, Hasan Poonawala, Marielle Stoelinga & Nils Jansen (2022). Robust Control for Dynamical Systems with Non-Gaussian Noise via Formal Abstractions. JAIR 2023](https://www.jair.org/index.php/jair/article/view/14253)
-- [Thom Badings, Licio Romao, Alessandro Abate, & Nils Jansen (2023). Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic Dynamical Models with Epistemic Uncertainty. AAAI 2023](https://arxiv.org/pdf/2210.05989.pdf)
+1. [Thom Badings, Alessandro Abate, David Parker, Nils Jansen, Hasan Poonawala & Marielle Stoelinga (2022). Sampling-based Robust Control of Autonomous Systems with Non-Gaussian Noise. AAAI 2022](https://ojs.aaai.org/index.php/AAAI/article/view/21201)
+2. [Thom Badings, Licio Romao, Alessandro Abate, David Parker, Hasan Poonawala, Marielle Stoelinga & Nils Jansen (2022). Robust Control for Dynamical Systems with Non-Gaussian Noise via Formal Abstractions. JAIR 2023](https://www.jair.org/index.php/jair/article/view/14253)
+3. [Thom Badings, Licio Romao, Alessandro Abate, & Nils Jansen (2023). Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic Dynamical Models with Epistemic Uncertainty. AAAI 2023](https://arxiv.org/pdf/2210.05989.pdf)
+4. [Thom Badings, Licio Romao, Alessandro Abate, & Nils Jansen (2024). A Stability-Based Abstraction Framework for Reach-Avoid Control of Stochastic Dynamical Systems with Unknown Noise Distributions. ECC 2024](https://arxiv.org/pdf/2404.01726)
+
+> **Note:** The code for reference 4 [Badings et al., ECC 2024] are located in the branch `ECC2024`.
 
 This repository contains all code and instructions that are needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM.
 

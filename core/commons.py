@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import numpy as np              # Import Numpy for computations
-import math                     # Import Math for mathematical operations
-import time                     # Import to create tic/toc functions
-import sys                      # Allows to terminate the code at some point
-import itertools                # Import to crate iterators
-import os                       # Import OS to allow creationg of folders
+import numpy as np
+import math
+import time
+import sys
+import itertools
+import os
 from scipy.spatial import Delaunay
 
 class table(object):

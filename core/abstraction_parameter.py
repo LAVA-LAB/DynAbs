@@ -4,10 +4,10 @@
 from core.abstraction import Abstraction
 from core.define_model import define_model
 
-import numpy as np              # Import Numpy for computations
-import itertools                # Import to create iterators
-from copy import deepcopy       # Import to copy variables in Python
-from progressbar import progressbar # Import to create progress bars
+import numpy as np
+import itertools
+from copy import deepcopy
+from progressbar import progressbar
 
 from .action_classes import backreachset, partial_model, epistemic_error, rotate_2D_vector
 from .compute_probabilities import compute_intervals_error
@@ -25,10 +25,14 @@ class abstraction_parameter(Abstraction):
 
         Parameters
         ----------
+        args : obj
+            Parsed arguments
         setup : dict
             Setup dictionary.
-        model : dict
+        model_raw : dict
             Base model for which to create the abstraction.
+        spec_raw : dict
+            Specification dictionary
 
         Returns
         -------
@@ -296,8 +300,6 @@ class abstraction_parameter(Abstraction):
         ----------
         tab : dict
             Table dictionary.
-        k : int
-            Discrete time step.
 
         Returns
         -------

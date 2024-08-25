@@ -3,12 +3,12 @@
 
 """
 
-Reach-avoid specifications used for the models in the paper:
+Models used in the paper:
  "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
   Dynamical Models with Epistemic Uncertainty"
 
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
+Originally coded by:        Thom Badings
+Contact e-mail address:     thombadings@gmail.com
 ______________________________________________________________________________
 """
 

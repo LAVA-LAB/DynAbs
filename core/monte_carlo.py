@@ -1,21 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-
-Implementation of the method proposed in the paper:
- "Probabilities Are Not Enough: Formal Controller Synthesis for Stochastic 
-  Dynamical Models with Epistemic Uncertainty"
-
-Originally coded by:        <anonymized>
-Contact e-mail address:     <anonymized>
-______________________________________________________________________________
-"""
-
-import numpy as np              # Import Numpy for computations
-import pandas as pd             # Import Pandas to store data in frames
-import random                   # Import to use random variables
-from progressbar import progressbar # Import to create progress bars
+import numpy as np
+import pandas as pd
+import random
+from progressbar import progressbar
 
 from .define_partition import computeRegionCenters
 from .commons import tocDiff, table

@@ -1,7 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from re import I
-import numpy as np              # Import Numpy for computations
-import pandas as pd             # Import Pandas to store data in frames
-import matplotlib.pyplot as plt # Import Pyplot to generate plots
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import cm
 from matplotlib.patches import Rectangle
@@ -13,13 +16,6 @@ def UAV_plot_2D(i_show, setup, args, regions, goal_regions, critical_regions,
                 spec, traces, cut_idx, traces_to_plot = 10, line=False):
     '''
     Create 2D trajectory plots for the 2D UAV benchmark
-
-    Parameters
-    ----------
-
-    Returns
-    -------
-    None.
 
     '''
     
@@ -162,15 +158,6 @@ def UAV_3D_plotLayout(setup, args, model, regions,
                       goal_regions, critical_regions, traces, spec):
     '''
     Create a plot that shows the layout of the UAV problem (without results)
-    
-    Parameters
-    ----------
-    ScAb : abstraction instance
-        Full object of the abstraction being plotted for
-        
-    Returns
-    -------
-    None.
         
     '''
     
@@ -192,24 +179,8 @@ def UAVplot3d_visvis(setup, args, model, regions, goal_regions,
                      critical_regions, spec, traces, cut_value, 
                      traces_to_plot = 10):
     '''
-    Create 3D trajectory plots for the 3D UAV benchmark
-
-    Parameters
-    ----------
-    setup : dict
-        Setup dictionary.
-    model : dict
-        Main dictionary of the LTI system model.
-    abstr : dict
-        Dictionay containing all information of the finite-state abstraction.
-    traces : list
-        Nested list containing the trajectories (traces) to plot for
-    cut_value : array
-        Values to create the cross-section for
-
-    Returns
-    -------
-    None.
+    Create 3D trajectory plots for the 3D UAV benchmark.
+    Creates cross-section at given `cut_value`.
 
     '''
     

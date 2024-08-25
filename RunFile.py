@@ -8,7 +8,8 @@ For more information about the papers forming the foundations of this tool, see 
 
 Originally coded by:        Thom Badings
 Contact e-mail address:     thombadings@gmail.com
-Git repository: https://github.com/LAVA-LAB/DynAbs
+Git repository:             https://github.com/LAVA-LAB/DynAbs
+Latest version:             August 25, 2024
 ______________________________________________________________________________
 """
 

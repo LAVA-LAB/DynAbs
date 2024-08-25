@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import numpy as np              # Import Numpy for computations
+import numpy as np
 from scipy.sparse.csgraph import connected_components
 
 def define_model(model_raw, spec):

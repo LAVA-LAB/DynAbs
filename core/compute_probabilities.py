@@ -3,7 +3,7 @@
 
 import numpy as np
 import itertools
-import matplotlib.pyplot as plt # Import Pyplot to generate plots
+import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from operator import itemgetter
 import collections
@@ -30,9 +30,7 @@ def compute_intervals_error(args, partition_setup, partition, trans,
         Dictionary of cluster information
     error : dict
         Control/epistemic error dictionary
-    samples : 2D Numpy array
-        Numpy array, with every row being a sample of the process noise.
-
+    
     Returns
     -------
     returnDict : dict

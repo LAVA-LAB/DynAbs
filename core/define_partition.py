@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import numpy as np              # Import Numpy for computations
-import itertools                # Import to crate iterators
-import matplotlib.pyplot as plt # Import Pyplot to generate plots
+import numpy as np
+import itertools
+import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 from scipy.spatial import ConvexHull
@@ -190,11 +190,10 @@ def define_spec_region(allCenters, sets, partition, borderOutside=False):
     ----------
     allCenters : List
         List of the center coordinates for all regions.
+    sets : List
+        List of sets to apply function for
     partition : Dict
         Partition dictionary.
-    subset : List
-        List of points to return the unique centers for.
-
     Returns
     -------
     list

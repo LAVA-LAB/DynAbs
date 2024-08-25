@@ -8,7 +8,7 @@ Models used in the paper:
  Formal Abstractions"
 
 Originally coded by:        Thom Badings
-Contact e-mail address:     thom.badings@ru.nl
+Contact e-mail address:     thombadings@gmail.com
 ______________________________________________________________________________
 """
 

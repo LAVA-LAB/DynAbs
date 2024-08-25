@@ -4,7 +4,7 @@
 import numpy as np
 
 from .commons import writeFile
-from progressbar import progressbar # Import to create progress bars
+from progressbar import progressbar
 
 class mdp(object):
     def __init__(self, setup, N, partition, actions, blref=False):
@@ -19,12 +19,14 @@ class mdp(object):
             Finite time horizon.
         partition : dict
             Partition dictionary
-    
+        actions : dict
+            Action dictionary
+        blref : bool, optional    
+
         Returns
         -------
-        mdp : dict
-            MDP dictionary.
-    
+        None.
+
         '''
         
         self.improved_synthesis = blref

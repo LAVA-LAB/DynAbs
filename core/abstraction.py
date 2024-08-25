@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import numpy as np              # Import Numpy for computations
-import itertools                # Import to crate iterators
-import sys                      # Allows to terminate the code at some point
-import pandas as pd             # Import Pandas to store data in frames
-import sys                      # Allows to terminate the code at some point
-import random                   # Import to use random variables
-import subprocess               # Import to call prism via terminal command
-from progressbar import progressbar # Import to create progress bars
+import numpy as np
+import itertools
+import sys
+import pandas as pd
+import random
+import subprocess
+from progressbar import progressbar
 import pathlib
 import re
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os                       # Import OS to allow creation of folders
-import matplotlib.pyplot as plt # Import to generate plos using Pyplot
-import seaborn as sns           # Import Seaborn to plot heat maps
-from datetime import datetime   # Import Datetime to retreive current date/time
-import math                     # Import Math for mathematical operations
+import os
+import matplotlib.pyplot as plt
+import seaborn as sns
+from datetime import datetime
+import math
 
 from core.commons import createDirectory
 
