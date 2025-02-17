@@ -348,7 +348,7 @@ class mdp(object):
         if mode == 'interval':
             firstrow = '0 0 0 [1.0,1.0]\n1 0 1 [1.0,1.0]\n2 0 2 [1.0,1.0]\n'
         else:
-            firstrow = '0 0 0 1.0\n1 0 1 1.0\n1 0 1 1.0\n'
+            firstrow = '0 0 0 1.0\n1 0 1 1.0\n2 0 2 1.0\n'
 
         ###
 

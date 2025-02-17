@@ -123,7 +123,7 @@ class settings(object):
         # Default pyplot style (font size, template, etc.)
         plt.close('all')
         plt.ion()
-        plt.style.use('seaborn-deep')
+        plt.style.use('seaborn-v0_8-deep')
         plt.rcParams.update({'font.size': 7, 
                              'pgf.texsystem' : "xelatex"})
         

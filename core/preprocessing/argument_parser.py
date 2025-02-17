@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 from ast import literal_eval
 
+
 def parse_arguments():
     """
     Function to parse arguments provided
@@ -14,9 +15,11 @@ def parse_arguments():
     :args: Dictionary with all arguments
 
     """
-    
+
     parser = argparse.ArgumentParser(description="Sampling-Based Abstraction Method",
                                      prefix_chars='--')
+
+    parser.add_argument('--seed', type=int, default=1, help="Random seed")
 
     # Path to prism exectuable
     parser.add_argument('--prism_executable', type=str, action="store", dest='prism_executable',
@@ -24,60 +27,68 @@ def parse_arguments():
 
     ### Abstraction options
     # File from which to load model
-    parser.add_argument('--model_file', type=str, action="store", dest='model_file', 
-                        default=False, help="File to load model from", required=True)
-    
-    # Argument for model to load
-    parser.add_argument('--model', type=str, action="store", dest='model', 
-                        default=False, help="Model to load", required=True)
+    parser.add_argument('--model_file', type=str, action="store", dest='model_file',
+                        default=False, help="File to load model from", required=False)
 
-    parser.add_argument('--timebound', type=str, action="store", dest='timebound', 
+    # Argument for model to load
+    parser.add_argument('--model', type=str, action="store", dest='model',
+                        default=False, help="Model to load", required=False)
+
+    parser.add_argument('--timebound', type=str, action="store", dest='timebound',
                         default='inf', help="Timebound on the temporal logic specification ('inf' for infinity)", required=False)
 
     # Type of abstraction to create
-    parser.add_argument('--abstraction_type', type=str, action="store", dest='abstraction_type', 
+    parser.add_argument('--abstraction_type', type=str, action="store", dest='abstraction_type',
                         default='default', help="Type of abstraction to generate (can be 'default' or 'parameter')", required=False)
-    
+
+    #### If true, activate Pick2Learn scheme ####
+    parser.add_argument('--P2L', dest='P2L', action='store_true',
+                        help="Enable the Pick2Learn scheme for computing a lower bound on the reach-avoid probability")
+    parser.set_defaults(P2L=False)
+
+    parser.add_argument('--P2L_delta', type=float, action="store", dest='P2L_delta',
+                        default=0.01, help="Confidence probability used by the P2L algorithm")
+
+    parser.add_argument('--P2L_add_per_iteration', type=int, action="store", dest='P2L_add_per_iteration',
+                        default=1, help="Number of samples to add per P2L iteration")
+
+    parser.add_argument('--P2L_pretrain_fraction', type=float, action="store", dest='P2L_pretrain_fraction',
+                        default=0.5, help="Fraction of samples to use in pretraining (initial hypothesis) of P2L")
+
     # Number of Monte Carlo simulation iterations
-    parser.add_argument('--monte_carlo_iter', type=int, action="store", dest='monte_carlo_iter', 
+    parser.add_argument('--monte_carlo_iter', type=int, action="store", dest='monte_carlo_iter',
                         default=0, help="Number of Monte Carlo simulations to perform")
 
     # Initial state for Monte Carlo simulations
-    parser.add_argument('--x_init', type=str, action="store", dest='x_init', 
+    parser.add_argument('--x_init', type=str, action="store", dest='x_init',
                         default='[]', help="Initial state for Monte Carlo simulations")
-    
-
 
     ### Scenario problem main arguments
-    parser.add_argument('--noise_samples', type=int, action="store", dest='noise_samples', 
+    parser.add_argument('--noise_samples', type=int, action="store", dest='noise_samples',
                         default=20000, help="Number of noise samples to use")
-    
-    parser.add_argument('--confidence', type=float, action="store", dest='confidence', 
+
+    parser.add_argument('--confidence', type=float, action="store", dest='confidence',
                         default=1e-8, help="Confidence level on individual transitions")
-    
-    parser.add_argument('--sample_clustering', type=float, action="store", dest='sample_clustering', 
+
+    parser.add_argument('--sample_clustering', type=float, action="store", dest='sample_clustering',
                         default=1e-2, help="Distance at which to cluster noise samples")
-    
-    parser.add_argument('--iterations', type=int, action="store", dest='iterations', 
+
+    parser.add_argument('--iterations', type=int, action="store", dest='iterations',
                         default=1, help="Number of repetitions of computing iMDP probability intervals")
 
     parser.add_argument('--nongaussian_noise', dest='nongaussian_noise', action='store_true',
                         help="If enabled, non-Gaussian noise samples (if available) are used")
     parser.set_defaults(nongaussian_noise=False)
 
-
-
     ### Memory allocation
     # Prism java memory
-    parser.add_argument('--prism_java_memory', type=int, action="store", dest='prism_java_memory', 
+    parser.add_argument('--prism_java_memory', type=int, action="store", dest='prism_java_memory',
                         default=1, help="Max. memory usage by JAVA / PRISM")
-    
+
     # Enable/disable improved policy synthesis scheme
     parser.add_argument('--improved_synthesis', dest='improved_synthesis', action='store_true',
                         help="If enabled, the improved policy synthesis scheme is enabled")
     parser.set_defaults(improved_synthesis=False)
-
-
 
     ### Plotting options
     parser.add_argument('--partition_plot', dest='partition_plot', action='store_true',
@@ -87,8 +98,6 @@ def parse_arguments():
     parser.add_argument('--plot', dest='plot', action='store_true',
                         help="If enabled, plots are created after finishing the programme")
     parser.set_defaults(plot=False)
-    
-
 
     ### Verbose switch
     parser.add_argument('--verbose', dest='verbose', action='store_true',
@@ -102,79 +111,82 @@ def parse_arguments():
     parser.add_argument('--drone_spring', dest='drone_spring', action='store_true',
                         help="Enable spring coefficient in drone benchmark")
     parser.set_defaults(drone_spring=False)
-    
+
     parser.add_argument('--drone_par_uncertainty', dest='drone_par_uncertainty', action='store_true',
                         help="Enable parameter uncertainty in drone benchmark")
     parser.set_defaults(drone_par_uncertainty=False)
-    
-    parser.add_argument('--drone_mc_step', type=int, action="store", dest='drone_mc_step', 
+
+    parser.add_argument('--drone_mc_step', type=int, action="store", dest='drone_mc_step',
                         default=0.2, help="Steps (factor) at which to increase parameter deviation from nominal value")
-    
-    parser.add_argument('--drone_mc_iter', type=int, action="store", dest='drone_mc_iter', 
+
+    parser.add_argument('--drone_mc_iter', type=int, action="store", dest='drone_mc_iter',
                         default=100, help="Monte Carlo simulations to evaluate controller safety")
-    
+
     ####
     ####
 
     #### Building temperature model arguments ####
-    parser.add_argument('--bld_partition', type=str, action="store", dest='bld_partition', 
+    parser.add_argument('--bld_partition', type=str, action="store", dest='bld_partition',
                         default='[25,35]', help="Size of the state space partition")
-    
-    parser.add_argument('--bld_target_size', type=str, action="store", dest='bld_target_size', 
+
+    parser.add_argument('--bld_target_size', type=str, action="store", dest='bld_target_size',
                         default='[[-.1, .1], [-.3, .3]]', help="Size of the target sets used")
-    
+
     parser.add_argument('--bld_par_uncertainty', dest='bld_par_uncertainty', action='store_true',
                         help="Enable parameter uncertainty in temperature control benchmark")
     parser.set_defaults(bld_par_uncertainty=False)
-    
+
     ####
     ####
 
     #### Anaesthesia delivery model arguments ####
-    parser.add_argument('--drug_partition', type=str, action="store", dest='drug_partition', 
+    parser.add_argument('--drug_partition', type=str, action="store", dest='drug_partition',
                         default='[20,20,20]', help="Size of the state space partition")
 
     ####
     ####
-    
+
     #### UAV model arguments ####
-    parser.add_argument('--UAV_dim', type=int, action="store", dest='UAV_dim', 
+    parser.add_argument('--UAV_dim', type=int, action="store", dest='UAV_dim',
                         default=2, help="Dimension of the UAV model to run")
 
-    parser.add_argument('--noise_factor', type=float, action="store", dest='noise_factor', 
+    parser.add_argument('--noise_factor', type=float, action="store", dest='noise_factor',
                         default=1, help="Multiplication factor for the process noise (covariance)")
-    
+
     ####
     ####
 
-    parser.add_argument('--mdp_mode', type=str, action="store", dest='mdp_mode', 
+    parser.add_argument('--mdp_mode', type=str, action="store", dest='mdp_mode',
                         default='interval', help="Is either `estimate` (MDP) or `interval` (iMDP; default option)")
+
+    parser.add_argument('--clopper_pearson', dest='clopper_pearson', action='store_true',
+                        help="Use the Clopper-Pearson confidence interval to compute probability intervals (instead of scenario optimization)")
+    parser.set_defaults(clopper_pearson=False)
 
     # Now, parse the command line arguments and store the
     # values in the `args` variable
     args, unknown = parser.parse_known_args()
-    
+
     if args.timebound == 'inf':
         args.timebound = np.inf
     else:
         args.timebound = int(args.timebound)
 
     if len(unknown) > 0:
-        print('\nWarning: There are unknown arguments:\n', unknown,'\n')
-    
+        print('\nWarning: There are unknown arguments:\n', unknown, '\n')
+
     args.bld_target_size = literal_eval(args.bld_target_size)
-    
-    args.x_init = np.array(list(literal_eval(args.x_init)), dtype=float)    
+
+    args.x_init = np.array(list(literal_eval(args.x_init)), dtype=float)
 
     try:
         args.bld_partition = [int(args.bld_partition)]
     except:
-        args.bld_partition = list(literal_eval(args.bld_partition))    
-    
+        args.bld_partition = list(literal_eval(args.bld_partition))
+
     try:
         args.drug_partition = [int(args.drug_partition)]
     except:
         args.drug_partition = list(literal_eval(args.drug_partition))
-
 
     return args
