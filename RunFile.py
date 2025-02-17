@@ -370,19 +370,6 @@ filepath = Path(Ab.setup.directories['outputFcase'], 'out.json')
 with open(filepath, "w") as outfile:
     json.dump(expDic, outfile)
 
-if args.clean_prism_model:
-    Ab.setup.directories['outputFcase']
-
-    extensions = ['*.tra', '*.lab', '*.sta', '*.pctl']
-    for path, subdirs, files in os.walk(Ab.setup.directories['outputFcase']):
-        for name in files:
-            if any([fnmatch(name, extension) for extension in extensions]):
-                print(f'- Delete file: {name}')
-                os.remove(os.path.join(path, name))
-
-print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
-print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
-
 # -----------------------------------------------------------------------------
 # Create plots
 # -----------------------------------------------------------------------------
@@ -407,3 +394,17 @@ if args.plot:
     from RunPlots import plot
 
     plot(path=Ab.setup.directories['outputF'] + 'data_dump.p')
+
+# Finally, clean up files if enabled
+if args.clean_prism_model:
+    Ab.setup.directories['outputFcase']
+
+    extensions = ['*.tra', '*.lab', '*.sta', '*.pctl']
+    for path, subdirs, files in os.walk(Ab.setup.directories['outputFcase']):
+        for name in files:
+            if any([fnmatch(name, extension) for extension in extensions]):
+                print(f'- Delete file: {name}')
+                os.remove(os.path.join(path, name))
+
+print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
+print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))
