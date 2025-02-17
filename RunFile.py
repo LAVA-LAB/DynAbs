@@ -27,6 +27,7 @@ import importlib
 import pathlib
 import json
 from pathlib import Path
+from fnmatch import fnmatch
 
 # Load main classes and methods
 from core.abstraction_default import abstraction_default
@@ -351,7 +352,8 @@ expDic = {
     'N': int(args.noise_samples),
     'sim': float(np.round(ProbVal, 8)),
     'numSim': int(Ab.args.monte_carlo_iter),
-    'beta (per interval)': float(np.round(1 - args.confidence, 8))
+    'beta (per interval)': float(np.round(1 - args.confidence, 8)),
+    'clopper_pearson': args.clopper_pearson,
 }
 if args.P2L:
     expDic['P2L_delta'] = float(np.round(1 - args.P2L_delta, 8))
@@ -367,6 +369,16 @@ else:
 filepath = Path(Ab.setup.directories['outputFcase'], 'out.json')
 with open(filepath, "w") as outfile:
     json.dump(expDic, outfile)
+
+if args.clean_prism_model:
+    Ab.setup.directories['outputFcase']
+
+    extensions = ['*.tra', '*.lab', '*.sta', '*.pctl']
+    for path, subdirs, files in os.walk(Ab.setup.directories['outputFcase']):
+        for name in files:
+            if any([fnmatch(name, extension) for extension in extensions]):
+                print(f'- Delete file: {name}')
+                os.remove(os.path.join(path, name))
 
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 print('APPLICATION FINISHED AT', datetime.now().strftime("%m-%d-%Y %H-%M-%S"))

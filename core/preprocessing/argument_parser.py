@@ -163,6 +163,10 @@ def parse_arguments():
                         help="Use the Clopper-Pearson confidence interval to compute probability intervals (instead of scenario optimization)")
     parser.set_defaults(clopper_pearson=False)
 
+    parser.add_argument('--clean_prism_model', dest='clean_prism_model', action='store_true',
+                        help="If True, the PRISM model files are deleted after the program is finished (can be beneficial to free up disk space when running many experiments)")
+    parser.set_defaults(clean_prism_model=False)
+
     # Now, parse the command line arguments and store the
     # values in the `args` variable
     args, unknown = parser.parse_known_args()
