@@ -389,7 +389,7 @@ class UAV(master.LTI_master):
 
         # Covariance of the process noise
         self.noise = dict()
-        self.noise['w_cov'] = np.eye(np.size(self.A, 1)) * 0.05
+        self.noise['w_cov'] = np.eye(np.size(self.A, 1)) * 0.15
 
         if args.nongaussian_noise:
             self.setTurbulenceNoise(args)
@@ -418,7 +418,7 @@ class UAV(master.LTI_master):
 
         '''
 
-        path = Path(args.base_dir, 'input/TurbulenceNoise_N=10000.csv')
+        path = Path(args.base_dir, 'input/TurbulenceNoise_N=100000.csv')
 
         samples = np.genfromtxt(path, delimiter=',')
 

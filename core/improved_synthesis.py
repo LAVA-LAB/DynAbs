@@ -4,12 +4,13 @@
 import numpy as np
 import pandas as pd
 
+
 class improved_synthesis(object):
     '''
     Improved policy synthesis scheme, which aggregates state based on their
     reach-avoid probability, creating multiple smaller iMDPs.
-    ''' 
-    
+    '''
+
     def __init__(self, num_states, goal, num_regions, N):
 
         self.num_states = num_states
@@ -22,7 +23,7 @@ class improved_synthesis(object):
         self.general_policy = np.full((N, num_regions), fill_value=-1, dtype=int)
 
         # Initially set time step equal to horizon
-        self.k = N-1
+        self.k = N - 1
         self.initial = True
 
         # Initially, values are one in goal regions; zero elsewhere
@@ -33,7 +34,7 @@ class improved_synthesis(object):
 
     def append_policy(self, policy):
         # Append policy for current time step into the general policy
-        print('- Store (partial) policy for time step', self.k)
+        print(' - Store (partial) policy for time step', self.k)
         self.general_policy[self.k] = policy[0]
 
         return
@@ -42,7 +43,7 @@ class improved_synthesis(object):
 
         # Set values and determine which regions belong to which partitioned values
         self.values = values
-        self.state_relation = (self.values // self.step_size).astype(int) 
+        self.state_relation = (self.values // self.step_size).astype(int)
 
         # Determine lowest value (i.e. worst-case in each partitioned value)
         self.lb_values = [min(self.values[self.values >= v]) for v in self.partition]

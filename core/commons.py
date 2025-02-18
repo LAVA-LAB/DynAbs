@@ -9,11 +9,12 @@ import itertools
 import os
 from scipy.spatial import Delaunay
 
+
 class table(object):
     '''
     Table object, to print structured output in the console.
     '''
-    
+
     def __init__(self, col_width):
         '''
         Initialize the table.
@@ -29,7 +30,7 @@ class table(object):
 
         '''
         self.col_width = col_width
-        
+
     def print_row(self, row, head=False, sort=False):
         '''
         Print a row in the table.
@@ -49,22 +50,21 @@ class table(object):
 
         '''
         if head:
-            print('\n'+'='*sum(self.col_width))
-            
+            print('\n' + '=' * sum(self.col_width))
+
         # Define string
-        string = "".join(str(word).ljust(self.col_width[i]) 
-                         for i,word in enumerate(row))
-        
+        string = "".join(str(word).ljust(self.col_width[i])
+                         for i, word in enumerate(row))
+
         if sort == "Warning":
-            print("\u001b[35m"+string+"\x1b[0m")
+            print("\u001b[35m" + string + "\x1b[0m")
         elif sort == "Success":
-            print("\u001b[32m"+string+"\x1b[0m")
+            print("\u001b[32m" + string + "\x1b[0m")
         else:
             print(string)
-            
-        if head:
-            print('-'*sum(self.col_width))
 
+        if head:
+            print(' -' * sum(self.col_width))
 
 
 def in_hull(p, hull):
@@ -76,8 +76,8 @@ def in_hull(p, hull):
     coordinates of `M` points in `K`dimensions for which Delaunay triangulation
     will be computed
     '''
-    
-    if not isinstance(hull,Delaunay):
+
+    if not isinstance(hull, Delaunay):
         print(' -- Creating hull...')
         hull = Delaunay(hull, qhull_options='QJ')
 
@@ -86,19 +86,17 @@ def in_hull(p, hull):
     return boolArray
 
 
-
 def overapprox_box(brs):
     '''
     Overapproximate a backward reachable set as a box
     '''
-    
+
     brs_min = np.min(brs, axis=0)
     brs_max = np.max(brs, axis=0)
-    
-    backreach_heur = np.vstack((brs_min, brs_max))
-    
-    return backreach_heur
 
+    backreach_heur = np.vstack((brs_min, brs_max))
+
+    return backreach_heur
 
 
 def createDirectory(folder):
@@ -119,31 +117,27 @@ def createDirectory(folder):
         os.makedirs(folder)
 
 
-
 def TicTocGenerator():
     ''' Generator that returns the elapsed run time '''
-    ti = time.time() # initial time
-    tf = time.time() # final time
+    ti = time.time()  # initial time
+    tf = time.time()  # final time
     while True:
         tf = time.time()
-        yield tf-ti # returns the time difference
-
+        yield tf - ti  # returns the time difference
 
 
 def TicTocDifference():
     ''' Generator that returns time differences '''
-    tf0 = time.time() # initial time
-    tf = time.time() # final time
+    tf0 = time.time()  # initial time
+    tf = time.time()  # final time
     while True:
         tf0 = tf
         tf = time.time()
-        yield tf-tf0 # returns the time difference
+        yield tf - tf0  # returns the time difference
 
 
-
-TicToc = TicTocGenerator() # create an instance of the TicTocGen generator
-TicTocDiff = TicTocDifference() # create an instance of the TicTocGen generator
-
+TicToc = TicTocGenerator()  # create an instance of the TicTocGen generator
+TicTocDiff = TicTocDifference()  # create an instance of the TicTocGen generator
 
 
 def toc(tempBool=True):
@@ -151,15 +145,13 @@ def toc(tempBool=True):
     # Prints the time difference yielded by generator instance TicToc
     tempTimeInterval = next(TicToc)
     if tempBool:
-        print( "Elapsed time: %f seconds." %tempTimeInterval )
-
+        print("Elapsed time: %f seconds." % tempTimeInterval)
 
 
 def tic():
     ''' Start time recorder '''
     # Records a time in TicToc, marks the beginning of a time interval
     toc(False)
-    
 
 
 def tocDiff(tempBool=True):
@@ -167,19 +159,17 @@ def tocDiff(tempBool=True):
     # Prints the time difference yielded by generator instance TicToc
     tempTimeInterval = next(TicTocDiff)
     if tempBool:
-        print( "Elapsed time: %f seconds.\n" %np.round(tempTimeInterval, 5) )
+        print("Elapsed time: %f seconds.\n" % np.round(tempTimeInterval, 5))
     else:
         return np.round(tempTimeInterval, 12)
-        
-    return tempTimeInterval
 
+    return tempTimeInterval
 
 
 def ticDiff():
     ''' Start time recorder '''
     # Records a time in TicToc, marks the beginning of a time interval
     tocDiff(False)
-    
 
 
 def nchoosek(n, k):
@@ -187,13 +177,12 @@ def nchoosek(n, k):
     Binomial coefficient or all combinations
     n C k = n! / ( (n-k)! * k! )
     '''
-    
+
     if k == 0:
         r = 1
     else:
-        r = n/k * nchoosek(n-1, k-1)
+        r = n / k * nchoosek(n - 1, k - 1)
     return round(r)
-    
 
 
 def is_invertible(a):
@@ -211,9 +200,8 @@ def is_invertible(a):
         Boolean which is True if the matrix is invertible.
 
     '''
-    
-    return a.shape[0] == a.shape[1] and np.linalg.matrix_rank(a) == a.shape[0]
 
+    return a.shape[0] == a.shape[1] and np.linalg.matrix_rank(a) == a.shape[0]
 
 
 def printWarning(text):
@@ -230,9 +218,8 @@ def printWarning(text):
     None.
 
     '''
-    
-    print("\u001b[35m>>> "+str(text)+" <<<\x1b[0m")
-    
+
+    print("\u001b[35m>>> " + str(text) + " <<<\x1b[0m")
 
 
 def printSuccess(text):
@@ -249,9 +236,8 @@ def printSuccess(text):
     None.
 
     '''
-    
-    print("\u001b[32m>>> "+str(text)+" <<<\x1b[0m")
 
+    print("\u001b[32m>>> " + str(text) + " <<<\x1b[0m")
 
 
 def mat_to_vec(inp):
@@ -269,68 +255,60 @@ def mat_to_vec(inp):
         A vector.
 
     '''
-    
+
     return np.reshape(inp, np.size(inp))
 
 
-
-def dot(v,w):
-    x,y = v
-    X,Y = w
-    return x*X + y*Y
-
+def dot(v, w):
+    x, y = v
+    X, Y = w
+    return x * X + y * Y
 
 
 def length(v):
-    x,y = v
-    return math.sqrt(x*x + y*y)
+    x, y = v
+    return math.sqrt(x * x + y * y)
 
 
-
-def vector(b,e):
-    x,y = b
-    X,Y = e
-    return (X-x, Y-y)
-
+def vector(b, e):
+    x, y = b
+    X, Y = e
+    return (X - x, Y - y)
 
 
 def unit(v):
-    x,y = v
+    x, y = v
     mag = length(v)
-    return (x/mag, y/mag)
+    return (x / mag, y / mag)
 
 
-
-def distance(p0,p1):
-    return length(vector(p0,p1))
-
+def distance(p0, p1):
+    return length(vector(p0, p1))
 
 
-def scale(v,sc):
-    x,y = v
+def scale(v, sc):
+    x, y = v
     return (x * sc, y * sc)
 
 
-
-def add(v,w):
-    x,y = v
-    X,Y = w
-    return (x+X, y+Y)
-
+def add(v, w):
+    x, y = v
+    X, Y = w
+    return (x + X, y + Y)
 
 
 def pnt2line(pnt, start, end):
     '''
     Map a point `pnt` to a line from `start` to `end`.
     '''
-    
+
     line_vec = vector(start, end)
     pnt_vec = vector(start, pnt)
-    
+
     line_len = length(line_vec)
     line_unitvec = unit(line_vec)
-    pnt_vec_scaled = scale(pnt_vec, 1.0/line_len)
-    t = dot(line_unitvec, pnt_vec_scaled)    
+    pnt_vec_scaled = scale(pnt_vec, 1.0 / line_len)
+    t = dot(line_unitvec, pnt_vec_scaled)
     if t < 0.0:
         t = 0.0
     elif t > 1.0:
@@ -341,8 +319,7 @@ def pnt2line(pnt, start, end):
     return dist, nearest
 
 
-
-def point_in_poly(x,y,poly):
+def point_in_poly(x, y, poly):
     '''
     Determine which points (x,y) are in the polytope `poly`
     '''
@@ -350,42 +327,39 @@ def point_in_poly(x,y,poly):
     n = len(poly)
     inside = False
 
-    p1x,p1y = poly[0]
-    for i in range(n+1):
-        p2x,p2y = poly[i % n]
-        if y > min(p1y,p2y):
-            if y <= max(p1y,p2y):
-                if x <= max(p1x,p2x):
+    p1x, p1y = poly[0]
+    for i in range(n + 1):
+        p2x, p2y = poly[i % n]
+        if y > min(p1y, p2y):
+            if y <= max(p1y, p2y):
+                if x <= max(p1x, p2x):
                     if p1y != p2y:
-                        xints = (y-p1y)*(p2x-p1x)/(p2y-p1y)+p1x
+                        xints = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
                     if p1x == p2x or x <= xints:
                         inside = not inside
-        p1x,p1y = p2x,p2y
+        p1x, p1y = p2x, p2y
 
     return inside
-
 
 
 def cm2inch(*tupl):
     '''
     Convert centimeters to inches
     '''
-    
+
     inch = 2.54
     if isinstance(tupl[0], tuple):
-        return tuple(i/inch for i in tupl[0])
+        return tuple(i / inch for i in tupl[0])
     else:
-        return tuple(i/inch for i in tupl)
-
+        return tuple(i / inch for i in tupl)
 
 
 def floor_decimal(a, precision=0):
     '''
     Floor function, but than with a specific precision
     '''
-    
-    return np.round(a - 0.5 * 10**(-precision), precision)
 
+    return np.round(a - 0.5 * 10 ** (-precision), precision)
 
 
 def writeFile(file, operation="w", content=[""]):
@@ -411,7 +385,6 @@ def writeFile(file, operation="w", content=[""]):
     filehandle.close()
 
 
-
 def setStateBlock(partition, **kwargs):
     '''
     Create a block of discrete regions for the given partition (can be used
@@ -432,41 +405,39 @@ def setStateBlock(partition, **kwargs):
         block.
 
     '''
-    
+
     nrArgs = len(kwargs)
     stateDim = len(partition['number'])
-    
+
     if nrArgs != len(partition['number']):
-        print('State dimension is',stateDim,'but only',nrArgs,
+        print('State dimension is', stateDim, 'but only', nrArgs,
               'arguments given.')
         sys.exit()
-    
-    row = [None for i in range(stateDim)]
-    
-    center_domain = (np.array(partition['number'])-1) * 0.5 * \
-                     np.array(partition['width'])
-    
-    for i,value in enumerate(kwargs.values()):
-        
-        if value == 'all':
-            
-            row[i] = np.linspace(
-                        -center_domain[i] + np.array(partition['origin'][i]), 
-                         center_domain[i] + np.array(partition['origin'][i]), 
-                         partition['number'][i])
-            
-        else:
-            
-            row[i] = list(value)
-            
-    return np.array(list(itertools.product(*row)))
 
+    row = [None for i in range(stateDim)]
+
+    center_domain = (np.array(partition['number']) - 1) * 0.5 * \
+                    np.array(partition['width'])
+
+    for i, value in enumerate(kwargs.values()):
+
+        if value == 'all':
+
+            row[i] = np.linspace(
+                -center_domain[i] + np.array(partition['origin'][i]),
+                center_domain[i] + np.array(partition['origin'][i]),
+                partition['number'][i])
+
+        else:
+
+            row[i] = list(value)
+
+    return np.array(list(itertools.product(*row)))
 
 
 def unit_vector(vector):
     """ Returns the unit vector of the vector.  """
     return vector / np.linalg.norm(vector)
-
 
 
 def angle_between(v1, v2):
@@ -482,7 +453,6 @@ def angle_between(v1, v2):
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
-
 
 
 def flatten(t):

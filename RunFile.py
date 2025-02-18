@@ -9,11 +9,9 @@ For more information about the papers forming the foundations of this tool, see 
 Originally coded by:        Thom Badings
 Contact e-mail address:     thombadings@gmail.com
 Git repository:             https://github.com/LAVA-LAB/DynAbs
-Latest version:             August 25, 2024
+Latest version:             February 18, 2025
 ______________________________________________________________________________
 """
-
-# %run "~/documents/sample-abstract/RunFile.py"
 
 # Load general packages
 from datetime import datetime  # Import Datetime to get current date/time
@@ -26,6 +24,7 @@ from inspect import getmembers, isclass  # To get list of all available models
 import importlib
 import pathlib
 import json
+import random
 from pathlib import Path
 from fnmatch import fnmatch
 
@@ -44,7 +43,6 @@ from core.preprocessing.argument_parser import parse_arguments
 from plotting.harmonic_oscillator import oscillator_experiment
 from plotting.anaesthesia_delivery import heatmap_3D
 
-np.random.seed(1)
 mpl.rcParams['figure.dpi'] = 300
 
 # -----------------------------------------------------------------------------
@@ -55,26 +53,9 @@ args = parse_arguments()
 args.base_dir = os.path.dirname(os.path.abspath(__file__))
 print('Base directory:', args.base_dir)
 
-# args.model_file = 'JAIR22_models'
-# args.model = 'UAV'
-# args.UAV_dim = 3
-# args.noise_factor = 1
-# args.nongaussian_noise = True
-# args.timebound = 32
-# args.confidence = 1e-8
-# args.prism_executable = '/Users/thobad/Documents/Tools/prism/prism/bin/prism'
-# args.noise_samples = 6400
-# args.mdp_mode = 'interval'
-# args.x_init = [-14, 0, 6, 0, -2, 0]
-# args.prism_java_memory = 16
-#
-# args.clopper_pearson = True
-#
-# args.P2L = True
-# args.P2L_add_per_iteration = 100
-# args.P2L_pretrain_fraction = 0.5
-# args.P2L_delta = 0.001
-# args.monte_carlo_iter = 10000
+# Set random seeds
+np.random.seed(args.seed)
+random.seed(args.seed)
 
 if not pathlib.Path(args.prism_executable).is_file():
     raise Exception(f"Could not find the prism executable. Please check if the following path to the executable is correct: {str(args.prism_executable)}")
@@ -180,14 +161,15 @@ else:
     harm_osc = False
 
 # For every iteration... (or once, if iterations are disabled)
-P2L_iter = 0
 for case_id in range(0, Ab.args.iterations):
 
     # Set directories for this iteration
-    Ab.setup.prepare_iteration(N, case_id)
+    folder = Ab.setup.create_output_directory(N, case_id)
 
     # Export the results of the current iteration
+    exporter.set_folder(folder)
     writer = exporter.create_writer(Ab, N)
+    exporter.export_args(Ab.args)
 
     done = False
 
@@ -204,22 +186,11 @@ for case_id in range(0, Ab.args.iterations):
             size=(Ab.args.noise_samples, Ab.N))
 
     if args.P2L:
-        # Create order (tie-break rule) over the samples
-        noise_samples_order = np.arange(len(noise_samples))
-        pretrain_samples = int(np.round(len(noise_samples) * args.P2L_pretrain_fraction))
-
-        # Unused samples
-        D = noise_samples[pretrain_samples:]
-        Di = noise_samples_order[pretrain_samples:]
-
-        # Used samples
-        T = noise_samples[:pretrain_samples]
-        Ti = noise_samples_order[:pretrain_samples]
-
-        P2L_sim = P2L(Ab)
+        # Initialize pick2learn meta algorithm
+        pick2learn = P2L(Ab, noise_samples)
     else:
-        # If Pick2Learn is not enabled, just use all samples
-        T = noise_samples
+        # If Pick2Learn is not enabled, still create the object but directly set all samples to be used
+        pick2learn = P2L(Ab, noise_samples, enabled=False)
 
     #####
 
@@ -227,72 +198,29 @@ for case_id in range(0, Ab.args.iterations):
         if args.improved_synthesis:
             print('\nBLOCK REFINEMENT - TIME STEP k =', Ab.blref.k)
             case_string = str(case_id) + 'k=' + str(Ab.blref.k)
-            print('-- Number of value states used:', Ab.blref.num_lb_used, '\n')
+            print(' -- Number of value states used:', Ab.blref.num_lb_used, '\n')
         else:
             case_string = str(case_id)
 
         # Calculate transition probabilities
-        Ab.define_probabilities(T[:, 0, :])  # Only pass noise samples for time k=0
+        Ab.define_probabilities(pick2learn.T[:, 0, :])  # Only pass noise samples for time k=0
 
         # Build and solve interval MDP
         model_size = Ab.build_iMDP()
         Ab.solve_iMDP()
 
+        # If an initial state is given, print the optimal reach-avoid prob. in that state
+        if len(args.x_init) == Ab.model.n:
+            s_init = state2region(args.x_init, Ab.spec.partition, Ab.partition['R']['c_tuple'])
+            print(f" > Optimal satisfaction probability computed PRISM: {Ab.results['optimal_reward'][s_init[0]]:.6f} (in state {s_init[0]})")
+
         # Store run times of current iterations        
         time_df = pd.DataFrame(data=Ab.time, index=[case_string])
         time_df.to_excel(writer, sheet_name='Run time')
 
-        if args.P2L:
-            # Run Monte Carlo simulations
-            score = P2L_sim.run(policy=Ab.results['optimal_policy'],
-                                noise_samples=D,
-                                x0=args.x_init)
-
-            # First sort the failed sample idxs according to the ordering Di
-            idxs_failed = np.arange(len(D))[score == 0]
-            idxs_sorted = idxs_failed[np.argsort(Di[score == 0])]
-
-            print(f'\n=== Pick2Learn iteration {P2L_iter} ===')
-            print(f'Number of violating samples: {len(idxs_failed)}')
-
-            if len(idxs_sorted) == 0 or len(idxs_sorted) < args.P2L_add_per_iteration:
-
-                # If there are no remaining failing samples, then we are done
-                done = True
-
-                # Calculate confidence leven on reach-avoid probability
-                samples_added = len(Ti) - pretrain_samples + len(idxs_sorted)  # Only count samples that were not in initial pretrain set
-                epsL, epsU = bound_risk(samples_added, Ab.args.noise_samples - pretrain_samples, args.P2L_delta)
-
-                ProbBound = 1 - epsU
-                print(f'With a confidence of {(1 - args.P2L_delta):.6f}, the reach-avoid probability is at least {ProbBound:.6f}')
-
-                ProbVal = -1
-                if Ab.args.monte_carlo_iter > 0 and len(args.x_init) == Ab.model.n:
-                    s_init = state2region(args.x_init, Ab.spec.partition, Ab.partition['R']['c_tuple'])
-                    Ab.mc = MonteCarloSim(Ab, iterations=Ab.args.monte_carlo_iter,
-                                          writer=writer, init_states=s_init)
-
-                    ProbVal = Ab.mc.results['reachability_probability'][s_init[0]]
-                    print(f"Empirical reach-avoid probability (over {Ab.args.monte_carlo_iter} simulations): {ProbVal:.6f}")
-
-            else:
-                P2L_iter += 1
-
-                # Add the max. nr. of remaining failed samples (sorted by tie-break rule)
-                add_idx = idxs_sorted[:args.P2L_add_per_iteration]
-
-                # Append sample to data used by algorithm
-                T = np.concatenate((T, D[add_idx]))
-                Ti = np.concatenate((Ti, Di[add_idx]))
-                # Remove these samples from the unused dataset
-                bool_remove = np.full(len(Di), False)
-                bool_remove[add_idx] = True
-                D = D[~bool_remove]
-                Di = Di[~bool_remove]
-
-                print(f'Added {len(add_idx)} samples')
-                print(f'Training set has now size {len(T)}\n')
+        if pick2learn.enabled:
+            # Update the pick2learn datasets
+            done = pick2learn.update(Ab)
 
         else:
             if args.improved_synthesis:
@@ -312,20 +240,6 @@ for case_id in range(0, Ab.args.iterations):
             if not args.improved_synthesis or blref_done:
                 done = True
 
-                ProbVal = -1
-                if Ab.args.monte_carlo_iter > 0:
-                    if len(args.x_init) == Ab.model.n:
-                        s_init = state2region(args.x_init, Ab.spec.partition, Ab.partition['R']['c_tuple'])
-
-                        Ab.mc = MonteCarloSim(Ab, iterations=Ab.args.monte_carlo_iter,
-                                              writer=writer, init_states=s_init)
-                        ProbVal = Ab.mc.results['reachability_probability'][s_init[0]]
-                    else:
-                        Ab.mc = MonteCarloSim(Ab, iterations=Ab.args.monte_carlo_iter,
-                                              writer=writer)
-
-                writer.close()
-
         # Export results
         exporter.add_results(Ab, Ab.blref.general_policy if args.improved_synthesis else Ab.results['optimal_policy'],
                              model_size, case_string)
@@ -335,40 +249,58 @@ for case_id in range(0, Ab.args.iterations):
         exporter.add_to_df(pd.DataFrame(data=model_size, index=[case_string]),
                            'model_size')
 
+    # Export JSON results file
+    expDic = {
+        'seed': int(args.seed),
+        'abstraction': str('IMDP' if args.mdp_mode == 'interval' else 'MDP'),
+        'N': int(args.noise_samples),
+        'num_montecarlo': int(Ab.args.monte_carlo_iter),
+        'beta_per_interval)': float(np.round(args.confidence, 8)),
+        'clopper_pearson': args.clopper_pearson,
+    }
+
+    if args.P2L:
+        generalization_bound, empirical_bound = pick2learn.compute_bound(Ab)
+        expDic['P2L_iter'] = int(pick2learn.iteration)
+        expDic['P2L_delta'] = float(np.round(1 - args.P2L_delta, 8))
+        expDic['P2L_bound'] = float(np.round(generalization_bound, 8))
+        expDic['P2L_montecarlo'] = float(np.round(empirical_bound, 8)),
+    else:
+        if len(args.x_init) == Ab.model.n:
+            # Retrieve bound on satisfaction probability from optimal values
+            s_init = state2region(args.x_init, Ab.spec.partition, Ab.partition['R']['c_tuple'])
+            generalization_bound = Ab.results['optimal_reward'][s_init[0]]
+
+            # Perform monte carlo simulations
+            Ab.mc = MonteCarloSim(Ab, iterations=Ab.args.monte_carlo_iter, writer=writer, init_states=s_init)
+            empirical_bound = Ab.mc.results['reachability_probability'][s_init[0]]
+            print(f" > Empirical reach-avoid probability (over {Ab.args.monte_carlo_iter} simulations): {empirical_bound:.6f}\n")
+
+            expDic['no-P2L_bound'] = float(np.round(generalization_bound, 8))
+            expDic['no-P2L_montecarlo'] = float(np.round(empirical_bound, 8))
+        else:
+            Ab.mc = MonteCarloSim(Ab, iterations=Ab.args.monte_carlo_iter, writer=writer)
+
+            # If no initial state is specified, there is not a single value we can report
+            expDic['no-P2L_bound'] = -1
+            expDic['no-P2L_montecarlo'] = -1
+
+    # Export to JSON
+    filepath = Path(Ab.setup.directories['outputFcase'], 'out.json')
+    with open(filepath, "w") as outfile:
+        json.dump(expDic, outfile)
+
+    # Export objects into data file
     pickle_results(Ab)
 
     if harm_osc:
-        print('-- Monte Carlo simulations to determine controller safety...')
+        print(' -- Monte Carlo simulations to determine controller safety...')
         harm_osc.add_iteration(Ab, case_id)
 
-# Save overall data in Excel (for all iterations combined)   
-exporter.save_to_excel(Ab.setup.directories['outputF'] + \
-                       Ab.setup.time['datetime'] + '_iterative_results.xlsx')
+    writer.close()
 
-# Export
-expDic = {
-    'seed': int(args.seed),
-    'abstraction': str('IMDP' if args.mdp_mode == 'interval' else 'MDP'),
-    'N': int(args.noise_samples),
-    'sim': float(np.round(ProbVal, 8)),
-    'numSim': int(Ab.args.monte_carlo_iter),
-    'beta (per interval)': float(np.round(1 - args.confidence, 8)),
-    'clopper_pearson': args.clopper_pearson,
-}
-if args.P2L:
-    expDic['P2L_delta'] = float(np.round(1 - args.P2L_delta, 8))
-    expDic['P2L'] = float(np.round(ProbBound, 8))
-    expDic['P2L_iter'] = int(P2L_iter)
-else:
-    if len(args.x_init) == Ab.model.n:
-        s_init = state2region(args.x_init, Ab.spec.partition, Ab.partition['R']['c_tuple'])
-        expDic['PRISM'] = float(np.round(Ab.results['optimal_reward'][s_init[0]], 8))
-    else:
-        expDic['PRISM'] = -1
-# Export to JSON
-filepath = Path(Ab.setup.directories['outputFcase'], 'out.json')
-with open(filepath, "w") as outfile:
-    json.dump(expDic, outfile)
+# Save overall data in Excel (for all iterations combined)   
+exporter.save_to_excel(Path(Ab.setup.directories['outputF'], Ab.setup.time['datetime'] + '_iterative_results.xlsx'))
 
 # -----------------------------------------------------------------------------
 # Create plots
@@ -376,7 +308,7 @@ with open(filepath, "w") as outfile:
 
 # Plots for AAAI 2023 paper
 if harm_osc:
-    print('-- Export results for longitudinal drone dynamics as in paper...')
+    print(' -- Export results for longitudinal drone dynamics as in paper...')
 
     harm_osc.export(Ab)
 
@@ -393,17 +325,15 @@ if Ab.model.name == 'anaesthesia_delivery':
 if args.plot:
     from RunPlots import plot
 
-    plot(path=Ab.setup.directories['outputF'] + 'data_dump.p')
+    plot(path=Path(Ab.setup.directories['outputF'], 'data_dump.p'))
 
 # Finally, clean up files if enabled
 if args.clean_prism_model:
-    Ab.setup.directories['outputFcase']
-
     extensions = ['*.tra', '*.lab', '*.sta', '*.pctl']
     for path, subdirs, files in os.walk(Ab.setup.directories['outputFcase']):
         for name in files:
             if any([fnmatch(name, extension) for extension in extensions]):
-                print(f'- Delete file: {name}')
+                print(f' - Delete file: {name}')
                 os.remove(os.path.join(path, name))
 
 print('\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')

@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from operator import itemgetter
 import collections
+from pathlib import Path
 
 from .commons import cm2inch, floor_decimal, tocDiff
 from .define_partition import computeRegionIdx, computeRegionCenters, draw_hull
@@ -433,8 +434,8 @@ def transition_plot(samples, error, i_show, i_hide, args, setup, model, spec, pa
     fig.tight_layout()
 
     # Save figure
-    filename = setup.directories['outputFcase'] + 'transition_plot'
+    filename = Path(setup.directories['outputFcase'], 'transition_plot')
     for form in setup.plotting['exportFormats']:
-        plt.savefig(filename + '.' + str(form), format=form, bbox_inches='tight')
+        plt.savefig(filename.with_suffix('.' + str(form)), format=form, bbox_inches='tight')
 
     plt.show()

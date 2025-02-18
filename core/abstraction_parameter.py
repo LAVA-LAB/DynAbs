@@ -344,7 +344,7 @@ class abstraction_parameter(Abstraction):
             clusters0['lb'] = np.array(clusters0['lb'])
             clusters0['ub'] = np.array(clusters0['ub'])
 
-            print('--', len(noise_samples), 'samples clustered into',
+            print(' --', len(noise_samples), 'samples clustered into',
                   len(clusters0['value']), 'clusters')
 
             assert sum(clusters0['value']) == Nsamples

@@ -148,13 +148,13 @@ def create_table(N, beta, kstep, trials, export=False, clopper_pearson=False):
         # the number of discarded constraints
         if k > 0:
             if P_upp[k] > P_upp[k - 1]:
-                print('-- Fix issue in P_upp[' + str(k) + ']')
+                print(' -- Fix issue in P_upp[' + str(k) + ']')
                 P_upp[k] = P_upp[k - 1]
 
     # Due to numerical issues, P_low for N_out=0 can be incorrect. Check if 
     # this is the case, and change accordingly.
     if P_low[0] < P_low[1]:
-        print('-- Fix numerical error in P_low[0]')
+        print(' -- Fix numerical error in P_low[0]')
         P_low[0] = 1 - P_upp[N]
 
     if trials > 0:
@@ -179,7 +179,7 @@ def create_table(N, beta, kstep, trials, export=False, clopper_pearson=False):
 
         df.to_csv(filepath, sep=',')
 
-        print('exported table to *.csv file')
+        print(' - Exported table to *.csv file')
 
     return P_low, P_upp
 

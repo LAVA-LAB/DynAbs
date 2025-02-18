@@ -349,7 +349,7 @@ class abstraction_default(Abstraction):
             from createIntervalTable import create_table
 
             print('\nThe following table file does not exist:' + str(tableFile))
-            print('Create table now instead...')
+            print(' - Create table now instead...')
 
             P_low, P_upp = create_table(N=len(samples), beta=self.args.confidence, kstep=1, trials=0, export=True, clopper_pearson=self.args.clopper_pearson)
 

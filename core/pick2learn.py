@@ -6,13 +6,16 @@ from .define_partition import computeRegionCenters
 from .cvx_opt import Controller
 from scipy.stats import beta as betaF
 
+from core.define_partition import state2region
+from core.monte_carlo import MonteCarloSim
+
 
 class P2L:
     '''
     Class to run Monte Carlo simulations under a derived controller
     '''
 
-    def __init__(self, Ab, **kwargs):
+    def __init__(self, Ab, noise_samples, enabled=True, **kwargs):
         '''
         Initialization function
 
@@ -27,7 +30,30 @@ class P2L:
 
         '''
 
-        print('Starting Monte Carlo simulations...')
+        print('\nInitialize Pick2Learn meta algorithm...')
+
+        self.iteration = 1
+        self.enabled = bool(enabled)
+
+        # Create order (tie-break rule) over the samples
+        self.order = np.arange(len(noise_samples))
+
+        if enabled:
+            # If P2L is enabled
+            self.num_pretrain_samples = int(np.round(len(noise_samples) * Ab.args.P2L_pretrain_fraction))
+
+            # Unused samples
+            self.D = noise_samples[self.num_pretrain_samples:]
+            self.Di = self.order[self.num_pretrain_samples:]
+
+            # Used samples
+            self.T = noise_samples[:self.num_pretrain_samples]
+            self.Ti = self.order[:self.num_pretrain_samples]
+
+        else:
+            # Otherwise, use all samples
+            self.T = noise_samples
+            self.Ti = self.order
 
         if Ab.flags['underactuated']:
             self.controller = Controller(Ab.model)
@@ -46,8 +72,10 @@ class P2L:
         self.horizon = Ab.N
         if self.horizon == np.inf:
             max_horizon = int(100)
-            print('-- Horizon of abstraction is infinite; set to {} for simulations'.format(max_horizon))
+            print(' -- Horizon of abstraction is infinite; set to {} for simulations'.format(max_horizon))
             self.horizon = max_horizon
+
+        print('')
 
     def run(self, x0, policy, noise_samples):
 
@@ -60,6 +88,69 @@ class P2L:
             _, score[i] = self.simulate(x0, noise)
 
         return score
+
+    def update(self, Ab):
+
+        # Run Monte Carlo simulations
+        score = self.run(policy=Ab.results['optimal_policy'],
+                         noise_samples=self.D,
+                         x0=Ab.args.x_init)
+
+        # First sort the failed sample idxs according to the ordering Di
+        idxs_failed = np.arange(len(self.D))[score == 0]
+        idxs_sorted = idxs_failed[np.argsort(self.Di[score == 0])]
+
+        print(f'\n=== Pick2Learn iteration {self.iteration} ===')
+        print(f'Number of violating samples: {len(idxs_failed)}')
+
+        if len(idxs_sorted) == 0 or len(idxs_sorted) < Ab.args.P2L_add_per_iteration:
+            # If there are fewer violations than the max we add per iteration, then we are done
+            done = True
+
+            # Add all remaining failed samples (sorted by tie-break rule)
+            add_idx = idxs_sorted
+
+        else:
+            # If there are more violations than the max we add per iteration, then we are not done yet
+            done = False
+            self.iteration += 1
+
+            # Add the max. nr. of remaining failed samples (sorted by tie-break rule)
+            add_idx = idxs_sorted[:Ab.args.P2L_add_per_iteration]
+
+        # Append sample to data used by algorithm
+        self.T = np.concatenate((self.T, self.D[add_idx]))
+        self.Ti = np.concatenate((self.Ti, self.Di[add_idx]))
+
+        # Remove these samples from the unused dataset
+        bool_remove = np.full(len(self.Di), False)
+        bool_remove[add_idx] = True
+        self.D = self.D[~bool_remove]
+        self.Di = self.Di[~bool_remove]
+
+        print(f' - Added {len(add_idx)} samples')
+        print(f' - Training set has now size {len(self.T)}\n')
+
+        return done
+
+    def compute_bound(self, Ab):
+
+        # Calculate confidence leven on reach-avoid probability
+        samples_added = len(self.Ti) - self.num_pretrain_samples  # Only count samples that were not in initial pretrain set
+        epsL, epsU = bound_risk(samples_added, Ab.args.noise_samples - self.num_pretrain_samples, Ab.args.P2L_delta)
+
+        self.generalization_bound = 1 - epsU
+        print(f' > With a confidence of {(1 - Ab.args.P2L_delta):.6f}, the reach-avoid probability is at least {self.generalization_bound:.6f}')
+
+        self.empirical_bound = -1
+        if Ab.args.monte_carlo_iter > 0 and len(Ab.args.x_init) == Ab.model.n:
+            s_init = state2region(Ab.args.x_init, Ab.spec.partition, Ab.partition['R']['c_tuple'])
+            Ab.mc = MonteCarloSim(Ab, iterations=Ab.args.monte_carlo_iter, init_states=s_init)
+
+            self.empirical_bound = Ab.mc.results['reachability_probability'][s_init[0]]
+            print(f" > Empirical reach-avoid probability (over {Ab.args.monte_carlo_iter} simulations): {self.empirical_bound:.6f}\n")
+
+        return self.generalization_bound, self.empirical_bound
 
     def simulate(self, x0, noise):
 
@@ -139,7 +230,7 @@ class P2L:
                                                          self.actions['obj'][action[k]].backreach_obj.target_set_size)
 
                 if not success:
-                    print('>> Failed to compute control input <<')
+                    print('  >> Failed to compute control input <<')
                     assert False
 
                 # Implement the control into the physical (unobservable) system
