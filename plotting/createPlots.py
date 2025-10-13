@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import cm
+from itertools import cycle
 
 from core.commons import printWarning, mat_to_vec, cm2inch
 from core.define_partition import define_partition
@@ -39,7 +40,7 @@ def _set_axes_radius(ax, origin, radius):
 
 def reachability_plot(setup, results, mc=None):
     '''
-    Create the result plots for the partitionaction instance.
+    Plot reachability probability results.
 
     Parameters
     ----------
@@ -62,9 +63,11 @@ def reachability_plot(setup, results, mc=None):
         fig = plt.figure(figsize=cm2inch(8, 6))
     ax = plt.gca()
     
-    # Plot probability reachabilities
-    color = next(ax._get_lines.prop_cycler)['color']
-    
+    # Plot probability reachabilities    
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = cycle(prop_cycle.by_key()['color'])
+    color = next(colors)
+        
     plt.plot(results['optimal_reward'], label='k=0', linewidth=1, color=color)
     if mc != None and len(mc.init_states) == len(results['optimal_reward']):
         print('-- Plot Monte Carlo results')
@@ -195,7 +198,7 @@ def heatmap_2D(args, model, setup, c_tuple, spec, values, title = 'auto'):
                orig)['center']
         
     else:
-        print('ERROR: No suitable model type found for 2D heatmap')
+        print('Warning: No suitable model type found for 2D heatmap, so omit this plot')
         return
 
     cut_values = np.zeros((x_nr, y_nr))

@@ -54,6 +54,19 @@ def plot(path):
 
     ######
 
+    if data['model'].name in ['UAV'] and data['model'].modelDim == 2:
+
+        if len(data['args'].x_init) == data['model'].n:
+            s_init = state2region(data['args'].x_init, data['spec'].partition, data['regions']['c_tuple'])[0]
+            traces = data['mc'].traces[s_init]
+
+            UAV_plot_2D((0,2), data['setup'], data['args'], data['regions'], data['goal_regions'], data['critical_regions'], 
+                        data['spec'], traces, cut_idx = [0,0], traces_to_plot=10, line=True)
+        else:
+            print('-- No initial state provided')
+
+    ######
+
     if data['model'].name == 'UAV' and data['model'].modelDim == 3:
 
         if len(data['args'].x_init) == data['model'].n:

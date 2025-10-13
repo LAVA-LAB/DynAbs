@@ -474,9 +474,7 @@ class Abstraction(object):
         # Check if the prism executable can be found and if so, run it on the generated iMDP.
         if not pathlib.Path(self.args.prism_executable).is_file():
             raise Exception(f"Could not find the prism executable. Please check if the following path to the executable is correct: {str(self.args.prism_executable)}")
-        command = self.args.prism_executable + " -javamaxmem " + \
-                  str(self.args.prism_java_memory) + "g -importmodel " + model_file + " -pf '" + \
-                  spec + "' " + options
+        command = str(self.args.prism_executable) + " -javamaxmem " + str(self.args.prism_java_memory) + "g -importmodel " + str(model_file) + " -pf '" + str(spec) + "' " + str(options)
         
         subprocess.Popen(command, shell=True).wait()    
         

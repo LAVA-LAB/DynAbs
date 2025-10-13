@@ -86,16 +86,32 @@ Please check out the file `requirements.txt` to see the full list of packages th
 
 # How to run for a single model?
 
-An example of running the UAV benchmark (6D linear dynamical model) is as follows:
+> In the examples below, you have to change the `prism_executable` argument such that it points to the Prism executable for you. This is the file named `prism` in the `.../prism/bin/` folder.
+
+DynAbs can be run as in the following three example benchmarks, which run the spaceshuttle benchmark and the 2D and 3D UAV benchmarks, respectively
+
+### Spaceshuttle
+State space dimension: 4
 
 ```bash
-python3 RunFile.py --model_file JAIR22_models --model UAV --prism_executable '~/Documents/prism/bin/prism' --UAV_dim 3 --prism_java_memory 8 --noise_samples 6400 --noise_factor 1 --nongaussian_noise --monte_carlo_iter 1000 --x_init '[-14,0,6,0,-2,0]' --plot --timebound 16
+python3 RunFile.py --model_file JAIR22_models --model shuttle --prism_executable '~/Documents/prism/bin/prism' --timebound 16 --prism_java_memory 8 --noise_samples 1600 --monte_carlo_iter 100 --x_init '[-0.75, -0.85, 0.005, 0.005]' --plot
 ```
 
-This runs the 3D UAV benchmark from the paper, with `N=6400` (non-Gaussian) noise samples, and Monte Carlo simulations enabled.
+### 2D UAV
+State space dimension: 4
 
-> Importantly, you have to change the `prism_executable` argument such that it points to the Prism executable for you. This is the file named `prism` in the `.../prism/bin/` folder.
+```bash
+python3 RunFile.py --model_file JAIR22_models --model UAV --prism_executable '~/Documents/prism/bin/prism' --UAV_dim 2 --timebound 32 --prism_java_memory 8 --noise_samples 3200 --monte_carlo_iter 1000 --x_init '[-6,0,-6,0]' --plot
+```
 
+### 3D UAV
+State space dimension: 6
+
+```bash
+python3 RunFile.py --model_file JAIR22_models --model UAV --prism_executable '~/Documents/prism/bin/prism' --UAV_dim 3 --timebound 16 --prism_java_memory 8 --noise_samples 6400 --noise_factor 1 --nongaussian_noise --monte_carlo_iter 1000 --x_init '[-14,0,6,0,-2,0]' --plot
+```
+
+## Interpreting results
 All results are stored in the `output/` folder. When running `RunFile.py` for a new abstraction, a new folder is created that contains the application name and the current datetime, such as `Ab_UAV_09-21-2022_17-31-20/`. For every iteration, a subfolder is created, inwhich all results specific to that single iteration are saved. This includes:
 
 - The PRISM model files (namely a `.lab`, `.sta`, and `.tra` file).

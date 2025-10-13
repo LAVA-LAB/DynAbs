@@ -10,6 +10,9 @@ output/*
 # Avoid ancillary folder to be pushed
 _ancillary/*
 
+# Avoid vscode settings to be pushed
+.vscode/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

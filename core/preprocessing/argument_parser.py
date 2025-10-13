@@ -4,6 +4,7 @@
 import argparse
 import numpy as np
 from ast import literal_eval
+from pathlib import Path
 
 def parse_arguments():
     """
@@ -153,6 +154,8 @@ def parse_arguments():
     # Now, parse the command line arguments and store the
     # values in the `args` variable
     args, unknown = parser.parse_known_args()
+
+    args.prism_executable = Path(args.prism_executable).expanduser()
     
     if args.timebound == 'inf':
         args.timebound = np.inf
