@@ -12,7 +12,7 @@ More specifically, this artifact contains an implementation of the methods propo
 
 > **Note:** The code for reference 4 [Badings et al., ECC 2024] is located in the branch `ECC2024`.
 
-This repository contains all code and instructions that are needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM.
+This repository contains all the code and instructions that are needed to replicate the results presented in the paper. Our simulations ran on a Linux machine with 32 3.7GHz cores and 64 GB of RAM.
 
 Python version: `3.10.14`. For a list of the required Python packages, please see the `requirements.txt` file. The code is tested with PRISM version `4.8.1`.
 
@@ -23,25 +23,25 @@ Python version: `3.10.14`. For a list of the required Python packages, please se
 
 > **<u>Important note:</u>** We have only tested the artifact on MacOS and Linux. Windows is currently not supported (as we require building PRISM from source).
 
-We recommend using the artifact on a virtual environment, in order to keep things clean on your machine. Here, we explain how to install the artifact on such a virtual environment using Conda. Other methods for using virtual environments exist, but we assume that you have Python 3 installed (we tested with version `3.10.14`).
+We recommend using the artifact in a virtual environment to keep things clean on your machine. Here, we explain how to install the artifact on such a virtual environment using Conda. Other methods for using virtual environments exist, but we assume that you have Python 3 installed (we tested with version `3.10.14`).
 
 ## 1. Create virtual environment
 
-To create a virtual environment with Conda and the prefered Python version, run the following command (replacing `abstract_env` with the desired name for the environment):
+To create a virtual environment with Conda and the preferred Python version, run the following command (replacing `dynabs` with the desired name for the environment):
 
 ```bash
-conda create --name abstract_env python=3.10.14
+conda create --name dynabs python=3.10.14
 ```
 
 Then, to activate the virtual environment, run:
 
 ```bash
-conda activate abstract_env
+conda activate dynabs
 ```
 
 ## 2. Install dependencies
 
-We assume the git is installed on your machine. Then, the following dependencies must be installed on your machine:
+We assume git is installed on your machine. Then, the following dependencies must be installed on your machine:
 
 1. Java Development Kit (required to run PRISM, see https://prismmodelchecker.org/manual/InstallingPRISM/Instructions for details). On Linux, this can be installed using the commands:
 
@@ -49,7 +49,7 @@ We assume the git is installed on your machine. Then, the following dependencies
    sudo apt install default-jdk
    ```
 
-   On MacOS, the Java Development kit can be installed via, for example, Homebrew or Oracle (https://www.oracle.com/java/technologies/downloads/#jdk22-mac).
+   On macOS, the Java Development Kit can be installed via, for example, Homebrew or Oracle (https://www.oracle.com/java/technologies/downloads/#jdk22-mac).
 
 3. PRISM - In the desired PRISM installation folder, clone PRISM (version `4.8.1`) from git and run the makefile:
 
@@ -68,11 +68,11 @@ We assume the git is installed on your machine. Then, the following dependencies
    sudo apt-get install -y libdbus-1-3 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xinput0 libxcb-xfixes0
    ```
 
-   On MacOS, the Python requirements should be sufficient to generate the 3D plots. If you run into any problems, feel free to contact us (see contact details at the bottom of the ReadMe).
+   On macOS, the Python requirements should be sufficient to generate the 3D plots. If you run into any problems, feel free to contact us (see contact details at the bottom of the ReadMe).
 
 ## 3. Copy artifact files and install packages
 
-Download and extract the artifact files to a folder on your machine, making sure that you grant writing access (needed to store results).
+You can download and extract the artifact files to a folder on your machine, making sure that you grant writing access (needed to store results).
 
 Open a terminal and navigate to the artifact folder. Then, run the following command to install the required packages:
 
@@ -80,7 +80,7 @@ Open a terminal and navigate to the artifact folder. Then, run the following com
 pip3 install -r requirements.txt
 ```
 
-Please checkout the file `requirements.txt` to see the full list of packages that will be installed.
+Please check out the file `requirements.txt` to see the full list of packages that will be installed.
 
 ------
 
@@ -107,7 +107,7 @@ All results are stored in the `output/` folder. When running `RunFile.py` for a 
 # How to run experiments from the paper?
 
 The figures and tables in the experimental section of the paper can be reproduced by running the shell script `run_experiments.sh` in the root folder of the repository.
-To run the experiments, change the `prism_executable` variable such that it points to the Prism executable on your machine (also see the information above), and then run the following to performe the experiments presented in the respective papers:
+To run the experiments, change the `prism_executable` variable such that it points to the Prism executable on your machine (also see the information above), and then run the following to perform the experiments presented in the respective papers:
 
 ```bash
 bash run_experiments_JAIR23.sh;
@@ -118,7 +118,7 @@ bash run_experiments_AAAI23.sh
 
 # What arguments can be passed?
 
-Below, we list all arguments that can be passed to the command for running the program. Arguments are given as `--<argument name> <value>`. Note that only the `model` argument is required; all others are optional (and have certain default values).
+Below, we list all arguments that can be passed to the command for running the program. Arguments are given as `--<argument name> <value>`. Note that only the `model` argument is required; all others are optional (and have specific default values).
 
 | Argument           | Required? | Default            | Type                     | Description |
 | ---                | ---       | ---                | ---                      | ---         |
@@ -143,4 +143,4 @@ Below, we list all arguments that can be passed to the command for running the p
 
 # Contact
 
-In case you have questions or experience problems with the code, feel free to reach out to Thom Badings (thombadings@gmail.com).
+Do you have any questions, experience problems with the code, or have ideas to extend or improve the abstraction techniques? Please feel free to contact Thom Badings (thombadings@gmail.com). We are happy to assist you or collaborate with you!
